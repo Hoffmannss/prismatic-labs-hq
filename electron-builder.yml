@@ -1,0 +1,77 @@
+appId: com.prismaticlabs.vendedoria
+productName: Vendedor IA
+copyright: Copyright © 2026 Prismatic Labs
+
+directories:
+  output: dist
+  buildResources: electron
+
+files:
+  - electron/**/*
+  - src/**/*
+  - data/**/*
+  - node_modules/**/*
+  - package.json
+  - .env
+
+extraFiles:
+  - from: data
+    to: data
+    filter:
+      - "**/*"
+
+# WINDOWS
+win:
+  target:
+    - nsis
+  icon: electron/icon.png
+  artifactName: "${productName}-Setup-${version}.${ext}"
+  requestedExecutionLevel: asInvoker
+  
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  perMachine: false
+  createDesktopShortcut: always
+  createStartMenuShortcut: true
+  shortcutName: "Vendedor IA"
+  runAfterFinish: true
+  installerIcon: electron/icon.png
+  uninstallerIcon: electron/icon.png
+  installerHeaderIcon: electron/icon.png
+  deleteAppDataOnUninstall: true
+
+# MACOS (futuro)
+mac:
+  target:
+    - dmg
+  icon: electron/icon.png
+  category: public.app-category.business
+  hardenedRuntime: true
+  gatekeeperAssess: false
+
+dmg:
+  contents:
+    - x: 130
+      y: 220
+    - x: 410
+      y: 220
+      type: link
+      path: /Applications
+  title: "${productName} ${version}"
+
+# LINUX (futuro)
+linux:
+  target:
+    - AppImage
+  icon: electron/icon.png
+  category: Office
+  maintainer: contato@prismaticlabs.com
+
+# AUTO-UPDATE
+publish:
+  provider: github
+  owner: Hoffmannss
+  repo: prismatic-labs-hq
+  private: true
+  releaseType: release
