@@ -31,6 +31,24 @@
         "Leads duplicados inflando CRM",
         "Emails invalidos desperdicando budget de email marketing",
         "UTMs perdidos impedindo atribuicao correta de conversoes"
+      ],
+      "objecoes": [
+        {
+          "objecao": "Muito caro",
+          "resposta": "Plano Free com 100 requests/mes. Starter a $29 ja resolve pra maioria."
+        },
+        {
+          "objecao": "Complexo de implementar",
+          "resposta": "1 linha de codigo. Retorna JSON pronto. Docs com exemplos em Python/JS/PHP."
+        },
+        {
+          "objecao": "Ja tenho outra solucao",
+          "resposta": "Testa gratis e compara. Se nao resolver melhor, sem problemas."
+        },
+        {
+          "objecao": "Nao tenho tempo agora",
+          "resposta": "Te mando acesso de teste. Integra quando tiver 10min. Sem pressa."
+        }
       ]
     },
     {
@@ -62,6 +80,24 @@
         "Landing pages genericas que nao convertem",
         "Design amador prejudicando credibilidade",
         "Alta taxa de rejeicao por falta de urgencia visual"
+      ],
+      "objecoes": [
+        {
+          "objecao": "Preco alto",
+          "resposta": "Starter a R$1.497 ja entrega profissional. ROI em 3-5 vendas."
+        },
+        {
+          "objecao": "Ja tenho landing",
+          "resposta": "Te mostro benchmark da sua vs nossa. Decide depois."
+        },
+        {
+          "objecao": "Nao sei se converte",
+          "resposta": "Te mando 3 cases com taxas antes/depois. Aumento medio de 40%."
+        },
+        {
+          "objecao": "Demora muito",
+          "resposta": "7-14 dias uteis. Se tiver lancamento proximo, priorizamos."
+        }
       ]
     }
   ]
