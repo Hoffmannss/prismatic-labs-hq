@@ -3,8 +3,9 @@
 // Fluxo totalmente automatico: hashtags -> perfis -> AI -> CRM -> aprendizado
 //
 // Uso:
-//   node 10-autopilot.js [nicho] [qtd] [maxAnalyze]
-//   node 10-autopilot.js api-automacao 20 8
+//   node 10-autopilot.js api-automacao 20
+//   node 10-autopilot.js "personal trainers fitness" 30
+//   node 10-autopilot.js "nutricionistas, coaches fitness" 50
 // =============================================================
 
 require('dotenv').config();
@@ -12,24 +13,19 @@ const https    = require('https');
 const fs       = require('fs');
 const path     = require('path');
 const { spawnSync } = require('child_process');
-const { NICHOS } = require('./6-scout');
+const { detectOrCreateNicho, getAllNichos } = require('./13-nicho-ai');
 
-const APIFY       = process.env.APIFY_API_TOKEN;
-const NICHO       = process.argv[2] || process.env.AUTOPILOT_NICHO || 'api-automacao';
-const QTD         = parseInt(process.argv[3] || process.env.AUTOPILOT_QTD  || '20',  10);
-const MAX_ANALYZE = parseInt(process.argv[4] || process.env.AUTOPILOT_MAX_ANALYZE || '10', 10);
-const SYNC_NOTION = (process.env.AUTOPILOT_SYNC_NOTION || 'true').toLowerCase() === 'true';
-
-// paths (agents/ esta dentro de vendedor-ai/)
-const DATA_DIR  = path.join(__dirname, '..', 'data');
-const DB_FILE   = path.join(DATA_DIR, 'crm', 'leads-database.json');
-const SCOUT_DIR = path.join(DATA_DIR, 'scout');
+const APIFY = process.env.APIFY_API_TOKEN;
 
 const C = {
   reset:'\x1b[0m', bright:'\x1b[1m', green:'\x1b[32m',
   yellow:'\x1b[33m', red:'\x1b[31m', cyan:'\x1b[36m',
   magenta:'\x1b[35m', blue:'\x1b[34m'
 };
+
+const DATA_DIR  = path.join(__dirname, '..', 'data');
+const DB_FILE   = path.join(DATA_DIR, 'crm', 'leads-database.json');
+const SCOUT_DIR = path.join(DATA_DIR, 'scout');
 
 function apiRequest(method, host, p, body, tokenQ) {
   return new Promise((resolve, reject) => {
@@ -127,7 +123,7 @@ async function scrapeProfiles(usernames) {
   return datasetItems(runId, usernames.length * 2);
 }
 
-function runAnalyze(username, bio, followers, posts, postsDesc) {
+function runAnalyze(username, bio, followers, posts, postsDesc, nichoId) {
   const script = path.join(__dirname, '5-orchestrator.js');
   const args   = [
     script, 'analyze',
@@ -135,7 +131,8 @@ function runAnalyze(username, bio, followers, posts, postsDesc) {
     bio         || '',
     String(followers || 0),
     String(posts     || 0),
-    postsDesc   || ''
+    postsDesc   || '',
+    nichoId     || ''
   ];
   const r = spawnSync('node', args, { stdio: 'inherit', cwd: __dirname, env: process.env });
   return r.status === 0;
@@ -150,32 +147,17 @@ function pickPostsDesc(config, caption) {
   ].filter(Boolean).join(' | ');
 }
 
-async function main() {
-  if (!APIFY) {
-    console.error(`${C.red}[AUTOPILOT] APIFY_API_TOKEN ausente no .env${C.reset}`);
-    process.exit(1);
-  }
+async function processNicho(nichoDesc, qtdTotal, maxAnalyze, syncNotion) {
+  console.log(`\n${C.yellow}>>> Processando nicho: "${nichoDesc}"${C.reset}`);
 
-  const config = NICHOS[NICHO];
-  if (!config) {
-    console.error(`${C.red}[AUTOPILOT] Nicho invalido: "${NICHO}"${C.reset}`);
-    console.log('Nichos disponiveis:', Object.keys(NICHOS).join(' | '));
-    process.exit(1);
-  }
+  // Detectar ou criar nicho
+  const { id: nichoId, config } = await detectOrCreateNicho(nichoDesc);
 
-  if (!fs.existsSync(SCOUT_DIR)) fs.mkdirSync(SCOUT_DIR, { recursive: true });
-
-  console.log(`\n${C.magenta}${'='.repeat(64)}${C.reset}`);
-  console.log(`${C.bright}  AUTOPILOT — ${config.nome}${C.reset}`);
-  console.log(`${C.magenta}${'='.repeat(64)}${C.reset}`);
-  console.log(`  Meta: ${QTD} leads  |  Max analyze: ${MAX_ANALYZE}  |  Notion: ${SYNC_NOTION}`);
-
+  const qtd = qtdTotal;
   const jaCRM = loadCRMUsernames();
-  console.log(`  Leads ja no CRM (skip): ${jaCRM.size}\n`);
 
-  // 1. Hashtags
-  console.log(`${C.cyan}[1/5] Scraping hashtags via Apify...${C.reset}`);
-  const posts = await scrapeByHashtags(config.hashtags.slice(0, 4), QTD * 6);
+  console.log(`\n${C.cyan}[1/5] Scraping hashtags via Apify...${C.reset}`);
+  const posts = await scrapeByHashtags(config.hashtags.slice(0, 4), qtd * 6);
   console.log(`  Posts coletados: ${posts.length}`);
 
   const uniq = new Map();
@@ -186,15 +168,14 @@ async function main() {
   }
   console.log(`  Usernames novos (nao no CRM): ${uniq.size}`);
 
-  const candidates = Array.from(uniq.values()).slice(0, Math.max(QTD * 2, MAX_ANALYZE * 3));
+  const candidates = Array.from(uniq.values()).slice(0, Math.max(qtd * 2, maxAnalyze * 3));
   const usernames  = candidates.map(x => x.username);
 
   if (usernames.length === 0) {
-    console.log(`${C.yellow}  Nenhum candidato novo. Tente outro nicho ou aumente QTD.${C.reset}`);
-    process.exit(0);
+    console.log(`${C.yellow}  Nenhum candidato novo. Pulando este nicho.${C.reset}`);
+    return { nichoId, leads: 0, analisados: 0 };
   }
 
-  // 2. Enrich perfis
   console.log(`\n${C.cyan}[2/5] Enriquecendo ${usernames.length} perfis...${C.reset}`);
   const profs = await scrapeProfiles(usernames);
 
@@ -218,33 +199,97 @@ async function main() {
       bio:       pr.bio,
       followers: pr.followers,
       posts:     pr.posts,
-      postsDesc: pickPostsDesc(config, c.caption)
+      postsDesc: pickPostsDesc(config, c.caption),
+      nicho:     nichoId
     });
-    if (queue.length >= QTD) break;
+    if (queue.length >= qtd) break;
   }
 
   const dateStr = new Date().toISOString().split('T')[0];
-  const outFile = path.join(SCOUT_DIR, `autopilot-${dateStr}-${NICHO}.json`);
-  fs.writeFileSync(outFile, JSON.stringify({ nicho: NICHO, date: dateStr, total: queue.length, queue }, null, 2));
+  const outFile = path.join(SCOUT_DIR, `autopilot-${dateStr}-${nichoId}.json`);
+  fs.writeFileSync(outFile, JSON.stringify({ nicho: nichoId, date: dateStr, total: queue.length, queue }, null, 2));
   console.log(`  Queue salva: ${outFile}`);
 
-  // 3. Analyze
-  console.log(`\n${C.cyan}[3/5] Analyze em ${Math.min(queue.length, MAX_ANALYZE)} leads...${C.reset}`);
-  const toAnalyze = queue.slice(0, MAX_ANALYZE);
+  console.log(`\n${C.cyan}[3/5] Analyze em ${Math.min(queue.length, maxAnalyze)} leads...${C.reset}`);
+  const toAnalyze = queue.slice(0, maxAnalyze);
   let okCount = 0;
 
   for (let i = 0; i < toAnalyze.length; i++) {
     const l = toAnalyze[i];
     console.log(`\n${C.bright}[${i+1}/${toAnalyze.length}] @${l.username}${C.reset} | ${l.followers} followers`);
-    const ok = runAnalyze(l.username, l.bio, l.followers, l.posts, l.postsDesc);
+    const ok = runAnalyze(l.username, l.bio, l.followers, l.posts, l.postsDesc, nichoId);
     if (ok) okCount++;
     await sleep(400);
   }
 
   console.log(`\n${C.green}  Analyze: ${okCount}/${toAnalyze.length} ok${C.reset}`);
 
-  // 4. Notion sync
-  if (SYNC_NOTION) {
+  return { nichoId, leads: queue.length, analisados: okCount };
+}
+
+async function main() {
+  const args = process.argv.slice(2);
+
+  if (args.length === 0 || args[0] === 'help') {
+    console.log(`\n${C.cyan}AUTOPILOT - Sistema automatico de prospeccao${C.reset}\n`);
+    console.log('Uso:');
+    console.log('  node 10-autopilot.js api-automacao 20');
+    console.log('  node 10-autopilot.js "personal trainers fitness" 30');
+    console.log('  node 10-autopilot.js "nutricionistas, coaches" 50\n');
+    console.log('Multiplos nichos (separe por virgula):');
+    console.log('  node 10-autopilot.js "fitness, nutricionistas, psicologos" 20\n');
+    process.exit(0);
+  }
+
+  if (!APIFY) {
+    console.error(`${C.red}[AUTOPILOT] APIFY_API_TOKEN ausente no .env${C.reset}`);
+    process.exit(1);
+  }
+
+  const inputNicho = args[0];
+  const qtdTotal   = parseInt(args[1] || process.env.AUTOPILOT_QTD || '20', 10);
+  const maxAnalyze = parseInt(args[2] || process.env.AUTOPILOT_MAX_ANALYZE || '10', 10);
+  const syncNotion = (process.env.AUTOPILOT_SYNC_NOTION || 'true').toLowerCase() === 'true';
+
+  if (!fs.existsSync(SCOUT_DIR)) fs.mkdirSync(SCOUT_DIR, { recursive: true });
+
+  // Detectar se sao multiplos nichos
+  const nichos = inputNicho.split(',').map(n => n.trim()).filter(Boolean);
+
+  console.log(`\n${C.magenta}${'='.repeat(70)}${C.reset}`);
+  console.log(`${C.bright}  AUTOPILOT - ${nichos.length} nicho(s)${C.reset}`);
+  console.log(`${C.magenta}${'='.repeat(70)}${C.reset}`);
+  console.log(`  Meta total: ${qtdTotal} leads por nicho`);
+  console.log(`  Max analyze: ${maxAnalyze} por nicho`);
+  console.log(`  Notion sync: ${syncNotion}`);
+  console.log(`  Nichos: ${nichos.join(', ')}\n`);
+
+  const jaCRM = loadCRMUsernames();
+  console.log(`  Leads ja no CRM (skip): ${jaCRM.size}\n`);
+
+  const resultados = [];
+
+  for (let i = 0; i < nichos.length; i++) {
+    console.log(`\n${C.magenta}${'='.repeat(70)}${C.reset}`);
+    console.log(`${C.bright}  NICHO ${i+1}/${nichos.length}: ${nichos[i]}${C.reset}`);
+    console.log(`${C.magenta}${'='.repeat(70)}${C.reset}`);
+
+    try {
+      const resultado = await processNicho(nichos[i], qtdTotal, maxAnalyze, syncNotion);
+      resultados.push(resultado);
+    } catch (e) {
+      console.error(`${C.red}[ERRO] Nicho "${nichos[i]}": ${e.message}${C.reset}`);
+      resultados.push({ nichoId: nichos[i], leads: 0, analisados: 0, erro: e.message });
+    }
+
+    if (i < nichos.length - 1) {
+      console.log(`\n${C.dim}Aguardando 3s antes do proximo nicho...${C.reset}`);
+      await sleep(3000);
+    }
+  }
+
+  // Notion sync
+  if (syncNotion) {
     console.log(`\n${C.cyan}[4/5] Sincronizando com Notion...${C.reset}`);
     const r = spawnSync(
       'node', [path.join(__dirname, '9-notion-sync.js'), 'sync'],
@@ -255,7 +300,7 @@ async function main() {
     console.log(`\n${C.yellow}[4/5] Notion sync pulado (AUTOPILOT_SYNC_NOTION=false)${C.reset}`);
   }
 
-  // 5. Learner
+  // Learner
   console.log(`\n${C.blue}[5/5] Atualizando memoria de aprendizado...${C.reset}`);
   try {
     const { runLearner } = require('./11-learner');
@@ -265,13 +310,22 @@ async function main() {
     console.log(`${C.yellow}  (nao critico — pipeline concluido)${C.reset}`);
   }
 
-  console.log(`\n${C.magenta}${'='.repeat(64)}${C.reset}`);
+  // Resumo final
+  console.log(`\n${C.magenta}${'='.repeat(70)}${C.reset}`);
   console.log(`${C.bright}  AUTOPILOT CONCLUIDO${C.reset}`);
-  console.log(`  ✓ ${queue.length} leads na queue`);
-  console.log(`  ✓ ${okCount} analisados e salvos no CRM`);
-  console.log(`  ✓ Memoria de aprendizado atualizada`);
-  console.log(`  → Dashboard: node 8-dashboard.js  —  http://localhost:3131`);
-  console.log(`${C.magenta}${'='.repeat(64)}${C.reset}\n`);
+  console.log(`${C.magenta}${'='.repeat(70)}${C.reset}\n`);
+
+  const totalLeads = resultados.reduce((s, r) => s + r.leads, 0);
+  const totalAnalise = resultados.reduce((s, r) => s + r.analisados, 0);
+
+  resultados.forEach(r => {
+    const status = r.erro ? `${C.red}ERRO${C.reset}` : `${C.green}OK${C.reset}`;
+    console.log(`  ${status} ${r.nichoId}: ${r.leads} leads | ${r.analisados} analisados`);
+  });
+
+  console.log(`\n  ${C.bright}TOTAL: ${totalLeads} leads | ${totalAnalise} analisados${C.reset}`);
+  console.log(`\n  → Dashboard: node 8-dashboard.js  —  http://localhost:3131`);
+  console.log(`${C.magenta}${'='.repeat(70)}${C.reset}\n`);
 }
 
 main().catch(e => {
