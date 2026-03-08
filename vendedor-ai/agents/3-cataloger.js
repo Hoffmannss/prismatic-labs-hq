@@ -215,7 +215,7 @@ function dailyReport() {
   const db = loadDB();
   const pipeline = fs.existsSync(PIPELINE_FILE) ? JSON.parse(fs.readFileSync(PIPELINE_FILE, 'utf8')) : {};
   
-  console.log('\n========================================';
+  console.log('\n========================================');
   console.log('   RELATORIO DIARIO - PRISMATIC LABS CRM');
   console.log('========================================');
   console.log(`Total de Leads: ${db.leads.length}`);
