@@ -2,14 +2,16 @@
 // MODULO 2: COPYWRITER AI - PRISMATIC LABS VENDEDOR AUTOMATICO
 // Gera DM hiperpersonalizada usando few-shot + analise de posts
 // + Aprendizado continuo via style-memory.json (11-learner.js)
+// Stack: Google Gemini 2.0 Flash - GRATIS e excelente para copy
 // =============================================================
 
 require('dotenv').config();
-const Groq = require('groq-sdk');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
 const fs   = require('fs');
 const path = require('path');
 
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
+const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
 
 const username     = process.argv[2] || process.env.LEAD_USERNAME;
 const analysisFile = path.join(__dirname, '..', 'data', 'leads', `${username}_analysis.json`);
@@ -34,11 +36,11 @@ function sanitizeJSON(str) {
   for (let i = 0; i < str.length; i++) {
     const c = str[i];
     if (escaped) { result += c; escaped = false; continue; }
-    if (c === '\\') { escaped = true; result += c; continue; }
-    if (c === '"')  { inString = !inString; result += c; continue; }
-    if (inString && c === '\n') { result += '\\n'; continue; }
-    if (inString && c === '\r') { result += '\\r'; continue; }
-    if (inString && c === '\t') { result += '\\t'; continue; }
+    if (c === '\\\\') { escaped = true; result += c; continue; }
+    if (c === '\"')  { inString = !inString; result += c; continue; }
+    if (inString && c === '\n') { result += '\\\\n'; continue; }
+    if (inString && c === '\r') { result += '\\\\r'; continue; }
+    if (inString && c === '\t') { result += '\\\\t'; continue; }
     result += c;
   }
   return result;
@@ -67,26 +69,21 @@ async function generateMessage() {
     const objecoesStr = api.objecoes.map(o => `"${o.objecao}" -> "${o.resposta}"`).join('\n');
     contexto_produto = `PRODUTO: Lead Normalizer API
 URL: ${api.url_landing}
-O que faz: ${api.one_liner}
+O que faz: ${api.descricao}
 USPs: ${api.usp.slice(0, 3).join(' | ')}
 Precos: Free (100 req/mes, sem cartao), Starter $29/mes, Pro $79/mes
 Objecoes:\n${objecoesStr}
 Tom: dev para dev, direto, parece mensagem de colega`;
   } else {
+    const lp = produtos.find(p => p.id === 'landing-page-premium');
+    const objecoesStr = lp.objecoes.map(o => `"${o.objecao}" -> "${o.resposta}"`).join('\n');
     contexto_produto = `PRODUTO: Landing Page Premium Dark Mode + Neon
-O que faz: LP de alta conversao para infoprodutores
+O que faz: ${lp.descricao}
+USPs: ${lp.usp.slice(0, 3).join(' | ')}
 Precos: R$1.497 a R$5.997
-Diferenciais: dark mode exclusivo, conversao 15-25% vs media 5-10%, entrega 10-15 dias
+Objecoes:\n${objecoesStr}
 Tom: aspiracional, focado em resultado`;
   }
-
-  // ---- FEW-SHOT EXAMPLES ----
-  const templateGroup = isAPI ? templates.templates_api : templates.templates_landing_page;
-  const fewShot = templateGroup
-    .flatMap(t => (t.mensagens_exemplo || []).slice(0, 2))
-    .slice(0, 4)
-    .map((m, i) => `=== Exemplo ${i + 1} ===\n${m}`)
-    .join('\n\n');
 
   // ---- CONTEXTO DE POSTS ----
   const postsContext = ap.tem_posts_analisados
@@ -115,7 +112,7 @@ MINIMO: 3 linhas. Mensagem de 1 linha = INVALIDO.`;
   const memoria = loadMemory();
   let memoriaStr = '';
   if (memoria?.regras_copywriting?.length) {
-    const prodAngle = memoria.angulos_por_produto?.lead_normalizer_api;
+    const prodAngle = isAPI ? memoria.angulos_por_produto?.lead_normalizer_api : memoria.angulos_por_produto?.landing_page;
     memoriaStr = `
 APRENDIZADO ACUMULADO (v${memoria.versao} — ${memoria.total_amostras} amostras, score medio ${memoria.score_medio}/100):
 
@@ -125,7 +122,7 @@ ${memoria.regras_copywriting.map((r, i) => `${i + 1}. ${r}`).join('\n')}
 ERROS PARA NUNCA REPETIR:
 ${(memoria.erros_recorrentes || []).map(e => `- ${e}`).join('\n') || '(nenhum ainda)'}
 ${prodAngle ? `
-ANGULO MAIS EFICAZ (lead_normalizer_api): ${prodAngle.melhor_angulo}
+ANGULO MAIS EFICAZ (${a.servico_ideal}): ${prodAngle.melhor_angulo}
 EVITAR: ${(prodAngle.evitar || []).join(' | ')}` : ''}
 `;
     console.log(`[COPYWRITER] 🧠 Memoria v${memoria.versao} carregada (${memoria.regras_copywriting.length} regras)`);
@@ -150,14 +147,12 @@ ${postsContext}
 
 ${estruturaIdeal}
 ${memoriaStr}
-EXEMPLOS (siga este estilo e comprimento):
-${fewShot}
-
 REGRAS FINAIS:
 1. NUNCA coloque @handle no texto da mensagem
 2. NAO comece com "Vi seu perfil", "Parabens", "Notei que"
 3. Tom: colega util, nao vendedor
 4. Followups: 2-3 linhas naturais, sem @handle
+5. Use \\n para quebras de linha (sera convertido depois)
 
 Retorne SOMENTE o JSON (sem markdown, sem backticks, sem texto fora do JSON):
 {
@@ -172,14 +167,15 @@ Retorne SOMENTE o JSON (sem markdown, sem backticks, sem texto fora do JSON):
 }`;
 
   try {
-    const completion = await groq.chat.completions.create({
-      messages: [{ role: 'user', content: prompt }],
-      model:    'llama-3.3-70b-versatile',
-      temperature: 0.65,
-      max_tokens:  2500,
+    const result = await model.generateContent({
+      contents: [{ role: 'user', parts: [{ text: prompt }] }],
+      generationConfig: {
+        temperature: 0.8,
+        maxOutputTokens: 2500,
+      },
     });
 
-    const rawResponse = completion.choices[0].message.content.trim();
+    const rawResponse = result.response.text().trim();
     const jsonMatch   = rawResponse.match(/\{[\s\S]*\}/);
     if (!jsonMatch) throw new Error('Resposta nao contem JSON valido');
 
@@ -189,7 +185,7 @@ Retorne SOMENTE o JSON (sem markdown, sem backticks, sem texto fora do JSON):
     const outputDir = path.join(__dirname, '..', 'data', 'mensagens');
     if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true });
 
-    const result = {
+    const resultData = {
       timestamp:        new Date().toISOString(),
       username,
       produto_detectado: a.servico_ideal,
@@ -201,7 +197,7 @@ Retorne SOMENTE o JSON (sem markdown, sem backticks, sem texto fora do JSON):
     };
 
     const outputFile = path.join(outputDir, `${username}_mensagens.json`);
-    fs.writeFileSync(outputFile, JSON.stringify(result, null, 2));
+    fs.writeFileSync(outputFile, JSON.stringify(resultData, null, 2));
 
     const recKey    = `mensagem_${messages.mensagem_recomendada}`;
     const recMsg    = messages[recKey];
@@ -212,14 +208,17 @@ Retorne SOMENTE o JSON (sem markdown, sem backticks, sem texto fora do JSON):
     console.log(`[COPYWRITER] Produto: ${prodLabel}${postsLbl}`);
     console.log(`[COPYWRITER] Recomendada: #${messages.mensagem_recomendada} - ${messages.motivo_recomendacao}`);
     console.log(`\n========== COPIE E COLE ESTA MENSAGEM ==========`);
-    console.log(recMsg?.texto?.replace(/\\n/g, '\n'));
+    console.log(recMsg?.texto?.replace(/\\\\n/g, '\n'));
     console.log(`================================================\n`);
     console.log(`[COPYWRITER] Arquivo: ${outputFile}`);
-    console.log(`\nMESSAGES_OUTPUT=${JSON.stringify(result)}`);
+    console.log(`\nMESSAGES_OUTPUT=${JSON.stringify(resultData)}`);
 
-    return result;
+    return resultData;
   } catch (error) {
     console.error('[COPYWRITER] Erro:', error.message);
+    if (error.message.includes('API key')) {
+      console.error('[COPYWRITER] GOOGLE_API_KEY nao encontrada ou invalida. Pegue em: https://aistudio.google.com/apikey');
+    }
     process.exit(1);
   }
 }
