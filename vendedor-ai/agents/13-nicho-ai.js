@@ -239,42 +239,45 @@ function listAllNichos() {
   console.log(`${C.dim}Criar novo: node 13-nicho-ai.js "descricao do nicho"${C.reset}\n`);
 }
 
-// MAIN
-const args = process.argv.slice(2);
-
-if (args.length === 0 || args[0] === 'help') {
-  console.log(`\n${C.cyan}NICHO AI - Sistema inteligente de nichos${C.reset}\n`);
-  console.log('Uso:');
-  console.log('  node 13-nicho-ai.js "personal trainers fitness"');
-  console.log('  node 13-nicho-ai.js "advogados previdenciarios"');
-  console.log('  node 13-nicho-ai.js "nutricionistas online"');
-  console.log('  node 13-nicho-ai.js list\n');
-  console.log('O sistema vai:');
-  console.log('  1. Detectar se o nicho ja existe');
-  console.log('  2. Se nao existir, criar automaticamente com IA');
-  console.log('  3. Gerar ID, hashtags, keywords e estrategia\n');
-  process.exit(0);
-}
-
-if (args[0] === 'list') {
-  listAllNichos();
-  process.exit(0);
-}
-
-const descricao = args.join(' ');
-
-if (!process.env.GROQ_API_KEY) {
-  console.error(`${C.red}[NICHO-AI] GROQ_API_KEY nao encontrada no .env${C.reset}`);
-  process.exit(1);
-}
-
-detectOrCreateNicho(descricao)
-  .then(resultado => {
-    process.exit(0);
-  })
-  .catch(err => {
-    console.error(`${C.red}[NICHO-AI] Erro: ${err.message}${C.reset}`);
-    process.exit(1);
-  });
-
+// Exportar funcoes para uso como modulo
 module.exports = { detectOrCreateNicho, getAllNichos, listAllNichos };
+
+// MAIN - so executa se for chamado diretamente (nao como modulo)
+if (require.main === module) {
+  const args = process.argv.slice(2);
+
+  if (args.length === 0 || args[0] === 'help') {
+    console.log(`\n${C.cyan}NICHO AI - Sistema inteligente de nichos${C.reset}\n`);
+    console.log('Uso:');
+    console.log('  node 13-nicho-ai.js "personal trainers fitness"');
+    console.log('  node 13-nicho-ai.js "advogados previdenciarios"');
+    console.log('  node 13-nicho-ai.js "nutricionistas online"');
+    console.log('  node 13-nicho-ai.js list\n');
+    console.log('O sistema vai:');
+    console.log('  1. Detectar se o nicho ja existe');
+    console.log('  2. Se nao existir, criar automaticamente com IA');
+    console.log('  3. Gerar ID, hashtags, keywords e estrategia\n');
+    process.exit(0);
+  }
+
+  if (args[0] === 'list') {
+    listAllNichos();
+    process.exit(0);
+  }
+
+  const descricao = args.join(' ');
+
+  if (!process.env.GROQ_API_KEY) {
+    console.error(`${C.red}[NICHO-AI] GROQ_API_KEY nao encontrada no .env${C.reset}`);
+    process.exit(1);
+  }
+
+  detectOrCreateNicho(descricao)
+    .then(resultado => {
+      process.exit(0);
+    })
+    .catch(err => {
+      console.error(`${C.red}[NICHO-AI] Erro: ${err.message}${C.reset}`);
+      process.exit(1);
+    });
+}
