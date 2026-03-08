@@ -1,0 +1,21 @@
+{
+  "name": "prismatic-labs-vendedor-ai",
+  "version": "1.1.0",
+  "description": "SUPER VENDEDOR AI - Prismatic Labs 2026",
+  "main": "5-orchestrator.js",
+  "scripts": {
+    "start": "node 5-orchestrator.js",
+    "analyze": "node 5-orchestrator.js analyze",
+    "followup": "node 5-orchestrator.js followup",
+    "report": "node 5-orchestrator.js report"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "groq-sdk": "^0.7.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "author": "Prismatic Labs",
+  "license": "UNLICENSED"
+}
