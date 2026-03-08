@@ -1,0 +1,68 @@
+{
+  "produtos": [
+    {
+      "id": "lead-normalizer-api",
+      "nome": "Lead Normalizer API",
+      "tipo": "SaaS",
+      "moeda": "USD",
+      "recorrente": true,
+      "url_landing": "https://openclaw.io",
+      "descricao": "1 chamada normaliza telefone BR para E.164, limpa email, parseia UTMs, gera SHA-256 dedupe hash",
+      "planos": [
+        { "nome": "Free",       "preco": 0,   "requests": 100  },
+        { "nome": "Starter",    "preco": 29,  "requests": 5000 },
+        { "nome": "Pro",        "preco": 79,  "requests": 25000 },
+        { "nome": "Enterprise", "preco": 199, "requests": -1   }
+      ],
+      "icp": {
+        "primario": [
+          "Builders de automacao (Make, n8n, Zapier)",
+          "Devs e SaaS que processam leads via API",
+          "Gestores de trafego com alto volume de leads",
+          "Agencias digitais com workflows de CRM"
+        ],
+        "secundario": [
+          "E-commerce com checkout proprio",
+          "Plataformas de geração de leads B2B"
+        ]
+      },
+      "dores_resolvidas": [
+        "Telefones em formato errado quebrando flows de automacao",
+        "Leads duplicados inflando CRM",
+        "Emails invalidos desperdicando budget de email marketing",
+        "UTMs perdidos impedindo atribuicao correta de conversoes"
+      ]
+    },
+    {
+      "id": "landing-page-premium",
+      "nome": "Landing Page Premium Dark Mode + Neon",
+      "tipo": "servico",
+      "moeda": "BRL",
+      "recorrente": false,
+      "url_landing": "https://prismaticlab.com.br",
+      "descricao": "Landing pages premium dark mode com efeitos neon para infoprodutores e e-commerce",
+      "planos": [
+        { "nome": "Starter",    "preco": 1497 },
+        { "nome": "Pro",        "preco": 2997 },
+        { "nome": "Enterprise", "preco": 5997 }
+      ],
+      "icp": {
+        "primario": [
+          "Infoprodutores com lancamento ativo",
+          "Coaches e consultores com audiencia",
+          "E-commerce com produto proprio",
+          "Criadores de conteudo monetizados"
+        ],
+        "secundario": [
+          "Agencias que revendem para clientes",
+          "Profissionais liberais com servico premium"
+        ]
+      },
+      "dores_resolvidas": [
+        "Landing pages genericas que nao convertem",
+        "Design amador prejudicando credibilidade",
+        "Alta taxa de rejeicao por falta de urgencia visual"
+      ]
+    }
+  ]
+}
