@@ -2,15 +2,16 @@
 // MODULO 2: COPYWRITER AI - PRISMATIC LABS VENDEDOR AUTOMATICO
 // Gera DM hiperpersonalizada usando few-shot + analise de posts
 // + Aprendizado continuo via style-memory.json (11-learner.js)
-// Stack: Groq (Llama 3.3 70B) - GRATIS e comprovado
+// Stack: Google Gemini 2.0 Flash - GRATIS e superior para copy criativa
 // =============================================================
 
 require('dotenv').config();
-const Groq = require('groq-sdk');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
 const fs   = require('fs');
 const path = require('path');
 
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
+const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
 
 const username     = process.argv[2] || process.env.LEAD_USERNAME;
 const analysisFile = path.join(__dirname, '..', 'data', 'leads', `${username}_analysis.json`);
@@ -35,11 +36,11 @@ function sanitizeJSON(str) {
   for (let i = 0; i < str.length; i++) {
     const c = str[i];
     if (escaped) { result += c; escaped = false; continue; }
-    if (c === '\\') { escaped = true; result += c; continue; }
-    if (c === '"')  { inString = !inString; result += c; continue; }
-    if (inString && c === '\n') { result += '\\n'; continue; }
-    if (inString && c === '\r') { result += '\\r'; continue; }
-    if (inString && c === '\t') { result += '\\t'; continue; }
+    if (c === '\\\\') { escaped = true; result += c; continue; }
+    if (c === '\"')  { inString = !inString; result += c; continue; }
+    if (inString && c === '\n') { result += '\\\\n'; continue; }
+    if (inString && c === '\r') { result += '\\\\r'; continue; }
+    if (inString && c === '\t') { result += '\\\\t'; continue; }
     result += c;
   }
   return result;
@@ -151,6 +152,7 @@ REGRAS FINAIS:
 2. NAO comece com "Vi seu perfil", "Parabens", "Notei que"
 3. Tom: colega util, nao vendedor
 4. Followups: 2-3 linhas naturais, sem @handle
+5. Use \\n para quebras de linha no JSON
 
 Retorne SOMENTE o JSON (sem markdown, sem backticks, sem texto fora do JSON):
 {
@@ -165,14 +167,17 @@ Retorne SOMENTE o JSON (sem markdown, sem backticks, sem texto fora do JSON):
 }`;
 
   try {
-    const completion = await groq.chat.completions.create({
-      messages: [{ role: 'user', content: prompt }],
-      model:       'llama-3.3-70b-versatile',
-      temperature: 0.65,
-      max_tokens:  2500,
+    const result = await model.generateContent({
+      contents: [{ role: 'user', parts: [{ text: prompt }] }],
+      generationConfig: {
+        temperature: 0.85,
+        maxOutputTokens: 2500,
+        topP: 0.95,
+        topK: 40,
+      },
     });
 
-    const rawResponse = completion.choices[0].message.content.trim();
+    const rawResponse = result.response.text().trim();
     const jsonMatch   = rawResponse.match(/\{[\s\S]*\}/);
     if (!jsonMatch) throw new Error('Resposta nao contem JSON valido');
 
@@ -205,7 +210,7 @@ Retorne SOMENTE o JSON (sem markdown, sem backticks, sem texto fora do JSON):
     console.log(`[COPYWRITER] Produto: ${prodLabel}${postsLbl}`);
     console.log(`[COPYWRITER] Recomendada: #${messages.mensagem_recomendada} - ${messages.motivo_recomendacao}`);
     console.log(`\n========== COPIE E COLE ESTA MENSAGEM ==========`);
-    console.log(recMsg?.texto?.replace(/\\n/g, '\n'));
+    console.log(recMsg?.texto?.replace(/\\\\n/g, '\n'));
     console.log(`================================================\n`);
     console.log(`[COPYWRITER] Arquivo: ${outputFile}`);
     console.log(`\nMESSAGES_OUTPUT=${JSON.stringify(resultData)}`);
@@ -213,8 +218,8 @@ Retorne SOMENTE o JSON (sem markdown, sem backticks, sem texto fora do JSON):
     return resultData;
   } catch (error) {
     console.error('[COPYWRITER] Erro:', error.message);
-    if (!process.env.GROQ_API_KEY) {
-      console.error('[COPYWRITER] GROQ_API_KEY nao encontrada no .env');
+    if (error.message.includes('API key')) {
+      console.error('[COPYWRITER] GOOGLE_API_KEY nao encontrada ou invalida.');
     }
     process.exit(1);
   }
