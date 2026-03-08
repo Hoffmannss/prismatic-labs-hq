@@ -1,0 +1,85 @@
+{
+  "api-automacao": {
+    "nome": "Builders de Automação (Make / n8n / Zapier)",
+    "descricao": "Profissionais e agências que desenvolvem automações usando plataformas no-code/low-code",
+    "hashtags": ["#makecom", "#n8n", "#zapier", "#automacao"],
+    "dor_principal": "Leads chegando com telefone em formato errado quebrando os flows",
+    "solucao": "OpenClaw valida e formata automaticamente dados de entrada antes de entrarem no workflow",
+    "tom": "técnico, direto, resultado-orientado",
+    "palavras_chave": [
+      "workflow",
+      "automação",
+      "integração",
+      "API",
+      "webhook",
+      "flows",
+      "dados estruturados",
+      "validação"
+    ]
+  },
+  "ecommerce": {
+    "nome": "E-commerce e Vendas Online",
+    "descricao": "Lojistas, dropshippers e gestores de e-commerce",
+    "hashtags": ["#ecommerce", "#vendasonline", "#dropshipping", "#lojista"],
+    "dor_principal": "Perda de vendas por dados de checkout incorretos",
+    "solucao": "OpenClaw valida CEP, telefone e email em tempo real no checkout",
+    "tom": "comercial, focado em conversão e ROI",
+    "palavras_chave": [
+      "conversão",
+      "checkout",
+      "carrinho abandonado",
+      "vendas perdidas",
+      "validação de dados",
+      "taxa de aprovação"
+    ]
+  },
+  "marketing-digital": {
+    "nome": "Marketing Digital e Growth",
+    "descricao": "Profissionais de marketing, growth hackers e gestores de tráfego",
+    "hashtags": ["#marketingdigital", "#growth", "#leadgen", "#cro"],
+    "dor_principal": "Leads de baixa qualidade desperdiçando budget de ads",
+    "solucao": "OpenClaw filtra leads fake e valida informações antes de entrarem no CRM",
+    "tom": "estratégico, data-driven, focado em métricas",
+    "palavras_chave": [
+      "qualificação de leads",
+      "CPL",
+      "ROI",
+      "funil",
+      "conversão",
+      "leads qualificados",
+      "MQL/SQL"
+    ]
+  },
+  "saas": {
+    "nome": "SaaS e Produtos Digitais",
+    "descricao": "Fundadores e desenvolvedores de software como serviço",
+    "hashtags": ["#saas", "#startup", "#b2b", "#software"],
+    "dor_principal": "Onboarding quebrado por dados de cadastro incorretos",
+    "solucao": "OpenClaw valida dados na API antes de criar contas e processar pagamentos",
+    "tom": "técnico, focado em produto e UX",
+    "palavras_chave": [
+      "onboarding",
+      "churn",
+      "ativação",
+      "dados de usuário",
+      "API validation",
+      "product-led growth"
+    ]
+  },
+  "agencias": {
+    "nome": "Agências Digitais e Consultorias",
+    "descricao": "Agências que entregam soluções para clientes",
+    "hashtags": ["#agenciadigital", "#webdesign", "#desenvolvimento", "#consultoria"],
+    "dor_principal": "Retrabalho corrigindo dados que clientes enviaram errados",
+    "solucao": "OpenClaw valida formulários e integrações dos clientes automaticamente",
+    "tom": "profissional, focado em eficiência operacional",
+    "palavras_chave": [
+      "entregáveis",
+      "eficiência",
+      "escala",
+      "automação de processos",
+      "qualidade de dados",
+      "produtividade"
+    ]
+  }
+}
