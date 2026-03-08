@@ -1,17 +1,21 @@
 {
   "name": "prismatic-labs-vendedor-ai",
-  "version": "1.1.0",
-  "description": "SUPER VENDEDOR AI - Prismatic Labs 2026",
-  "main": "5-orchestrator.js",
+  "version": "2.0.0",
+  "description": "Vendedor IA - Sistema completo de prospecção automatizada",
+  "main": "agents/5-orchestrator.js",
   "scripts": {
-    "start": "node 5-orchestrator.js",
-    "analyze": "node 5-orchestrator.js analyze",
-    "followup": "node 5-orchestrator.js followup",
-    "report": "node 5-orchestrator.js report"
+    "start": "node agents/5-orchestrator.js",
+    "analyze": "node agents/1-analyzer.js",
+    "copywrite": "node agents/2-copywriter.js",
+    "scout": "node agents/6-scout.js",
+    "autopilot": "node agents/10-autopilot.js",
+    "dashboard": "node agents/8-dashboard.js",
+    "notion-sync": "node agents/9-notion-sync.js"
   },
   "dependencies": {
     "dotenv": "^16.4.5",
-    "groq-sdk": "^0.7.0"
+    "groq-sdk": "^0.7.0",
+    "apify-client": "^2.9.3"
   },
   "engines": {
     "node": ">=18.0.0"

@@ -1,119 +1,145 @@
-# 📦 Migração de Código — Reorganização dos Repositórios
+# 🔄 Migração: Consolidação do Vendedor IA
 
-**Data:** 07 de Março de 2026  
-**Status:** ✅ EM ANDAMENTO
-
----
-
-## 🎯 Objetivo
-
-Consolidar todo o código do **Vendedor IA** em um único repositório correto:
-- **De:** `prismatic-labs-2026/vendedor/` (repo público de landing pages)
-- **Para:** `prismatic-labs-hq/vendedor-ai/` (repo privado de código)
+**Data:** 07/03/2026 23:00 BRT  
+**Branch:** `fix/consolidate-vendedor-code`  
+**Status:** ✅ Concluído
 
 ---
 
-## 📊 Estrutura Antes vs Depois
+## 📋 Contexto
 
-### ❌ ANTES (Incorreto)
+### Problema Identificado
+O código do **Vendedor IA** estava fragmentado entre dois repositórios:
+
+- **prismatic-labs-2026** (repo público): Continha todo o código funcional em `/vendedor/`
+  - 20+ arquivos JavaScript (agentes, orquestrador, dashboard)
+  - Configurações e dados
+  - **Problema:** Repo é para landing pages e docs, não código privado
+
+- **prismatic-labs-hq** (repo privado): Branch `refactor/electron-desktop-app`
+  - Apenas estrutura Electron (main.js, preload.js, splash.html)
+  - Pasta `vendedor-ai/` com apenas 1 arquivo de documentação
+  - **Problema:** Faltava o código core do sistema
+
+### Decisão
+Consolidar **TODO** o código do Vendedor IA no repositório correto: `prismatic-labs-hq`.
+
+---
+
+## 🎯 Ações Executadas
+
+### 1. Migração de Código
+**De:** `Hoffmannss/prismatic-labs-2026/vendedor/*`  
+**Para:** `Hoffmannss/prismatic-labs-hq/vendedor-ai/*`
+
+**Arquivos movidos:**
 ```
-prismatic-labs-2026/              [PÚBLICO]
-├── vendedor/                     ← CÓDIGO NO LUGAR ERRADO
+vendedor-ai/
+├── agents/               ← NOVO: todos os agentes IA
 │   ├── 1-analyzer.js
 │   ├── 2-copywriter.js
+│   ├── 3-cataloger.js
+│   ├── 4-followup.js
 │   ├── 5-orchestrator.js
-│   └── ... (20+ arquivos)
-└── index.html, 08-WEBSITE/, etc.
-
-prismatic-labs-hq/                [PRIVADO]
-├── vendedor-ai/
-│   └── 01-ANALYZER-AI.md         ← SÓ 1 ARQUIVO DOC
-└── (sem código core)
+│   ├── 6-scout.js
+│   ├── 6-scout-auto.js
+│   ├── 7-reviewer.js
+│   ├── 8-dashboard.js
+│   ├── 9-notion-sync.js
+│   ├── 10-autopilot.js
+│   ├── 11-learner.js
+│   └── 12-tracker.js
+├── config/               ← Configurações (nichos, templates)
+├── data/                 ← Dados e learning memory
+├── .env.example
+└── package.json          ← Atualizado v2.0.0
 ```
 
-### ✅ DEPOIS (Correto)
-```
-prismatic-labs-2026/              [PÚBLICO]
-├── _ARCHIVED/
-│   └── vendedor-old/             ← Código movido para cá (preservado)
-│       └── README.md             "Este código foi migrado para..."
-├── index.html
-└── 08-WEBSITE/, docs, etc.       ← Landing pages e docs estratégicos
-
-prismatic-labs-hq/                [PRIVADO]
-├── electron/                     ← Desktop app
-├── vendedor-ai/                  ← TODO CÓDIGO AQUI
-│   ├── agents/
-│   │   ├── 1-analyzer.js
-│   │   ├── 2-copywriter.js
-│   │   ├── 3-cataloger.js
-│   │   └── ... (todos os .js)
-│   ├── config/
-│   │   ├── nichos-config.json
-│   │   └── copywriting-templates.json
-│   ├── data/
-│   │   └── produtos.json
-│   ├── 5-orchestrator.js
-│   ├── package.json
-│   └── SETUP.md
-└── package.json (root)
+### 2. Nova Estrutura de Paths
+**Antes:**
+```javascript
+const config = require('../config/nichos-config.json');
 ```
 
----
+**Depois:** (já ajustado)
+```javascript
+const config = require(path.join(__dirname, '..', 'config', 'nichos-config.json'));
+```
 
-## ✅ Arquivos Migrados
-
-### Core System
-- [x] `.env.example`
-- [x] `package.json`
-- [x] `SETUP.md`
-- [ ] `5-orchestrator.js` (orquestrador principal)
-
-### AI Agents
-- [ ] `1-analyzer.js` → `agents/1-analyzer.js`
-- [ ] `2-copywriter.js` → `agents/2-copywriter.js`
-- [ ] `3-cataloger.js` → `agents/3-cataloger.js`
-- [ ] `4-followup.js` → `agents/4-followup.js`
-- [ ] `6-scout.js` → `agents/6-scout.js`
-- [ ] `6-scout-auto.js` → `agents/6-scout-auto.js`
-- [ ] `7-reviewer.js` → `agents/7-reviewer.js`
-- [ ] `8-dashboard.js` → `agents/8-dashboard.js`
-- [ ] `9-notion-sync.js` → `agents/9-notion-sync.js`
-- [ ] `10-autopilot.js` → `agents/10-autopilot.js`
-- [ ] `11-learner.js` → `agents/11-learner.js`
-- [ ] `12-tracker.js` → `agents/12-tracker.js`
-
-### Config & Data
-- [ ] `config/nichos-config.json`
-- [ ] `config/copywriting-templates.json`
-- [ ] `data/produtos.json`
-
-### UI
-- [ ] `jarvis.html`
-- [ ] `public/*`
-
-### Docs
-- [ ] `README-*.md`
+### 3. Arquivamento (próximo passo)
+**Repo:** `prismatic-labs-2026`  
+**Ação:** Mover `/vendedor/` → `/_ARCHIVED/vendedor-old/`  
+**Motivo:** Preservar histórico, mas sinalizar obsoleto
 
 ---
 
-## 🚀 Próximos Passos
+## 🧪 Validação Necessária
 
-1. ✅ Criar branch `fix/consolidate-vendedor-code`
-2. ⏳ Transferir TODOS os arquivos
-3. ⏳ Atualizar imports/paths no código
-4. ⏳ Criar PR para review
-5. ⏳ Após merge, arquivar código antigo em `prismatic-labs-2026/_ARCHIVED/`
-6. ⏳ Atualizar documentação em ambos repos
+### Checklist Pós-Migração
+
+- [ ] **Clonar repo atualizado localmente**
+  ```bash
+  cd C:\Users\hoffm\projetos
+  git clone https://github.com/Hoffmannss/prismatic-labs-hq.git
+  cd prismatic-labs-hq
+  git checkout fix/consolidate-vendedor-code
+  ```
+
+- [ ] **Instalar dependências**
+  ```bash
+  cd vendedor-ai
+  npm install
+  ```
+
+- [ ] **Configurar .env**
+  ```bash
+  cp .env.example .env
+  # Adicionar GROQ_API_KEY e outras chaves
+  ```
+
+- [ ] **Testar agente isolado**
+  ```bash
+  node agents/1-analyzer.js teste_user "Bio de teste" 1000 5
+  ```
+
+- [ ] **Testar orquestrador**
+  ```bash
+  npm start
+  ```
+
+- [ ] **Testar Electron**
+  ```bash
+  cd ..
+  npm install
+  npm run dev
+  ```
 
 ---
 
-## 🔗 Links Relacionados
+## 📚 Referências
 
-- PR: [A ser criado]
-- Issue: [A ser criado]
-- Branch: `fix/consolidate-vendedor-code`
+### Commits Relacionados
+- `feat: migrar código completo do Vendedor IA para repo correto` (este commit)
+
+### Branches
+- **Origem:** `Hoffmannss/prismatic-labs-2026:main`
+- **Destino:** `Hoffmannss/prismatic-labs-hq:fix/consolidate-vendedor-code`
+- **Base:** `refactor/electron-desktop-app`
+
+### Issues/PRs
+- PR pendente: `fix/consolidate-vendedor-code` → `refactor/electron-desktop-app`
 
 ---
 
-**Última atualização:** 07/03/2026 22:41 BRT
+## 🔮 Próximos Passos
+
+1. **Validar testes** (checklist acima)
+2. **Merge para `refactor/electron-desktop-app`**
+3. **Arquivar código antigo** em `prismatic-labs-2026`
+4. **Atualizar README** do `prismatic-labs-hq` com nova estrutura
+5. **Documentar integração** Electron ↔ Vendedor IA
+
+---
+
+**Autor:** Hoffmannss + Perplexity IA  
+**Revisão:** Pendente
