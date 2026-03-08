@@ -1,7 +1,7 @@
 // =============================================================
 // MODULO 13: MONITOR DM HEADLESS - PRISMATIC LABS VENDEDOR AI
 // Uso: node 13-monitor-dm.js
-// Roda Chrome headless com extensão para detectar respostas automaticamente
+// Roda Chrome com extensao para detectar respostas automaticamente
 // =============================================================
 
 require('dotenv').config();
@@ -10,127 +10,139 @@ const path = require('path');
 const fs = require('fs');
 
 const EXTENSION_PATH = path.join(__dirname, '..', 'chrome-extension');
-const INSTAGRAM_URL = 'https://www.instagram.com/direct/inbox/';
-const CHECK_INTERVAL = 30000; // 30 segundos
+const INSTAGRAM_URL  = 'https://www.instagram.com/direct/inbox/';
+const CHECK_INTERVAL = 30000;
+
+// Caminhos do Chrome no Windows
+const CHROME_PATHS = [
+  'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+  'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
+  process.env.LOCALAPPDATA + '\\Google\\Chrome\\Application\\chrome.exe',
+  'C:\\Program Files\\Chromium\\Application\\chrome.exe',
+];
 
 const C = {
-  r: '\x1b[0m',
-  b: '\x1b[1m',
-  m: '\x1b[35m',
-  c: '\x1b[36m',
-  g: '\x1b[32m',
-  y: '\x1b[33m'
+  r: '\x1b[0m', b: '\x1b[1m', m: '\x1b[35m',
+  c: '\x1b[36m', g: '\x1b[32m', y: '\x1b[33m'
 };
 
+function findChrome() {
+  for (const p of CHROME_PATHS) {
+    if (fs.existsSync(p)) return p;
+  }
+  return null;
+}
+
 if (!fs.existsSync(EXTENSION_PATH)) {
-  console.error(`${C.m}[ERRO]${C.r} Extensão não encontrada em: ${EXTENSION_PATH}`);
-  console.log(`Execute: ${C.c}git pull origin fix/consolidate-vendedor-code${C.r}`);
+  console.error(`${C.m}[ERRO]${C.r} Extensao nao encontrada em: ${EXTENSION_PATH}`);
+  process.exit(1);
+}
+
+const chromePath = findChrome();
+if (!chromePath) {
+  console.error(`${C.m}[ERRO]${C.r} Chrome nao encontrado. Instale o Google Chrome.`);
   process.exit(1);
 }
 
 console.log(`\n${C.m}${'='.repeat(60)}${C.r}`);
-console.log(`${C.b}  MONITOR DM HEADLESS - Prismatic Labs${C.r}`);
+console.log(`${C.b}  MONITOR DM - Prismatic Labs Vendedor IA${C.r}`);
 console.log(`${C.m}${'='.repeat(60)}${C.r}`);
-console.log(`  Iniciando Chrome headless com extensão...`);
-console.log(`  Extensão: ${C.c}${EXTENSION_PATH}${C.r}`);
+console.log(`  Chrome  : ${C.c}${chromePath}${C.r}`);
+console.log(`  Extensao: ${C.c}${EXTENSION_PATH}${C.r}`);
 console.log(`${C.m}${'='.repeat(60)}${C.r}\n`);
 
 (async () => {
   let browser;
-  
+
   try {
-    // Lança Chrome headless com extensão
     browser = await puppeteer.launch({
-      headless: false, // IMPORTANTE: extensões não funcionam em headless=true (limitação do Chrome)
-      // Mas podemos minimizar a janela via window position
+      executablePath: chromePath,
+      headless: false,
       args: [
         `--disable-extensions-except=${EXTENSION_PATH}`,
         `--load-extension=${EXTENSION_PATH}`,
         '--no-sandbox',
         '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-accelerated-2d-canvas',
         '--no-first-run',
-        '--no-zygote',
-        '--disable-gpu',
-        '--window-position=-2400,-2400', // Posiciona janela fora da tela
+        '--no-default-browser-check',
+        '--disable-default-apps',
+        '--window-position=-2400,-2400', // Fora da tela, invisivel
+        '--window-size=1280,900',
       ],
       defaultViewport: null
     });
-    
-    console.log(`${C.g}✓${C.r} Chrome iniciado com extensão carregada`);
-    
+
+    console.log(`${C.g}[OK]${C.r} Chrome iniciado com extensao carregada`);
+
     const pages = await browser.pages();
-    const page = pages[0] || await browser.newPage();
-    
-    // Navega para Instagram Direct
-    console.log(`${C.y}➤${C.r} Navegando para ${INSTAGRAM_URL}`);
-    await page.goto(INSTAGRAM_URL, { waitUntil: 'networkidle2', timeout: 60000 });
-    
-    console.log(`${C.g}✓${C.r} Página carregada`);
-    console.log(`\n${C.b}IMPORTANTE:${C.r} Faça login manualmente no Instagram na janela que abriu.`);
-    console.log(`Após o login, a extensão começará a monitorar automaticamente.\n`);
-    
-    // Aguarda login (detecta quando URL muda de /accounts/login/)
-    console.log(`${C.y}Aguardando login...${C.r}`);
-    
+    const page  = pages[0] || await browser.newPage();
+
+    await page.goto(INSTAGRAM_URL, { waitUntil: 'networkidle2', timeout: 60000 })
+      .catch(() => page.goto(INSTAGRAM_URL, { timeout: 60000 }));
+
+    console.log(`${C.g}[OK]${C.r} Pagina Instagram carregada`);
+    console.log(`\n${C.b}ACAO NECESSARIA:${C.r}`);
+    console.log(`  1. Procure a janela do Chrome que abriu (pode estar na barra de tarefas)`);
+    console.log(`  2. Faca login no Instagram`);
+    console.log(`  3. Volte aqui - o monitor vai ativar automaticamente\n`);
+
+    // Aguarda login (max 5 minutos)
     await page.waitForFunction(
-      () => !window.location.pathname.includes('/accounts/login'),
-      { timeout: 300000 } // 5 minutos para fazer login
-    );
-    
-    console.log(`${C.g}✓${C.r} Login detectado!`);
-    console.log(`${C.g}✓${C.r} Monitor ativo. Detectando respostas automaticamente...\n`);
-    
-    // Console logs da extensão
+      () => !window.location.pathname.includes('/accounts/login') &&
+            !window.location.pathname.includes('/challenge'),
+      { timeout: 300000 }
+    ).catch(() => {
+      console.log(`${C.y}[AVISO]${C.r} Timeout aguardando login. Continuando mesmo assim...`);
+    });
+
+    console.log(`${C.g}[OK]${C.r} Login detectado!`);
+    console.log(`${C.g}[OK]${C.r} Monitor ativo. Aguardando respostas automaticamente...\n`);
+
+    // Redireciona para inbox se necessario
+    const currentUrl = page.url();
+    if (!currentUrl.includes('/direct')) {
+      await page.goto(INSTAGRAM_URL, { waitUntil: 'networkidle2' });
+    }
+
+    // Captura logs da extensao
     page.on('console', msg => {
       const text = msg.text();
-      if (text.includes('[Vendedor IA]')) {
-        if (text.includes('Nova resposta detectada')) {
-          console.log(`${C.g}✓${C.r} ${text}`);
-        } else if (text.includes('Webhook enviado')) {
-          console.log(`  ${C.c}➤${C.r} ${text}`);
-        } else {
-          console.log(`  ${C.y}[DEBUG]${C.r} ${text}`);
-        }
+      if (!text.includes('[Vendedor IA]')) return;
+
+      if (text.includes('Nova resposta detectada') || text.includes('Webhook enviado')) {
+        console.log(`${C.g}[DETECTADO]${C.r} ${text}`);
       }
     });
-    
-    // Mantém navegador aberto
-    console.log(`${C.m}${'='.repeat(60)}${C.r}`);
-    console.log(`${C.b}Monitor rodando. Pressione Ctrl+C para parar.${C.r}`);
-    console.log(`${C.m}${'='.repeat(60)}${C.r}\n`);
-    
-    // Health check periódico
+
+    // Health check
     setInterval(async () => {
       try {
         const url = await page.url();
+        const now = new Date().toLocaleTimeString('pt-BR');
+        console.log(`${C.c}[${now}]${C.r} Monitor ativo | URL: ${url.substring(0, 50)}`);
+
         if (!url.includes('instagram.com')) {
-          console.log(`${C.y}[AVISO]${C.r} Navegou para fora do Instagram. Redirecionando...`);
           await page.goto(INSTAGRAM_URL, { waitUntil: 'networkidle2' });
         }
-      } catch (error) {
-        console.error(`${C.m}[ERRO]${C.r} Health check falhou:`, error.message);
+      } catch (err) {
+        console.error(`${C.m}[ERRO]${C.r} Health check:`, err.message);
       }
     }, CHECK_INTERVAL);
-    
-    // Mantém processo vivo
-    await new Promise(() => {}); // Never resolves
-    
+
+    console.log(`${C.m}${'='.repeat(60)}${C.r}`);
+    console.log(`${C.b}  Monitor rodando. Pressione Ctrl+C para parar.${C.r}`);
+    console.log(`${C.m}${'='.repeat(60)}${C.r}\n`);
+
+    await new Promise(() => {});
+
   } catch (error) {
     console.error(`\n${C.m}[ERRO FATAL]${C.r}`, error.message);
-    console.error(error.stack);
-    
-    if (browser) {
-      await browser.close();
-    }
-    
+    if (browser) await browser.close();
     process.exit(1);
   }
 })();
 
-// Graceful shutdown
 process.on('SIGINT', async () => {
-  console.log(`\n\n${C.y}Encerrando monitor...${C.r}`);
+  console.log(`\n${C.y}Encerrando monitor...${C.r}`);
   process.exit(0);
 });
