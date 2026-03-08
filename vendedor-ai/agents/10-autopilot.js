@@ -3,9 +3,9 @@
 // Fluxo totalmente automatico SEM APIFY - usa scraper proprio na VPS
 //
 // Uso:
-//   node 10-autopilot.js api-automacao 20
-//   node 10-autopilot.js "personal trainers fitness" 30
-//   node 10-autopilot.js "nutricionistas, coaches, psicologos" 50
+//   node 10-autopilot.js                          (lê config do dashboard)
+//   node 10-autopilot.js api-automacao 20         (CLI override)
+//   node 10-autopilot.js "personal trainers" 30   (CLI override)
 // =============================================================
 
 require('dotenv').config();
@@ -14,6 +14,7 @@ const path = require('path');
 const { spawnSync } = require('child_process');
 const { detectOrCreateNicho } = require('./13-nicho-ai');
 const { scrapeHashtag, scrapeProfiles } = require('./0-scraper');
+const { AutopilotDB } = require('../config/database');
 
 const C = {
   reset:'\x1b[0m', bright:'\x1b[1m', green:'\x1b[32m',
@@ -27,11 +28,12 @@ const SCOUT_DIR = path.join(DATA_DIR, 'scout');
 const LOGS_DIR  = path.join(__dirname, '..', 'logs');
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
+const db = new AutopilotDB();
 
 function loadCRMUsernames() {
   if (!fs.existsSync(DB_FILE)) return new Set();
-  const db = JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
-  return new Set((db.leads || []).map(l => (l.username || '').toLowerCase()).filter(Boolean));
+  const dbData = JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
+  return new Set((dbData.leads || []).map(l => (l.username || '').toLowerCase()).filter(Boolean));
 }
 
 function runAnalyze(username, bio, followers, posts, postsDesc, nichoId) {
@@ -142,19 +144,52 @@ async function processNicho(nichoDesc, qtd, maxAnalyze) {
 async function main() {
   const args = process.argv.slice(2);
 
-  if (args.length === 0 || args[0] === 'help') {
+  // ---- MODO 1: LÊ CONFIGURAÇÕES DO DASHBOARD ----
+  let inputNicho, qtdTotal, maxAnalyze, syncNotion;
+
+  if (args.length === 0) {
+    console.log(`\n${C.cyan}>>> Lendo configurações do dashboard...${C.reset}`);
+    const config = db.loadConfig();
+
+    if (!config.active) {
+      console.log(`${C.red}[ERRO] Autopilot está desativado no dashboard!${C.reset}`);
+      console.log(`${C.yellow}Ative em: http://localhost:3131${C.reset}\n`);
+      process.exit(1);
+    }
+
+    if (!config.nicho) {
+      console.log(`${C.red}[ERRO] Nenhum nicho configurado no dashboard!${C.reset}`);
+      console.log(`${C.yellow}Configure em: http://localhost:3131${C.reset}\n`);
+      process.exit(1);
+    }
+
+    inputNicho  = config.nicho;
+    qtdTotal    = config.quantidade_leads || 20;
+    maxAnalyze  = config.max_analyze || 10;
+    syncNotion  = config.sync_notion !== false;
+
+    console.log(`${C.green}✓${C.reset} Nicho: ${inputNicho}`);
+    console.log(`${C.green}✓${C.reset} Quantidade: ${qtdTotal} leads`);
+    console.log(`${C.green}✓${C.reset} Max Analyze: ${maxAnalyze}`);
+    console.log(`${C.green}✓${C.reset} Sync Notion: ${syncNotion}\n`);
+
+  } else if (args[0] === 'help') {
     console.log(`\n${C.cyan}AUTOPILOT - Sem Apify, roda direto na VPS${C.reset}\n`);
     console.log('Uso:');
-    console.log('  node 10-autopilot.js api-automacao 20');
-    console.log('  node 10-autopilot.js "personal trainers" 30');
+    console.log('  node 10-autopilot.js                            (lê config do dashboard)');
+    console.log('  node 10-autopilot.js api-automacao 20           (CLI override)');
+    console.log('  node 10-autopilot.js "personal trainers" 30     (CLI override)');
     console.log('  node 10-autopilot.js "fitness, nutricionistas" 50  (multiplos nichos)\n');
     process.exit(0);
-  }
 
-  const inputNicho = args[0];
-  const qtdTotal   = parseInt(args[1] || process.env.AUTOPILOT_QTD || '20', 10);
-  const maxAnalyze = parseInt(args[2] || process.env.AUTOPILOT_MAX_ANALYZE || '10', 10);
-  const syncNotion = (process.env.AUTOPILOT_SYNC_NOTION || 'true').toLowerCase() === 'true';
+  } else {
+    // ---- MODO 2: CLI OVERRIDE (backward compatibility) ----
+    inputNicho  = args[0];
+    qtdTotal    = parseInt(args[1] || '20', 10);
+    maxAnalyze  = parseInt(args[2] || '10', 10);
+    syncNotion  = true;
+    console.log(`\n${C.yellow}>>> Modo CLI (override do dashboard)${C.reset}\n`);
+  }
 
   // Detectar multiplos nichos (separados por virgula)
   const nichos = inputNicho.split(',').map(n => n.trim()).filter(Boolean);
@@ -208,6 +243,11 @@ async function main() {
     await runLearner();
   } catch (e) {
     console.log(`${C.yellow}[LEARNER] ${e.message} (nao critico)${C.reset}`);
+  }
+
+  // ---- ATUALIZAR LAST RUN NO DB ----
+  if (args.length === 0) {
+    db.updateLastRun();
   }
 
   // ---- RESUMO ----
