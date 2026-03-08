@@ -13,7 +13,7 @@ const https  = require('https');
 const fs     = require('fs');
 const path   = require('path');
 
-const TOKEN       = process.env.NOTION_API_KEY;
+const TOKEN       = process.env.NOTION_API_KEY || process.env.NOTION_TOKEN;
 const DATABASE_ID = process.env.NOTION_DATABASE_ID;
 const PARENT_ID   = process.env.NOTION_PARENT_PAGE_ID;
 const DB_FILE     = path.join(__dirname, '..', 'data', 'crm', 'leads-database.json');
@@ -25,10 +25,10 @@ const C = {
 };
 
 if (!TOKEN) {
-  console.error(`${C.red}[NOTION] NOTION_API_KEY nao encontrada no .env${C.reset}`);
+  console.error(`${C.red}[NOTION] NOTION_API_KEY ou NOTION_TOKEN nao encontrada no .env${C.reset}`);
   console.log('  1. Acesse https://www.notion.so/my-integrations');
   console.log('  2. Crie uma integracao (ex: Vendedor AI)');
-  console.log('  3. Copie o token e adicione ao .env: NOTION_API_KEY=secret_...');
+  console.log('  3. Copie o token e adicione ao .env: NOTION_TOKEN=ntn_...');
   process.exit(1);
 }
 
