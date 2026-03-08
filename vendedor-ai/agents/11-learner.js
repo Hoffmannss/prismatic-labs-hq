@@ -4,14 +4,16 @@
 // (respondeu/converteu) para extrair padroes com LLM e gravar
 // uma memoria de aprendizado continuo (style-memory.json)
 // Alimenta copywriter e reviewer nas proximas geracoes
+// Stack: Google Gemini 2.0 Flash - Superior para insights qualitativos
 // =============================================================
 
 require('dotenv').config();
-const Groq   = require('groq-sdk');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
 const fs     = require('fs');
 const path   = require('path');
 
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
+const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
 
 const MENSAGENS_DIR = path.join(__dirname, '..', 'data', 'mensagens');
 const LEADS_DIR     = path.join(__dirname, '..', 'data', 'leads');
@@ -28,11 +30,11 @@ function sanitizeJSON(str) {
   for (let i = 0; i < str.length; i++) {
     const c = str[i];
     if (escaped) { result += c; escaped = false; continue; }
-    if (c === '\\') { escaped = true; result += c; continue; }
-    if (c === '"') { inString = !inString; result += c; continue; }
-    if (inString && c === '\n') { result += '\\n'; continue; }
-    if (inString && c === '\r') { result += '\\r'; continue; }
-    if (inString && c === '\t') { result += '\\t'; continue; }
+    if (c === '\\\\') { escaped = true; result += c; continue; }
+    if (c === '\"') { inString = !inString; result += c; continue; }
+    if (inString && c === '\n') { result += '\\\\n'; continue; }
+    if (inString && c === '\r') { result += '\\\\r'; continue; }
+    if (inString && c === '\t') { result += '\\\\t'; continue; }
     result += c;
   }
   return result;
@@ -213,14 +215,16 @@ RETORNE APENAS O JSON.`;
 
   console.log(`${C.cyan}[LEARNER] Sintetizando com LLM (${allData.length} amostras, ${totalTracked} com tracking real)...${C.reset}`);
 
-  const completion = await groq.chat.completions.create({
-    messages:    [{ role: 'user', content: prompt }],
-    model:       'llama-3.3-70b-versatile',
-    temperature:  0.25,
-    max_tokens:   2800,
+  const result = await model.generateContent({
+    contents: [{ role: 'user', parts: [{ text: prompt }] }],
+    generationConfig: {
+      temperature: 0.3,
+      maxOutputTokens: 3000,
+      topP: 0.9,
+    },
   });
 
-  const raw = completion.choices[0].message.content.trim();
+  const raw = result.response.text().trim();
   const jsonMatch = raw.match(/\{[\s\S]*\}/);
   if (!jsonMatch) throw new Error('LLM nao retornou JSON valido');
 
