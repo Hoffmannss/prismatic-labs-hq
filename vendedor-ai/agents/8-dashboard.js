@@ -9,7 +9,8 @@ const http   = require('http');
 const fs     = require('fs');
 const path   = require('path');
 const url    = require('url');
-const { spawnSync } = require('child_process');
+const { spawnSync, spawn } = require('child_process');
+const { AutopilotDB } = require('../config/database');
 
 const PORT          = parseInt(process.argv[2]) || 3131;
 const DATA_DIR      = path.join(__dirname, '..', 'data');
@@ -20,11 +21,13 @@ const THEMES_FILE   = path.join(__dirname, '..', 'config', 'dashboard-themes.jso
 const TRACKER_DIR   = path.join(DATA_DIR, 'tracker');
 const LEARNING_FILE = path.join(DATA_DIR, 'learning', 'style-memory.json');
 
+const autopilotDB = new AutopilotDB();
+
 function json(res, data, status = 200) {
   res.writeHead(status, {
     'Content-Type': 'application/json; charset=utf-8',
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
+    'Access-Control-Allow-Methods': 'GET,POST,PUT,OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type'
   });
   res.end(JSON.stringify(data));
@@ -126,6 +129,64 @@ const server = http.createServer(async (req, res) => {
     return json(res, loadJSON(LEARNING_FILE, null));
   }
 
+  // ====== NOVAS ROTAS PARA AUTOPILOT ======
+
+  if (req.method === 'GET' && pathname === '/api/autopilot/config') {
+    const config = autopilotDB.loadConfig();
+    return json(res, config);
+  }
+
+  if (req.method === 'POST' && pathname === '/api/autopilot/config') {
+    const body = await bodyJSON(req);
+    const success = autopilotDB.updateConfig(body);
+    if (success) {
+      return json(res, { ok: true, config: autopilotDB.loadConfig() });
+    } else {
+      return json(res, { ok: false, error: 'Falha ao salvar configuração' }, 500);
+    }
+  }
+
+  if (req.method === 'POST' && pathname === '/api/autopilot/start') {
+    const config = autopilotDB.loadConfig();
+    
+    if (!config.active) {
+      return json(res, { ok: false, error: 'Autopilot está desativado' }, 400);
+    }
+
+    if (!config.nicho) {
+      return json(res, { ok: false, error: 'Nenhum nicho configurado' }, 400);
+    }
+
+    // Iniciar autopilot em processo separado
+    setTimeout(() => {
+      const child = spawn('node', [path.join(__dirname, '10-autopilot.js')], {
+        detached: true,
+        stdio: 'ignore',
+        cwd: __dirname,
+        env: process.env
+      });
+      child.unref();
+    }, 100);
+
+    return json(res, { 
+      ok: true, 
+      message: `Autopilot iniciado para nicho: ${config.nicho}`,
+      config: {
+        nicho: config.nicho,
+        quantidade_leads: config.quantidade_leads,
+        max_analyze: config.max_analyze
+      }
+    });
+  }
+
+  if (req.method === 'POST' && pathname === '/api/autopilot/toggle') {
+    const { active } = await bodyJSON(req);
+    autopilotDB.updateConfig({ active: active === true });
+    return json(res, { ok: true, active: autopilotDB.loadConfig().active });
+  }
+
+  // ====== FIM NOVAS ROTAS ======
+
   if (req.method === 'POST' && pathname === '/api/tracker') {
     const { username, action, extra } = await bodyJSON(req);
     if (!username || !action)
@@ -137,6 +198,7 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (req.method === 'POST' && pathname === '/api/autopilot') {
+    // DEPRECATED: mantido para backward compatibility
     const body     = await bodyJSON(req);
     const settings = loadJSON(SETTINGS_FILE, {});
     const n  = body.nicho      || settings.autopilotDefaults?.nicho      || 'api-automacao';
@@ -179,6 +241,7 @@ const server = http.createServer(async (req, res) => {
       if (trk?.outcome === 'converteu' && trk?.valor) totalValue += Number(trk.valor) || 0;
     });
     const learning = loadJSON(LEARNING_FILE, null);
+    const autopilotConfig = autopilotDB.loadConfig();
     return json(res, {
       total: leads.length,
       byPriority,
@@ -186,7 +249,12 @@ const server = http.createServer(async (req, res) => {
       totalValue,
       learning: learning
         ? { versao: learning.versao, score_medio: learning.score_medio, total_amostras: learning.total_amostras }
-        : null
+        : null,
+      autopilot: {
+        active: autopilotConfig.active,
+        nicho: autopilotConfig.nicho,
+        last_run: autopilotConfig.last_run
+      }
     });
   }
 
@@ -200,6 +268,9 @@ server.listen(PORT, () => {
   console.log(`${C.m}${'='.repeat(52)}${C.r}`);
   console.log(`  URL     : ${C.c}http://localhost:${PORT}${C.r}`);
   console.log(`  APIs    : /api/leads /api/settings /api/themes`);
-  console.log(`            /api/tracker /api/autopilot /api/stats`);
+  console.log(`            /api/tracker /api/autopilot/* /api/stats`);
+  console.log(`  Autopilot: /api/autopilot/config (GET/POST)`);
+  console.log(`             /api/autopilot/start (POST)`);
+  console.log(`             /api/autopilot/toggle (POST)`);
   console.log(`${C.m}${'='.repeat(52)}${C.r}\n`);
 });
