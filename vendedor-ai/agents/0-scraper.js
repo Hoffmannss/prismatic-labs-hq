@@ -2,6 +2,8 @@
 // MODULO 0: SCRAPER - INSTAGRAM SCRAPER PROPRIO (SEM APIFY)
 // Usa Playwright com Chromium headless para raspar Instagram
 // Substitui totalmente o Apify — roda na VPS 24/7
+// 
+// 🔒 SEGURANÇA: Sessões protegidas com AES-256-GCM
 //
 // Uso:
 //   node 0-scraper.js hashtag makecom 50
@@ -13,10 +15,13 @@ require('dotenv').config();
 const { chromium } = require('playwright');
 const fs   = require('fs');
 const path = require('path');
+const SessionSecurity = require('../config/session-security');
 
 const DATA_DIR    = path.join(__dirname, '..', 'data');
 const SESSION_DIR = path.join(DATA_DIR, 'session');
 const SESSION_FILE = path.join(SESSION_DIR, 'instagram-session.json');
+
+const security = new SessionSecurity();
 
 const C = {
   reset:'\x1b[0m', bright:'\x1b[1m', green:'\x1b[32m',
@@ -55,14 +60,14 @@ async function launchBrowser(headless = true) {
     }
   });
 
-  // Carregar sessao salva se existir
-  if (fs.existsSync(SESSION_FILE)) {
+  // 🔒 Carregar sessao CRIPTOGRAFADA
+  const cookies = security.loadEncrypted(SESSION_FILE);
+  if (cookies) {
     try {
-      const cookies = JSON.parse(fs.readFileSync(SESSION_FILE, 'utf8'));
       await context.addCookies(cookies);
-      console.log(`${C.green}[SCRAPER] Sessao Instagram carregada${C.reset}`);
+      console.log(`${C.green}[SCRAPER] 🔒 Sessão criptografada carregada${C.reset}`);
     } catch (e) {
-      console.log(`${C.yellow}[SCRAPER] Sessao invalida, sera necessario novo login${C.reset}`);
+      console.log(`${C.yellow}[SCRAPER] Sessão inválida, será necessário novo login${C.reset}`);
     }
   }
 
@@ -71,15 +76,20 @@ async function launchBrowser(headless = true) {
 
 async function saveSession(context) {
   const cookies = await context.cookies();
-  fs.writeFileSync(SESSION_FILE, JSON.stringify(cookies, null, 2));
-  console.log(`${C.green}[SCRAPER] Sessao salva em ${SESSION_FILE}${C.reset}`);
+  
+  // 🔒 Salvar sessao CRIPTOGRAFADA
+  security.saveEncrypted(SESSION_FILE, cookies);
+  
+  console.log(`${C.green}[SCRAPER] 🔒 Sessão criptografada e salva${C.reset}`);
+  console.log(`${C.dim}    Arquivo: ${SESSION_FILE}${C.reset}`);
+  console.log(`${C.dim}    Algoritmo: AES-256-GCM${C.reset}`);
 }
 
 // ---- LOGIN MANUAL ----
 // Roda com headless=false para o usuario logar manualmente
 async function doLogin() {
   console.log(`\n${C.cyan}[SCRAPER] Abrindo navegador para login manual...${C.reset}`);
-  console.log(`${C.yellow}1. Faca login no Instagram que aparecer${C.reset}`);
+  console.log(`${C.yellow}1. Faça login no Instagram que aparecer${C.reset}`);
   console.log(`${C.yellow}2. Depois de logado, pressione ENTER aqui${C.reset}\n`);
 
   const { browser, context } = await launchBrowser(false);
@@ -94,7 +104,11 @@ async function doLogin() {
 
   await saveSession(context);
   await browser.close();
-  console.log(`${C.green}[SCRAPER] Login salvo! Proximas execucoes serao automaticas.${C.reset}`);
+  
+  console.log(`\n${C.green}✅ Login salvo com sucesso!${C.reset}`);
+  console.log(`${C.green}🔒 Sessão protegida com criptografia AES-256${C.reset}`);
+  console.log(`${C.cyan}⏱️  Validade: ~30 dias${C.reset}`);
+  console.log(`${C.dim}   Próximas execuções serão automáticas.${C.reset}\n`);
 }
 
 // ---- SCRAPER DE HASHTAG (publico, sem login) ----
@@ -379,13 +393,15 @@ if (require.main === module) {
   const [,, cmd, arg1, arg2] = process.argv;
 
   if (!cmd || cmd === 'help') {
-    console.log(`\n${C.cyan}SCRAPER - Instagram sem Apify${C.reset}\n`);
+    console.log(`\n${C.cyan}SCRAPER - Instagram sem Apify${C.reset}`);
+    console.log(`${C.dim}🔒 Sessões protegidas com AES-256-GCM${C.reset}\n`);
     console.log('Comandos:');
     console.log('  node 0-scraper.js login                     - Login no Instagram (1x)');
     console.log('  node 0-scraper.js hashtag makecom 50        - Scrape por hashtag');
     console.log('  node 0-scraper.js profile n8nautomation     - Scrape perfil');
     console.log('  node 0-scraper.js profiles user1,user2,...  - Scrape multiplos perfis');
-    console.log('  node 0-scraper.js test                      - Teste de conectividade\n');
+    console.log('  node 0-scraper.js test                      - Teste de conectividade');
+    console.log('  node 0-scraper.js rotate-key                - Rotacionar chave de criptografia\n');
     process.exit(0);
   }
 
@@ -393,6 +409,11 @@ if (require.main === module) {
     try {
       if (cmd === 'login') {
         await doLogin();
+      } else if (cmd === 'rotate-key') {
+        console.log(`\n${C.yellow}🔄 ROTACIONAR CHAVE DE CRIPTOGRAFIA${C.reset}\n`);
+        const newKey = security.rotateKey(SESSION_DIR);
+        console.log(`\n${C.bright}Adicione ao .env:${C.reset}`);
+        console.log(`SESSION_ENCRYPTION_KEY=${newKey}\n`);
       } else if (cmd === 'hashtag') {
         const results = await scrapeHashtag(arg1 || 'makecom', parseInt(arg2 || '20'));
         console.log('\nUsernames encontrados:');
