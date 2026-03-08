@@ -1,0 +1,103 @@
+{
+  "estruturas": {
+    "problema_agitacao_solucao": {
+      "nome": "PAS (Problem-Agitation-Solution)",
+      "estrutura": [
+        "[gancho] — problema que o lead tem",
+        "[agitação] — consequencias do problema",
+        "[solução] — como o produto resolve",
+        "[CTA suave] — próximo passo sem pressão"
+      ],
+      "quando_usar": "Lead com problema claro identificado nos posts"
+    },
+    "before_after_bridge": {
+      "nome": "BAB (Before-After-Bridge)",
+      "estrutura": [
+        "[antes] — situação atual do lead",
+        "[depois] — como seria com a solução",
+        "[ponte] — como chegar lá com o produto",
+        "[CTA] — próximo passo"
+      ],
+      "quando_usar": "Lead que já sabe que quer melhorar mas não sabe como"
+    },
+    "curiosidade_revelacao": {
+      "nome": "Curiosity-Reveal",
+      "estrutura": [
+        "[gancho curioso] — frase que gera curiosidade",
+        "[revelação] — insight valioso",
+        "[conexão] — como isso se aplica ao lead",
+        "[CTA] — convite para conversar"
+      ],
+      "quando_usar": "Lead de nicho técnico que valoriza insights"
+    }
+  },
+  "tom_por_nicho": {
+    "api-automacao": {
+      "estilo": "direto, técnico, sem floreios",
+      "vocabulario": ["workflow", "pipeline", "validação", "E.164", "dedupe", "normalização"],
+      "evitar": ["oportunidade imperdível", "garanta já", "oferta exclusiva"],
+      "exemplo_abertura": "Vi que você trabalha com [ferramenta]. Pergunta rápida sobre normalização de dados de entrada..."
+    },
+    "ecommerce": {
+      "estilo": "comercial, focado em ROI e conversão",
+      "vocabulario": ["conversão", "checkout", "taxa de aprovação", "carrinho abandonado"],
+      "evitar": ["termos técnicos demais", "jargão de dev"],
+      "exemplo_abertura": "Vi sua loja e fiquei curioso: quantos checkouts você perde por dados inválidos?"
+    },
+    "marketing-digital": {
+      "estilo": "estratégico, data-driven",
+      "vocabulario": ["CPL", "ROI", "qualificação", "MQL/SQL", "funil"],
+      "evitar": ["promessas sem dados", "garantias irreais"],
+      "exemplo_abertura": "Quanto do seu budget de ads vai pra lead fake ou duplicado?"
+    },
+    "saas": {
+      "estilo": "produto-focado, UX-oriented",
+      "vocabulario": ["onboarding", "ativação", "churn", "product-led"],
+      "evitar": ["vendas agressivas", "pressão"],
+      "exemplo_abertura": "Vi que seu produto tem [feature]. Como você lida com validação de dados no sign-up?"
+    },
+    "infoprodutores": {
+      "estilo": "aspiracional, focado em resultado",
+      "vocabulario": ["conversão", "lançamento", "oferta", "urgencia"],
+      "evitar": ["termos técnicos", "foco em API"],
+      "exemplo_abertura": "Sua audiência merece uma landing que converte tanto quanto seu conteúdo entrega."
+    }
+  },
+  "ctas": {
+    "suave": [
+      "Faz sentido pra você?",
+      "Te mando um exemplo se quiser ver na prática?",
+      "Vale trocar uma ideia rápida sobre isso?",
+      "Curiosidade: como você resolve isso hoje?"
+    ],
+    "medio": [
+      "Te mostro em 5min como isso funcionaria no seu caso?",
+      "Posso te mandar um caso parecido que resolvemos?",
+      "Quer testar gratuitamente pra ver se resolve?"
+    ],
+    "direto": [
+      "Chama no direct que te explico melhor?",
+      "Abre pra gente trocar uma ideia sobre isso?",
+      "Te mando acesso de teste agora se quiser validar."
+    ]
+  },
+  "diretrizes_gerais": {
+    "tamanho_ideal": "80-120 palavras (cabe na tela sem scroll)",
+    "paragrafos": "2-3 parágrafos curtos",
+    "emojis": "0-1 por mensagem (só se fizer sentido)",
+    "personalizacao_minima": "mencionar algo específico do perfil ou posts",
+    "proibido": [
+      "copiar texto genérico",
+      "falar de funcionalidades sem conectar com a dor",
+      "usar 'oportunidade' ou 'exclusivo'",
+      "parecer bot ou template"
+    ]
+  },
+  "ganchos_por_contexto": {
+    "mencionou_ferramenta": "Vi que você usa [ferramenta]...",
+    "postou_sobre_problema": "Vi seu post sobre [problema]...",
+    "trabalha_com_nicho": "Vi que você trabalha com [nicho]...",
+    "tem_alta_audiencia": "Seu conteúdo sobre [tema] é muito bom...",
+    "comentou_sobre_dor": "Vi que você comentou sobre [dor]..."
+  }
+}
