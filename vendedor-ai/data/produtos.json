@@ -8,6 +8,13 @@
       "recorrente": true,
       "url_landing": "https://openclaw.io",
       "descricao": "1 chamada normaliza telefone BR para E.164, limpa email, parseia UTMs, gera SHA-256 dedupe hash",
+      "usp": [
+        "1 endpoint resolve tudo: telefone + email + UTM + dedupe",
+        "Formato E.164 internacional (funciona em qualquer CRM)",
+        "Dedupe hash SHA-256 (elimina duplicatas antes de entrar no sistema)",
+        "Resposta em <100ms (não adiciona latencia no flow)",
+        "Plano FREE permanente com 100 requests/mês"
+      ],
       "planos": [
         { "nome": "Free",       "preco": 0,   "requests": 100  },
         { "nome": "Starter",    "preco": 29,  "requests": 5000 },
@@ -59,6 +66,13 @@
       "recorrente": false,
       "url_landing": "https://prismaticlab.com.br",
       "descricao": "Landing pages premium dark mode com efeitos neon para infoprodutores e e-commerce",
+      "usp": [
+        "Design premium dark mode com efeitos neon (destaque imediato)",
+        "Otimizada para conversão (CTA estratégico + urgência visual)",
+        "Entrega em 7-14 dias úteis (lançamentos não esperam)",
+        "Cases reais: aumento médio de 40% na taxa de conversão",
+        "Responsivo mobile-first (70%+ do tráfego vem do celular)"
+      ],
       "planos": [
         { "nome": "Starter",    "preco": 1497 },
         { "nome": "Pro",        "preco": 2997 },
