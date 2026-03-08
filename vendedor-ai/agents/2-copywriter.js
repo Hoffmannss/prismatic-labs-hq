@@ -2,22 +2,44 @@
 // MODULO 2: COPYWRITER AI - PRISMATIC LABS VENDEDOR AUTOMATICO
 // Gera DM hiperpersonalizada usando few-shot + analise de posts
 // + Aprendizado continuo via style-memory.json (11-learner.js)
-// Stack: Google Gemini 2.0 Flash - GRATIS e superior para copy criativa
+// Stack: Google Gemini 2.0 Flash (fallback: Groq se API key invalida)
 // =============================================================
 
 require('dotenv').config();
-const { GoogleGenerativeAI } = require('@google/generative-ai');
 const fs   = require('fs');
 const path = require('path');
-
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
-const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
 
 const username     = process.argv[2] || process.env.LEAD_USERNAME;
 const analysisFile = path.join(__dirname, '..', 'data', 'leads', `${username}_analysis.json`);
 
 const templates = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'config', 'copywriting-templates.json'), 'utf8'));
 const produtos  = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'data', 'produtos.json'), 'utf8')).produtos;
+
+// ---- AUTO-DETECT LLM PROVIDER ----
+let model, generateFunc, provider;
+
+if (process.env.GOOGLE_API_KEY && process.env.GOOGLE_API_KEY.startsWith('AIza')) {
+  // Tentar Google Gemini primeiro
+  try {
+    const { GoogleGenerativeAI } = require('@google/generative-ai');
+    const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
+    model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
+    provider = 'gemini';
+    console.log('[COPYWRITER] Using Google Gemini 2.0 Flash');
+  } catch (e) {
+    console.log('[COPYWRITER] Google Gemini falhou, usando Groq fallback');
+    provider = null;
+  }
+}
+
+if (!provider) {
+  // Fallback para Groq
+  const Groq = require('groq-sdk');
+  const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+  model = groq;
+  provider = 'groq';
+  console.log('[COPYWRITER] Using Groq Llama 3.3 70B');
+}
 
 // ---- LEARNING MEMORY ----------------------------------------
 const MEMORY_FILE = path.join(__dirname, '..', 'data', 'learning', 'style-memory.json');
@@ -167,18 +189,30 @@ Retorne SOMENTE o JSON (sem markdown, sem backticks, sem texto fora do JSON):
 }`;
 
   try {
-    const result = await model.generateContent({
-      contents: [{ role: 'user', parts: [{ text: prompt }] }],
-      generationConfig: {
-        temperature: 0.85,
-        maxOutputTokens: 2500,
-        topP: 0.95,
-        topK: 40,
-      },
-    });
+    let rawResponse;
 
-    const rawResponse = result.response.text().trim();
-    const jsonMatch   = rawResponse.match(/\{[\s\S]*\}/);
+    if (provider === 'gemini') {
+      const result = await model.generateContent({
+        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        generationConfig: {
+          temperature: 0.85,
+          maxOutputTokens: 2500,
+          topP: 0.95,
+          topK: 40,
+        },
+      });
+      rawResponse = result.response.text().trim();
+    } else {
+      const completion = await model.chat.completions.create({
+        messages: [{ role: 'user', content: prompt }],
+        model: 'llama-3.3-70b-versatile',
+        temperature: 0.7,
+        max_tokens: 2500,
+      });
+      rawResponse = completion.choices[0].message.content.trim();
+    }
+
+    const jsonMatch = rawResponse.match(/\{[\s\S]*\}/);
     if (!jsonMatch) throw new Error('Resposta nao contem JSON valido');
 
     const sanitized = sanitizeJSON(jsonMatch[0]);
@@ -203,7 +237,7 @@ Retorne SOMENTE o JSON (sem markdown, sem backticks, sem texto fora do JSON):
 
     const recKey    = `mensagem_${messages.mensagem_recomendada}`;
     const recMsg    = messages[recKey];
-    const prodLabel = isAPI ? '🔵 Lead Normalizer API' : '🟣 Landing Page';
+    const prodLabel = isAPI ? '🔵 Lead Normalizer API' : '🟡 Landing Page';
     const postsLbl  = ap.tem_posts_analisados ? ' + posts ✓' : '';
 
     console.log(`\n[COPYWRITER] Mensagens geradas!`);
@@ -219,7 +253,7 @@ Retorne SOMENTE o JSON (sem markdown, sem backticks, sem texto fora do JSON):
   } catch (error) {
     console.error('[COPYWRITER] Erro:', error.message);
     if (error.message.includes('API key')) {
-      console.error('[COPYWRITER] GOOGLE_API_KEY nao encontrada ou invalida.');
+      console.error('[COPYWRITER] API key invalida. Verifique GOOGLE_API_KEY ou GROQ_API_KEY no .env');
     }
     process.exit(1);
   }
