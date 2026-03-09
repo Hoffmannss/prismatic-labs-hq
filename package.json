@@ -1,0 +1,33 @@
+{
+  "name": "vendedor-ia",
+  "version": "1.0.0",
+  "description": "Vendedor autônomo de outreach no Instagram com IA",
+  "main": "electron/main.js",
+  "author": "Prismatic Labs",
+  "license": "PROPRIETARY",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Hoffmannss/prismatic-labs-hq.git"
+  },
+  "scripts": {
+    "start": "cross-env NODE_ENV=development electron .",
+    "dev": "cross-env NODE_ENV=development electron .",
+    "build": "electron-builder --win --x64",
+    "build:all": "electron-builder --win --mac --linux",
+    "publish": "electron-builder --win --publish always",
+    "postinstall": "electron-builder install-app-deps",
+    "test": "node tests/contract-tests.js && node tests/smoke-test.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "node-fetch": "^2.7.0",
+    "puppeteer": "^24.38.0"
+  },
+  "devDependencies": {
+    "cross-env": "^7.0.3",
+    "electron": "^28.2.3",
+    "electron-builder": "^24.13.3",
+    "electron-updater": "^6.1.8"
+  }
+}

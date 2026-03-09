@@ -1,0 +1,70 @@
+{
+  "nichos": [
+    {
+      "id": "api-automacao",
+      "nome": "Builders de Automacao (Make / n8n / Zapier)",
+      "produto_alvo": "lead_normalizer_api",
+      "hashtags": ["#makecom", "#n8n", "#zapier", "#automacao"],
+      "dor_principal": "Leads chegando com telefone em formato errado quebrando os flows",
+      "solucao": "OpenClaw normaliza dados na entrada antes de entrarem no workflow",
+      "tom": "tecnico, direto, resultado-orientado",
+      "sinais": ["Make.com", "n8n", "Zapier", "webhook", "automacao", "workflow", "CRM", "integracao", "API", "flows"],
+      "keywords": ["workflow", "automacao", "integracao", "API", "webhook", "flows", "dados estruturados", "validacao"]
+    },
+    {
+      "id": "ecommerce",
+      "nome": "E-commerce e Vendas Online",
+      "produto_alvo": "lead_normalizer_api",
+      "hashtags": ["#ecommerce", "#vendasonline", "#dropshipping", "#lojista"],
+      "dor_principal": "Perda de vendas por dados de checkout incorretos",
+      "solucao": "OpenClaw valida CEP, telefone e email em tempo real no checkout",
+      "tom": "comercial, focado em conversao e ROI",
+      "sinais": ["ecommerce", "loja", "checkout", "carrinho", "shopify", "VTEX", "WooCommerce", "dropshipping"],
+      "keywords": ["conversao", "checkout", "carrinho abandonado", "vendas perdidas", "validacao de dados", "taxa de aprovacao"]
+    },
+    {
+      "id": "marketing-digital",
+      "nome": "Marketing Digital e Growth",
+      "produto_alvo": "lead_normalizer_api",
+      "hashtags": ["#marketingdigital", "#growth", "#leadgen", "#cro"],
+      "dor_principal": "Leads de baixa qualidade desperdicando budget de ads",
+      "solucao": "OpenClaw filtra leads fake e valida informacoes antes de entrarem no CRM",
+      "tom": "estrategico, data-driven, focado em metricas",
+      "sinais": ["leads", "trafego", "Meta Ads", "Google Ads", "CRM", "funil", "conversao", "CPL", "ROI"],
+      "keywords": ["qualificacao de leads", "CPL", "ROI", "funil", "conversao", "leads qualificados", "MQL/SQL"]
+    },
+    {
+      "id": "saas",
+      "nome": "SaaS e Produtos Digitais",
+      "produto_alvo": "lead_normalizer_api",
+      "hashtags": ["#saas", "#startup", "#b2b", "#software"],
+      "dor_principal": "Onboarding quebrado por dados de cadastro incorretos",
+      "solucao": "OpenClaw valida dados na API antes de criar contas e processar pagamentos",
+      "tom": "tecnico, focado em produto e UX",
+      "sinais": ["SaaS", "startup", "API", "produto digital", "B2B", "onboarding", "dev", "desenvolvedor"],
+      "keywords": ["onboarding", "churn", "ativacao", "dados de usuario", "API validation", "product-led growth"]
+    },
+    {
+      "id": "infoprodutores",
+      "nome": "Infoprodutores e Criadores",
+      "produto_alvo": "landing_page",
+      "hashtags": ["#infoprodutor", "#lancamento", "#mentoria", "#curso"],
+      "dor_principal": "Landing pages genericas que nao convertem durante lancamentos",
+      "solucao": "Landing page premium dark mode que aumenta urgencia e credibilidade",
+      "tom": "aspiracional, focado em resultado e estetica",
+      "sinais": ["infoprodutor", "lancamento", "curso", "mentoria", "coach", "consultoria", "treinamento", "ebook"],
+      "keywords": ["conversao", "lancamento", "audiencia", "vendas", "copy", "oferta"]
+    },
+    {
+      "id": "agencias",
+      "nome": "Agencias Digitais e Consultorias",
+      "produto_alvo": "lead_normalizer_api",
+      "hashtags": ["#agenciadigital", "#webdesign", "#desenvolvimento", "#consultoria"],
+      "dor_principal": "Retrabalho corrigindo dados que clientes enviaram errados",
+      "solucao": "OpenClaw valida formularios e integracoes dos clientes automaticamente",
+      "tom": "profissional, focado em eficiencia operacional",
+      "sinais": ["agencia", "clientes", "projetos", "entregaveis", "webdesign", "desenvolvimento", "consultoria"],
+      "keywords": ["entregraveis", "eficiencia", "escala", "automacao de processos", "qualidade de dados", "produtividade"]
+    }
+  ]
+}

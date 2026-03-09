@@ -1,0 +1,54 @@
+# =============================================================
+# GITIGNORE - VENDEDOR AI
+# Protege dados sensíveis, sessões e arquivos locais
+# =============================================================
+
+# Ambiente e credenciais
+.env
+.env.*
+!.env.example
+
+# Sessões criptografadas do Instagram
+data/session/
+*.json.enc
+
+# CRM e dados locais
+data/crm/
+data/leads/
+data/mensagens/
+data/scout/
+data/nichos-cache.json
+data/autopilot-config.json
+
+# Node modules
+node_modules/
+package-lock.json
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Sistema operacional
+.DS_Store
+Thumbs.db
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Temporários
+tmp/
+temp/
+*.tmp
+
+# Playwright
+playwright-state/
+.auth/
+
+# Build
+dist/
+build/
