@@ -5,18 +5,18 @@
 //
 // 🔒 SEGURANÇA: Sessões protegidas com AES-256-GCM
 //
-// FIXES:
-//   - Usa context.request.get() para passar cookies corretamente
-//   - Múltiplos endpoints com fallback automático
-//   - Scraping visual com sessão autenticada como último recurso
-//   - Diagnóstico detalhado em modo debug
+// ARQUITETURA:
+//   1. Scraping visual como método PRINCIPAL (sessão autenticada)
+//   2. API como bomús quando disponível (429 é ignorado graciosamente)
+//   3. Interceptação de XHR para capturar dados das hashtags
+//   4. Regex PT+EN para extrair contadores (seguidores/Followers)
 //
 // Uso:
-//   node 0-scraper.js login              - Login automático (usa .env)
+//   node 0-scraper.js login              - Login automático (.env)
 //   node 0-scraper.js login --manual     - Login manual (navegador)
+//   node 0-scraper.js diag               - Diagnóstico completo
 //   node 0-scraper.js hashtag makecom 50
 //   node 0-scraper.js profile n8nautomation
-//   node 0-scraper.js diag               - Diagnóstico completo
 // =============================================================
 
 require('dotenv').config();
@@ -41,11 +41,22 @@ const C = {
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const rand  = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
-const sleepRandom = async (minMs = 1500, maxMs = 3500) => {
-  await sleep(rand(Math.floor(minMs * DELAY_MULT), Math.floor(maxMs * DELAY_MULT)));
-};
+const sleepRandom = async (minMs = 1500, maxMs = 3500) =>
+  sleep(rand(Math.floor(minMs * DELAY_MULT), Math.floor(maxMs * DELAY_MULT)));
 
 if (!fs.existsSync(SESSION_DIR)) fs.mkdirSync(SESSION_DIR, { recursive: true });
+
+// Extrai número de seguidores de strings PT ou EN
+// Ex: "701M seguidores" ou "701M Followers" ou "12,345 Followers"
+function parseFollowers(text) {
+  const match = text.match(/([\d,.]+[KkMmBb]?)\s*(seguidores|[Ff]ollowers)/);
+  if (!match) return 0;
+  let raw = match[1].replace(',', '.');
+  if (/[Mm]$/.test(raw)) return Math.round(parseFloat(raw) * 1_000_000);
+  if (/[Kk]$/.test(raw)) return Math.round(parseFloat(raw) * 1_000);
+  if (/[Bb]$/.test(raw)) return Math.round(parseFloat(raw) * 1_000_000_000);
+  return parseInt(raw.replace(/\./g, '')) || 0;
+}
 
 // ---- BROWSER ----
 async function launchBrowser(headless = true) {
@@ -63,22 +74,18 @@ async function launchBrowser(headless = true) {
     extraHTTPHeaders: { 'Accept-Language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7' }
   });
 
-  // 🔒 Carregar sessão CRIPTOGRAFADA
   const cookies = security.loadEncrypted(SESSION_FILE);
   if (cookies && cookies.length > 0) {
     try {
       await context.addCookies(cookies);
-      const sessionCookie = cookies.find(c => c.name === 'sessionid');
-      if (sessionCookie) {
-        console.log(`${C.green}[SCRAPER] 🔒 Sessão carregada (sessionid: ${sessionCookie.value.slice(0,8)}...)${C.reset}`);
-      } else {
-        console.log(`${C.yellow}[SCRAPER] ⚠️  Sessão carregada mas sem sessionid!${C.reset}`);
-      }
+      const s = cookies.find(c => c.name === 'sessionid');
+      if (s) console.log(`${C.green}[SCRAPER] 🔒 Sessão carregada (${s.value.slice(0,8)}...)${C.reset}`);
+      else   console.log(`${C.yellow}[SCRAPER] ⚠️  Sessão sem sessionid!${C.reset}`);
     } catch (e) {
       console.log(`${C.yellow}[SCRAPER] Sessão inválida: ${e.message}${C.reset}`);
     }
   } else {
-    console.log(`${C.yellow}[SCRAPER] ⚠️  Nenhuma sessão encontrada — rodando sem login${C.reset}`);
+    console.log(`${C.yellow}[SCRAPER] ⚠️  Sem sessão — rodando sem login${C.reset}`);
   }
 
   return { browser, context };
@@ -87,184 +94,153 @@ async function launchBrowser(headless = true) {
 async function saveSession(context) {
   const cookies = await context.cookies();
   security.saveEncrypted(SESSION_FILE, cookies);
-  console.log(`${C.green}[SCRAPER] 🔒 Sessão criptografada e salva (${cookies.length} cookies)${C.reset}`);
+  console.log(`${C.green}[SCRAPER] 🔒 Sessão salva (${cookies.length} cookies)${C.reset}`);
 }
 
 // ---- LOGIN AUTOMÁTICO ----
 async function doAutoLogin() {
   const username = process.env.INSTAGRAM_USERNAME;
   const password = process.env.INSTAGRAM_PASSWORD;
-
   if (!username || !password) {
     console.log(`${C.red}[SCRAPER] ❌ INSTAGRAM_USERNAME / INSTAGRAM_PASSWORD não definidos no .env${C.reset}`);
     process.exit(1);
   }
-
   console.log(`\n${C.cyan}[SCRAPER] Login automático: @${username}${C.reset}`);
   const { browser, context } = await launchBrowser(true);
   const page = await context.newPage();
-
   try {
     await page.goto('https://www.instagram.com/accounts/login/', { waitUntil: 'networkidle', timeout: 30000 });
     await page.waitForSelector('input[name="username"]', { timeout: 15000 });
     await sleep(2000);
-
     await page.fill('input[name="username"]', username);
     await sleep(rand(400, 900));
     await page.fill('input[name="password"]', password);
     await sleep(rand(600, 1200));
     await page.click('button[type="submit"]');
-
     console.log(`${C.cyan}[SCRAPER] Aguardando redirecionamento...${C.reset}`);
     await page.waitForURL(url => !url.includes('/accounts/login'), { timeout: 30000 });
     await sleep(3000);
-
     const url = page.url();
     if (url.includes('challenge') || url.includes('two_factor')) {
-      console.log(`${C.yellow}[SCRAPER] ⚠️  Instagram pediu verificação — use login --manual${C.reset}`);
-      await browser.close();
-      process.exit(1);
+      console.log(`${C.yellow}[SCRAPER] ⚠️  Verificação adicional — use login --manual${C.reset}`);
+      await browser.close(); process.exit(1);
     }
-
     await saveSession(context);
     console.log(`${C.green}✅ Login automático OK!${C.reset}\n`);
   } catch (e) {
-    console.error(`${C.red}[SCRAPER] Erro no login: ${e.message}${C.reset}`);
+    console.error(`${C.red}[SCRAPER] Erro: ${e.message}${C.reset}`);
     console.log(`${C.yellow}Tente: node 0-scraper.js login --manual${C.reset}`);
-    await browser.close();
-    process.exit(1);
+    await browser.close(); process.exit(1);
   }
-
   await browser.close();
 }
 
 // ---- LOGIN MANUAL ----
 async function doManualLogin() {
-  console.log(`\n${C.cyan}[SCRAPER] Abrindo navegador para login manual...${C.reset}`);
+  console.log(`\n${C.cyan}[SCRAPER] Abrindo navegador...${C.reset}`);
   console.log(`${C.yellow}1. Faça login no Instagram${C.reset}`);
   console.log(`${C.yellow}2. Pressione ENTER aqui quando logado${C.reset}\n`);
-
   const { browser, context } = await launchBrowser(false);
   const page = await context.newPage();
   await page.goto('https://www.instagram.com/accounts/login/', { waitUntil: 'networkidle' });
-
   await new Promise(resolve => { process.stdin.resume(); process.stdin.once('data', resolve); });
-
   await saveSession(context);
   await browser.close();
   console.log(`\n${C.green}✅ Login salvo! Validade: ~30 dias${C.reset}\n`);
 }
 
-// ---- DIAGNÓSTICO COMPLETO ----
+// ---- DIAGNÓSTICO ----
 async function runDiag() {
   console.log(`\n${C.magenta}===== DIAGNÓSTICO DO SCRAPER =====${C.reset}\n`);
 
-  // 1. Verificar arquivo de sessão
   console.log(`${C.cyan}1. Verificando sessão...${C.reset}`);
   const cookies = security.loadEncrypted(SESSION_FILE);
   if (!cookies) {
     console.log(`   ${C.red}❌ Sem sessão salva${C.reset}`);
   } else {
-    const sessionid = cookies.find(c => c.name === 'sessionid');
-    const csrftoken = cookies.find(c => c.name === 'csrftoken');
-    console.log(`   Total de cookies: ${cookies.length}`);
-    console.log(`   sessionid: ${sessionid ? C.green+'✅ presente'+C.reset : C.red+'❌ ausente'+C.reset}`);
-    console.log(`   csrftoken: ${csrftoken ? C.green+'✅ presente'+C.reset : C.red+'❌ ausente'+C.reset}`);
-    if (sessionid) {
-      const exp = new Date(sessionid.expires * 1000);
+    const sid = cookies.find(c => c.name === 'sessionid');
+    const csrf = cookies.find(c => c.name === 'csrftoken');
+    console.log(`   Cookies: ${cookies.length}`);
+    console.log(`   sessionid: ${sid  ? C.green+'✅ presente'+C.reset : C.red+'❌ ausente'+C.reset}`);
+    console.log(`   csrftoken: ${csrf ? C.green+'✅ presente'+C.reset : C.red+'❌ ausente'+C.reset}`);
+    if (sid) {
+      const exp = new Date(sid.expires * 1000);
       console.log(`   Expiração: ${exp.toLocaleDateString('pt-BR')} ${exp > new Date() ? C.green+'(válido)'+C.reset : C.red+'(EXPIRADO)'+C.reset}`);
     }
   }
 
-  // 2. Testar conectividade
-  console.log(`\n${C.cyan}2. Testando conectividade com Instagram...${C.reset}`);
   const { browser, context } = await launchBrowser(true);
   const page = await context.newPage();
 
-  // 3. Testar endpoint de perfil
-  console.log(`\n${C.cyan}3. Testando endpoint de perfil (@instagram)...${C.reset}`);
-  const endpoints = [
-    `https://www.instagram.com/api/v1/users/web_profile_info/?username=instagram`,
-    `https://i.instagram.com/api/v1/users/web_profile_info/?username=instagram`,
-  ];
-
-  for (const url of endpoints) {
+  console.log(`\n${C.cyan}2. Testando API de perfil (@instagram)...${C.reset}`);
+  for (const base of ['https://www.instagram.com','https://i.instagram.com']) {
     try {
-      const resp = await context.request.get(url, {
-        headers: {
-          'X-IG-App-ID': '936619743392459',
-          'X-Requested-With': 'XMLHttpRequest',
-          'Referer': 'https://www.instagram.com/instagram/'
-        }
+      const resp = await context.request.get(`${base}/api/v1/users/web_profile_info/?username=instagram`, {
+        headers: { 'X-IG-App-ID':'936619743392459','X-Requested-With':'XMLHttpRequest','Referer':'https://www.instagram.com/instagram/' }
       });
-      const status = resp.status();
-      let detail = '';
+      const s = resp.status();
       if (resp.ok()) {
-        const data = await resp.json();
-        const followers = data?.data?.user?.edge_followed_by?.count;
-        detail = followers ? `${C.green}✅ OK — followers: ${followers}${C.reset}` : `${C.yellow}⚠️  JSON vazio${C.reset}`;
+        const d = await resp.json();
+        const f = d?.data?.user?.edge_followed_by?.count;
+        console.log(`   ${base.includes('i.') ? 'i.instagram' : 'www.instagram'}: ${f ? C.green+'✅ '+f+' followers'+C.reset : C.yellow+'⚠️  JSON vazio'+C.reset}`);
       } else {
-        const text = await resp.text().catch(() => '');
-        detail = `${C.red}❌ HTTP ${status} — ${text.slice(0,80)}${C.reset}`;
+        console.log(`   ${base.includes('i.') ? 'i.instagram' : 'www.instagram'}: ${C.red}❌ HTTP ${s}${C.reset}`);
       }
-      console.log(`   ${url.includes('i.insta') ? 'i.instagram' : 'www.instagram'}: ${detail}`);
-    } catch (e) {
-      console.log(`   ${C.red}❌ Erro: ${e.message}${C.reset}`);
-    }
+    } catch(e) { console.log(`   ${C.red}❌ ${e.message}${C.reset}`); }
   }
 
-  // 4. Testar endpoint de hashtag
-  console.log(`\n${C.cyan}4. Testando endpoint de hashtag (#brasil)...${C.reset}`);
-  try {
-    const resp = await context.request.get(
-      'https://www.instagram.com/api/v1/tags/web_info/?tag_name=brasil',
-      {
-        headers: {
-          'X-IG-App-ID': '936619743392459',
-          'X-Requested-With': 'XMLHttpRequest',
-          'Referer': 'https://www.instagram.com/explore/tags/brasil/'
-        }
-      }
-    );
-    const status = resp.status();
-    if (resp.ok()) {
-      const data = await resp.json();
-      const sections = data?.data?.recent?.sections || [];
-      let count = 0;
-      for (const s of sections) for (const m of (s.layout_content?.medias || [])) if (m.media?.user?.username) count++;
-      console.log(`   HTTP ${status}: ${count > 0 ? C.green+'✅ '+count+' usernames'+C.reset : C.yellow+'⚠️  0 usernames (bloqueado ou vazio)'+C.reset}`);
-    } else {
-      console.log(`   ${C.red}❌ HTTP ${status}${C.reset}`);
-    }
-  } catch (e) {
-    console.log(`   ${C.red}❌ Erro: ${e.message}${C.reset}`);
-  }
-
-  // 5. Testar scraping visual
-  console.log(`\n${C.cyan}5. Testando scraping visual de perfil (@instagram)...${C.reset}`);
+  console.log(`\n${C.cyan}3. Testando scraping visual autenticado (@instagram)...${C.reset}`);
   try {
     await page.goto('https://www.instagram.com/instagram/', { waitUntil: 'domcontentloaded', timeout: 20000 });
     await sleep(2000);
     const url = page.url();
     if (url.includes('login')) {
-      console.log(`   ${C.red}❌ Redirecionou para login — sessão não reconhecida${C.reset}`);
+      console.log(`   ${C.red}❌ Redirecionou para login — sessão inválida${C.reset}`);
     } else {
       const desc = await page.$eval('meta[name="description"]', el => el.content).catch(() => '');
-      console.log(`   URL final: ${url}`);
-      console.log(`   Meta desc: ${desc.slice(0,80) || '(vazia)'}`);
-      console.log(`   ${desc.includes('Followers') || desc.includes('follower') ? C.green+'✅ Sessão válida!' : C.yellow+'⚠️  Conectou mas sem dados de seguidores'}${C.reset}`);
+      const followers = parseFollowers(desc);
+      console.log(`   URL: ${url}`);
+      console.log(`   Meta: ${desc.slice(0,80)}`);
+      console.log(`   Followers: ${followers > 0 ? C.green+'✅ '+followers.toLocaleString()+C.reset : C.yellow+'⚠️  não encontrado'+C.reset}`);
+      if (followers > 0) console.log(`   ${C.green}✅ SESSÃO VÁLIDA E FUNCIONAL!${C.reset}`);
     }
-  } catch (e) {
-    console.log(`   ${C.red}❌ Erro: ${e.message}${C.reset}`);
-  }
+  } catch(e) { console.log(`   ${C.red}❌ ${e.message}${C.reset}`); }
+
+  console.log(`\n${C.cyan}4. Testando scraping de hashtag (#automacao)...${C.reset}`);
+  try {
+    const captured = new Set();
+    page.on('response', async resp => {
+      if (!resp.url().includes('/api/v1/tags/')) return;
+      try {
+        const json = await resp.json().catch(() => null);
+        if (json?.data?.recent?.sections)
+          for (const s of json.data.recent.sections)
+            for (const m of (s.layout_content?.medias||[]))
+              if (m.media?.user?.username) captured.add(m.media.user.username);
+      } catch(_) {}
+    });
+    await page.goto('https://www.instagram.com/explore/tags/automacao/', { waitUntil: 'domcontentloaded', timeout: 20000 });
+    await sleep(3000);
+    for (let i = 0; i < 3; i++) { await page.evaluate(() => window.scrollBy(0,2000)); await sleep(1500); }
+    console.log(`   XHR capturados: ${captured.size > 0 ? C.green+'✅ '+captured.size+' usernames'+C.reset : C.yellow+'⚠️  0 (API bloqueada)'+C.reset}`);
+    if (captured.size === 0) {
+      const alts = await page.$$eval('a[href*="/p/"] img', imgs => imgs.map(i => i.alt||'').filter(Boolean));
+      let fromAlt = 0;
+      for (const alt of alts) { const m = alt.match(/@([a-zA-Z0-9._]+)/); if (m) { captured.add(m[1]); fromAlt++; } }
+      console.log(`   Alt text: ${fromAlt > 0 ? C.green+'✅ '+fromAlt+' usernames'+C.reset : C.red+'❌ 0 — bloqueio total'+C.reset}`);
+    }
+  } catch(e) { console.log(`   ${C.red}❌ ${e.message}${C.reset}`); }
 
   await browser.close();
   console.log(`\n${C.magenta}===== FIM DO DIAGNÓSTICO =====${C.reset}\n`);
 }
 
 // ---- SCRAPER DE HASHTAG ----
+// Método 1: API (quando disponível)
+// Método 2: Interceptar XHR enquanto navega
+// Método 3: Extrair alt de imagens
 async function scrapeHashtag(hashtag, limit = 50) {
-  const tag = hashtag.replace('#', '').toLowerCase();
+  const tag = hashtag.replace('#','').toLowerCase();
   console.log(`\n${C.cyan}[SCRAPER] Hashtag: #${tag} | Meta: ${limit} perfis${C.reset}`);
 
   const { browser, context } = await launchBrowser(true);
@@ -274,153 +250,164 @@ async function scrapeHashtag(hashtag, limit = 50) {
   const usernames = new Set();
 
   try {
-    // Endpoint principal — usa context.request (passa cookies!)
-    const apiUrl = `https://www.instagram.com/api/v1/tags/web_info/?tag_name=${tag}`;
-    const response = await context.request.get(apiUrl, {
-      headers: {
-        'X-IG-App-ID': '936619743392459',
-        'X-Requested-With': 'XMLHttpRequest',
-        'Referer': `https://www.instagram.com/explore/tags/${tag}/`
+    // Método 1: API direta
+    try {
+      const resp = await context.request.get(
+        `https://www.instagram.com/api/v1/tags/web_info/?tag_name=${tag}`,
+        { headers: { 'X-IG-App-ID':'936619743392459','X-Requested-With':'XMLHttpRequest',
+                     'Referer':`https://www.instagram.com/explore/tags/${tag}/` } }
+      );
+      if (resp.ok()) {
+        const data = await resp.json();
+        for (const s of (data?.data?.recent?.sections||[]))
+          for (const m of (s.layout_content?.medias||[]))
+            if (m.media?.user?.username) usernames.add(m.media.user.username.toLowerCase());
+        if (usernames.size > 0) console.log(`${C.green}[SCRAPER] Método 1 (API): ${usernames.size} usernames${C.reset}`);
       }
-    });
+    } catch(_) {}
 
-    console.log(`${C.dim}[SCRAPER] API hashtag: HTTP ${response.status()}${C.reset}`);
+    // Método 2: Navegar + interceptar XHR
+    if (usernames.size < limit) {
+      const captured = new Set();
+      page.on('response', async resp => {
+        const url = resp.url();
+        if (!url.includes('/api/v1/tags/') && !url.includes('/api/v1/feed/')) return;
+        try {
+          const json = await resp.json().catch(() => null);
+          if (!json) return;
+          // Formato hashtag
+          if (json?.data?.recent?.sections)
+            for (const s of json.data.recent.sections)
+              for (const m of (s.layout_content?.medias||[]))
+                if (m.media?.user?.username) captured.add(m.media.user.username.toLowerCase());
+          // Formato feed
+          for (const item of (json?.items||[]))
+            if (item?.user?.username) captured.add(item.user.username.toLowerCase());
+        } catch(_) {}
+      });
 
-    if (response.ok()) {
-      const data = await response.json();
-      const media = data?.data?.recent?.sections || [];
-      for (const section of media) {
-        for (const layout of (section.layout_content?.medias || [])) {
-          const username = layout.media?.user?.username;
-          if (username) usernames.add(username.toLowerCase());
-        }
-        if (usernames.size >= limit) break;
-      }
-      console.log(`${C.green}[SCRAPER] API: ${usernames.size} usernames${C.reset}`);
-    }
-
-    // Fallback: scraping visual autenticado
-    if (usernames.size < 5) {
-      console.log(`${C.yellow}[SCRAPER] API retornou poucos dados, tentando scraping visual...${C.reset}`);
       await page.goto(`https://www.instagram.com/explore/tags/${tag}/`, {
         waitUntil: 'domcontentloaded', timeout: 30000
       });
-      await sleep(3000);
 
-      // Verificar se está logado
       const currentUrl = page.url();
       if (currentUrl.includes('login')) {
-        console.log(`${C.red}[SCRAPER] Sessão expirada — refaça o login${C.reset}`);
+        console.log(`${C.red}[SCRAPER] Sessão expirada — refaz o login${C.reset}`);
       } else {
-        // Interceptar requests da API enquanto navega
-        const captured = new Set();
-        page.on('response', async resp => {
-          if (resp.url().includes('/api/v1/tags/') || resp.url().includes('explore/tags')) {
-            try {
-              const json = await resp.json().catch(() => null);
-              if (json?.data?.recent?.sections) {
-                for (const s of json.data.recent.sections)
-                  for (const m of (s.layout_content?.medias || []))
-                    if (m.media?.user?.username) captured.add(m.media.user.username.toLowerCase());
-              }
-            } catch (_) {}
-          }
-        });
-
-        // Scroll para disparar requisições
-        for (let i = 0; i < 5 && usernames.size + captured.size < limit; i++) {
+        await sleep(3000);
+        for (let i = 0; i < 5 && captured.size < limit; i++) {
           await page.evaluate(() => window.scrollBy(0, 2000));
           await sleep(2000);
         }
-
         captured.forEach(u => usernames.add(u));
-
-        // Último recurso: extrair dos alts das imagens
-        if (usernames.size < 5) {
-          const links = await page.$$eval('a[href*="/p/"] img', imgs =>
-            imgs.map(img => img.alt || '').filter(Boolean)
-          );
-          for (const alt of links) {
-            const match = alt.match(/@([a-zA-Z0-9._]+)/);
-            if (match) usernames.add(match[1].toLowerCase());
-            if (usernames.size >= limit) break;
-          }
-        }
+        if (captured.size > 0) console.log(`${C.green}[SCRAPER] Método 2 (XHR): ${captured.size} usernames${C.reset}`);
       }
     }
-  } catch (e) {
+
+    // Método 3: Alt de imagens (fallback final)
+    if (usernames.size < 5) {
+      console.log(`${C.yellow}[SCRAPER] Método 3: extraindo de alt de imagens...${C.reset}`);
+      const alts = await page.$$eval('a[href*="/p/"] img', imgs => imgs.map(i => i.alt||'').filter(Boolean));
+      for (const alt of alts) {
+        const m = alt.match(/@([a-zA-Z0-9._]+)/);
+        if (m) usernames.add(m[1].toLowerCase());
+        if (usernames.size >= limit) break;
+      }
+    }
+
+  } catch(e) {
     console.error(`${C.red}[SCRAPER] Erro hashtag ${tag}: ${e.message}${C.reset}`);
   } finally {
     await browser.close();
   }
 
   const result = Array.from(usernames).slice(0, limit);
-  console.log(`${C.green}[SCRAPER] Coletados: ${result.length} usernames de #${tag}${C.reset}`);
+  console.log(`${C.green}[SCRAPER] Total coletado: ${result.length} de #${tag}${C.reset}`);
   return result;
 }
 
 // ---- SCRAPER DE PERFIL ----
+// Método 1: API (quando não há 429)
+// Método 2: Scraping visual autenticado
 async function scrapeProfile(username) {
-  username = username.replace('@', '').toLowerCase();
+  username = username.replace('@','').toLowerCase();
   console.log(`${C.cyan}[SCRAPER] Perfil: @${username}${C.reset}`);
 
   const { browser, context } = await launchBrowser(true);
   const page = await context.newPage();
   await page.route('**/*.{png,jpg,jpeg,gif,webp,mp4,mov}', r => r.abort());
 
-  let profile = { username, bio: '', followers: 0, posts: 0, following: 0 };
+  let profile = { username, bio:'', followers:0, posts:0, following:0 };
 
   try {
-    // Usa context.request para passar cookies
-    const apiUrl = `https://www.instagram.com/api/v1/users/web_profile_info/?username=${username}`;
-    const response = await context.request.get(apiUrl, {
-      headers: {
-        'X-IG-App-ID': '936619743392459',
-        'X-Requested-With': 'XMLHttpRequest',
-        'Referer': `https://www.instagram.com/${username}/`
-      }
-    });
-
-    if (response.ok()) {
-      const data = await response.json();
-      const user = data?.data?.user;
-      if (user) {
+    // Método 1: API
+    const resp = await context.request.get(
+      `https://www.instagram.com/api/v1/users/web_profile_info/?username=${username}`,
+      { headers: { 'X-IG-App-ID':'936619743392459','X-Requested-With':'XMLHttpRequest',
+                   'Referer':`https://www.instagram.com/${username}/` } }
+    );
+    if (resp.ok()) {
+      const data = await resp.json();
+      const u = data?.data?.user;
+      if (u) {
         profile = {
-          username,
-          bio:        user.biography || '',
-          followers:  user.edge_followed_by?.count || 0,
-          following:  user.edge_follow?.count || 0,
-          posts:      user.edge_owner_to_timeline_media?.count || 0,
-          fullName:   user.full_name || '',
-          isPrivate:  user.is_private || false,
-          isVerified: user.is_verified || false,
-          externalUrl: user.external_url || ''
+          username, bio: u.biography||'',
+          followers: u.edge_followed_by?.count||0,
+          following: u.edge_follow?.count||0,
+          posts:     u.edge_owner_to_timeline_media?.count||0,
+          fullName:  u.full_name||'',
+          isPrivate: u.is_private||false,
+          isVerified:u.is_verified||false,
+          externalUrl:u.external_url||''
         };
       }
     }
 
-    // Fallback: scraping visual
-    if (!profile.bio && profile.followers === 0) {
+    // Método 2: Scraping visual (quando API retorna 429 ou vazio)
+    if (profile.followers === 0) {
       await page.goto(`https://www.instagram.com/${username}/`, {
         waitUntil: 'domcontentloaded', timeout: 30000
       });
       await sleep(2000);
 
-      const scriptContent = await page.$eval(
-        'script[type="application/ld+json"]', el => el.textContent
-      ).catch(() => null);
+      // Tentar capturar via XHR disparado pela própria página
+      const apiData = await page.evaluate(async (user) => {
+        try {
+          const r = await fetch(`/api/v1/users/web_profile_info/?username=${user}`, {
+            headers: { 'X-IG-App-ID':'936619743392459','X-Requested-With':'XMLHttpRequest' }
+          });
+          if (r.ok) return r.json();
+        } catch(_) {}
+        return null;
+      }, username);
 
-      if (scriptContent) {
-        const ldJson = JSON.parse(scriptContent);
-        profile.bio = ldJson.description || '';
+      if (apiData?.data?.user) {
+        const u = apiData.data.user;
+        profile = {
+          username, bio: u.biography||'',
+          followers: u.edge_followed_by?.count||0,
+          following: u.edge_follow?.count||0,
+          posts:     u.edge_owner_to_timeline_media?.count||0,
+          fullName:  u.full_name||'',
+          isPrivate: u.is_private||false,
+          isVerified:u.is_verified||false,
+          externalUrl:u.external_url||''
+        };
       }
 
-      const desc = await page.$eval('meta[name="description"]', el => el.content).catch(() => '');
-      const followersMatch = desc.match(/([\d,.]+)\s*[Ff]ollowers/);
-      if (followersMatch) profile.followers = parseInt(followersMatch[1].replace(/[,.]/g, '')) || 0;
+      // Fallback final: meta description (PT e EN)
+      if (profile.followers === 0) {
+        const desc = await page.$eval('meta[name="description"]', el => el.content).catch(() => '');
+        if (desc) {
+          profile.followers = parseFollowers(desc);
+          // Tentar bio via ld+json
+          const ld = await page.$eval('script[type="application/ld+json"]', el => el.textContent).catch(() => null);
+          if (ld) { try { profile.bio = JSON.parse(ld).description||''; } catch(_) {} }
+        }
+      }
     }
 
-  } catch (e) {
+  } catch(e) {
     console.error(`${C.yellow}[SCRAPER] Aviso @${username}: ${e.message}${C.reset}`);
   } finally {
     await browser.close();
@@ -429,10 +416,9 @@ async function scrapeProfile(username) {
   return profile;
 }
 
-// ---- SCRAPER DE MÚLTIPLOS PERFIS ----
+// ---- SCRAPER DE MÚLTIPLOS PERFIS (1 browser) ----
 async function scrapeProfiles(usernames) {
   console.log(`\n${C.cyan}[SCRAPER] Enriquecendo ${usernames.length} perfis...${C.reset}`);
-
   const { browser, context } = await launchBrowser(true);
   const page = await context.newPage();
   await page.route('**/*.{png,jpg,jpeg,gif,webp,mp4,mov}', r => r.abort());
@@ -441,54 +427,63 @@ async function scrapeProfiles(usernames) {
   let success = 0, fail = 0;
 
   for (let i = 0; i < usernames.length; i++) {
-    const username = usernames[i].replace('@', '').toLowerCase();
+    const username = usernames[i].replace('@','').toLowerCase();
     process.stdout.write(`  [${i+1}/${usernames.length}] @${username}... `);
 
     try {
-      const apiUrl = `https://www.instagram.com/api/v1/users/web_profile_info/?username=${username}`;
-      // USA context.request PARA PASSAR COOKIES DA SESSÃO
-      const response = await context.request.get(apiUrl, {
-        headers: {
-          'X-IG-App-ID': '936619743392459',
-          'X-Requested-With': 'XMLHttpRequest',
-          'Referer': `https://www.instagram.com/${username}/`
-        }
-      });
+      // Primeiro tenta API
+      let profile = null;
+      const resp = await context.request.get(
+        `https://www.instagram.com/api/v1/users/web_profile_info/?username=${username}`,
+        { headers: { 'X-IG-App-ID':'936619743392459','X-Requested-With':'XMLHttpRequest',
+                     'Referer':`https://www.instagram.com/${username}/` } }
+      );
 
-      if (response.ok()) {
-        const data = await response.json();
-        const user = data?.data?.user;
-        if (user) {
-          profiles.push({
-            username,
-            bio:        user.biography || '',
-            followers:  user.edge_followed_by?.count || 0,
-            following:  user.edge_follow?.count || 0,
-            posts:      user.edge_owner_to_timeline_media?.count || 0,
-            fullName:   user.full_name || '',
-            isPrivate:  user.is_private || false,
-            externalUrl: user.external_url || ''
-          });
-          success++;
-          process.stdout.write(`${C.green}OK (${user.edge_followed_by?.count || 0} followers)${C.reset}\n`);
-        } else {
-          profiles.push({ username, bio:'', followers:0, posts:0 });
-          fail++;
-          process.stdout.write(`${C.yellow}vazio${C.reset}\n`);
+      if (resp.ok()) {
+        const data = await resp.json();
+        const u = data?.data?.user;
+        if (u) profile = {
+          username, bio:u.biography||'', followers:u.edge_followed_by?.count||0,
+          following:u.edge_follow?.count||0, posts:u.edge_owner_to_timeline_media?.count||0,
+          fullName:u.full_name||'', isPrivate:u.is_private||false, externalUrl:u.external_url||''
+        };
+      } else if (resp.status() === 429) {
+        // Rate limit: usar scraping visual inline
+        await page.goto(`https://www.instagram.com/${username}/`, { waitUntil:'domcontentloaded', timeout:20000 });
+        await sleep(1500);
+        const apiData = await page.evaluate(async (user) => {
+          try {
+            const r = await fetch(`/api/v1/users/web_profile_info/?username=${user}`, {
+              headers: { 'X-IG-App-ID':'936619743392459','X-Requested-With':'XMLHttpRequest' }
+            });
+            if (r.ok) return r.json();
+          } catch(_) {}
+          return null;
+        }, username);
+        if (apiData?.data?.user) {
+          const u = apiData.data.user;
+          profile = {
+            username, bio:u.biography||'', followers:u.edge_followed_by?.count||0,
+            following:u.edge_follow?.count||0, posts:u.edge_owner_to_timeline_media?.count||0,
+            fullName:u.full_name||'', isPrivate:u.is_private||false, externalUrl:u.external_url||''
+          };
         }
-      } else if (response.status() === 429) {
-        const waitTime = Math.floor(60000 * DELAY_MULT);
-        console.log(`\n${C.red}[SCRAPER] Rate limit! Aguardando ${waitTime/1000}s...${C.reset}`);
-        await sleep(waitTime);
-        profiles.push({ username, bio:'', followers:0, posts:0 });
-        fail++;
-        process.stdout.write(`${C.red}rate-limit${C.reset}\n`);
+        if (!profile) {
+          const desc = await page.$eval('meta[name="description"]', el => el.content).catch(() => '');
+          profile = { username, bio:'', followers:parseFollowers(desc), posts:0, following:0 };
+        }
+      }
+
+      if (profile && (profile.followers > 0 || profile.bio)) {
+        profiles.push(profile);
+        success++;
+        process.stdout.write(`${C.green}OK (${profile.followers.toLocaleString()} followers)${C.reset}\n`);
       } else {
         profiles.push({ username, bio:'', followers:0, posts:0 });
         fail++;
-        process.stdout.write(`${C.red}HTTP ${response.status()}${C.reset}\n`);
+        process.stdout.write(`${C.yellow}sem dados${C.reset}\n`);
       }
-    } catch (e) {
+    } catch(e) {
       profiles.push({ username, bio:'', followers:0, posts:0 });
       fail++;
       process.stdout.write(`${C.red}erro: ${e.message.slice(0,40)}${C.reset}\n`);
@@ -502,7 +497,7 @@ async function scrapeProfiles(usernames) {
   return profiles;
 }
 
-// ---- SCRAPER COMPLETO POR NICHO ----
+// ---- SCRAPER POR NICHO ----
 async function scrapeNicho(nichoConfig, limit = 30) {
   const hashtags = nichoConfig.hashtags.slice(0, 4);
   console.log(`\n${C.magenta}${'='.repeat(60)}${C.reset}`);
@@ -513,23 +508,20 @@ async function scrapeNicho(nichoConfig, limit = 30) {
   const allUsernames = new Set();
   for (const hashtag of hashtags) {
     if (allUsernames.size >= limit * 2) break;
-    const usernames = await scrapeHashtag(hashtag, Math.ceil(limit / hashtags.length) + 10);
-    usernames.forEach(u => allUsernames.add(u));
+    const list = await scrapeHashtag(hashtag, Math.ceil(limit / hashtags.length) + 10);
+    list.forEach(u => allUsernames.add(u));
     await sleepRandom(3000, 6000);
   }
+  console.log(`${C.cyan}[SCRAPER] Total únicos: ${allUsernames.size}${C.reset}`);
 
-  console.log(`${C.cyan}[SCRAPER] Total usernames únicos: ${allUsernames.size}${C.reset}`);
+  const list = Array.from(allUsernames).slice(0, Math.min(limit * 2, 60));
+  const profiles = await scrapeProfiles(list);
 
-  const usernames = Array.from(allUsernames).slice(0, Math.min(limit * 2, 60));
-  const profiles = await scrapeProfiles(usernames);
-
-  const keywords = (nichoConfig.keywords_bio || []).map(k => k.toLowerCase());
+  const keywords = (nichoConfig.keywords_bio||[]).map(k => k.toLowerCase());
   const filtered = profiles.filter(p => {
     if (!p.bio) return true;
-    const bioLower = p.bio.toLowerCase();
-    return keywords.length === 0 || keywords.some(k => bioLower.includes(k));
+    return keywords.length === 0 || keywords.some(k => p.bio.toLowerCase().includes(k));
   });
-
   console.log(`${C.green}[SCRAPER] Filtrados: ${filtered.length}/${profiles.length}${C.reset}`);
   return filtered.slice(0, limit);
 }
@@ -540,50 +532,40 @@ if (require.main === module) {
 
   if (!cmd || cmd === 'help') {
     console.log(`\n${C.cyan}SCRAPER - Instagram sem Apify${C.reset}`);
-    console.log('Comandos:');
-    console.log('  login                     Login automático (usa .env)');
-    console.log('  login --manual            Login manual (navegador visível)');
+    console.log('  login                     Login automático (.env)');
+    console.log('  login --manual            Login manual (navegador)');
     console.log('  diag                      Diagnóstico completo');
     console.log('  hashtag <tag> [limite]    Scrape por hashtag');
     console.log('  profile <user>            Scrape de perfil');
-    console.log('  profiles <u1,u2,...>      Scrape de múltiplos perfis');
-    console.log('  test                      Teste rápido de conectividade');
-    console.log('  rotate-key                Rotacionar chave de criptografia\n');
+    console.log('  profiles <u1,u2,...>      Scrape múltiplos perfis');
+    console.log('  test                      Teste rápido');
+    console.log('  rotate-key                Rotacionar chave\n');
     process.exit(0);
   }
 
   (async () => {
     try {
-      if (cmd === 'login') {
-        if (arg1 === '--manual') await doManualLogin();
-        else await doAutoLogin();
-      } else if (cmd === 'diag') {
-        await runDiag();
-      } else if (cmd === 'rotate-key') {
-        const newKey = security.rotateKey(SESSION_DIR);
-        console.log(`\nAdicione ao .env:\nSESSION_ENCRYPTION_KEY=${newKey}\n`);
-      } else if (cmd === 'hashtag') {
-        const results = await scrapeHashtag(arg1 || 'makecom', parseInt(arg2 || '20'));
-        console.log('\nUsernames encontrados:');
-        results.forEach((u, i) => console.log(`  ${i+1}. @${u}`));
-      } else if (cmd === 'profile') {
-        const profile = await scrapeProfile(arg1 || 'instagram');
-        console.log('\nPerfil:');
-        console.log(JSON.stringify(profile, null, 2));
-      } else if (cmd === 'profiles') {
-        const list = (arg1 || '').split(',').filter(Boolean);
-        const profiles = await scrapeProfiles(list);
-        console.log(JSON.stringify(profiles, null, 2));
-      } else if (cmd === 'test') {
-        console.log(`${C.cyan}[SCRAPER] Testando...${C.reset}`);
-        const profile = await scrapeProfile('instagram');
-        if (profile.followers > 0) {
-          console.log(`${C.green}✅ OK! @instagram: ${profile.followers} followers${C.reset}`);
-        } else {
-          console.log(`${C.yellow}⚠️  Conectou mas sem dados. Rode: node 0-scraper.js diag${C.reset}`);
-        }
+      if      (cmd === 'login')      { if (arg1==='--manual') await doManualLogin(); else await doAutoLogin(); }
+      else if (cmd === 'diag')       { await runDiag(); }
+      else if (cmd === 'rotate-key') { const k = security.rotateKey(SESSION_DIR); console.log(`\nSESSION_ENCRYPTION_KEY=${k}\n`); }
+      else if (cmd === 'hashtag')    {
+        const r = await scrapeHashtag(arg1||'makecom', parseInt(arg2||'20'));
+        console.log('\nUsernames:'); r.forEach((u,i) => console.log(`  ${i+1}. @${u}`));
       }
-    } catch (e) {
+      else if (cmd === 'profile')    {
+        const p = await scrapeProfile(arg1||'instagram');
+        console.log('\nPerfil:'); console.log(JSON.stringify(p, null, 2));
+      }
+      else if (cmd === 'profiles')   {
+        const ps = await scrapeProfiles((arg1||'').split(',').filter(Boolean));
+        console.log(JSON.stringify(ps, null, 2));
+      }
+      else if (cmd === 'test') {
+        const p = await scrapeProfile('instagram');
+        if (p.followers > 0) console.log(`${C.green}✅ OK! @instagram: ${p.followers.toLocaleString()} followers${C.reset}`);
+        else console.log(`${C.yellow}⚠️  Sem dados. Rode: node 0-scraper.js diag${C.reset}`);
+      }
+    } catch(e) {
       console.error(`${C.red}[SCRAPER] Erro: ${e.message}${C.reset}`);
       process.exit(1);
     }
