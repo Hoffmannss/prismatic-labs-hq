@@ -6,9 +6,10 @@
 // 🔒 SEGURANÇA: Sessões protegidas com AES-256-GCM
 //
 // Uso:
+//   node 0-scraper.js login              - Login automático (usa .env)
+//   node 0-scraper.js login --manual     - Login manual (navegador)
 //   node 0-scraper.js hashtag makecom 50
 //   node 0-scraper.js profile n8nautomation
-//   node 0-scraper.js hashtags api-automacao 30
 // =============================================================
 
 require('dotenv').config();
@@ -35,7 +36,6 @@ const C = {
 };
 
 // ---- Rate limit seguro ----
-// 1-2 requests por segundo = ~3.600/hora = seguro para nao banir
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const rand  = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
 const sleepRandom = async (minMs = 1500, maxMs = 3500) => {
@@ -95,9 +95,86 @@ async function saveSession(context) {
   console.log(`${C.dim}    Algoritmo: AES-256-GCM${C.reset}`);
 }
 
-// ---- LOGIN MANUAL ----
-// Roda com headless=false para o usuario logar manualmente
-async function doLogin() {
+// ---- LOGIN AUTOMÁTICO (usa credenciais do .env) ----
+async function doAutoLogin() {
+  const username = process.env.INSTAGRAM_USERNAME;
+  const password = process.env.INSTAGRAM_PASSWORD;
+
+  if (!username || !password) {
+    console.log(`${C.red}[SCRAPER] ❌ Credenciais não encontradas no .env${C.reset}`);
+    console.log(`${C.yellow}Adicione:${C.reset}`);
+    console.log(`  INSTAGRAM_USERNAME=seu_usuario`);
+    console.log(`  INSTAGRAM_PASSWORD=sua_senha\n`);
+    process.exit(1);
+  }
+
+  console.log(`\n${C.cyan}[SCRAPER] Login automático: @${username}${C.reset}`);
+
+  const { browser, context } = await launchBrowser(true);
+  const page = await context.newPage();
+
+  try {
+    await page.goto('https://www.instagram.com/accounts/login/', { 
+      waitUntil: 'networkidle',
+      timeout: 30000 
+    });
+
+    // Aguardar formulário de login
+    await page.waitForSelector('input[name="username"]', { timeout: 10000 });
+    await sleep(2000);
+
+    // Preencher credenciais
+    await page.fill('input[name="username"]', username);
+    await sleep(rand(300, 800));
+    await page.fill('input[name="password"]', password);
+    await sleep(rand(500, 1200));
+
+    // Clicar em Login
+    await page.click('button[type="submit"]');
+    
+    console.log(`${C.cyan}[SCRAPER] Aguardando login...${C.reset}`);
+    
+    // Aguardar redirecionamento após login (máx 30s)
+    await page.waitForURL(url => !url.includes('/accounts/login'), { 
+      timeout: 30000 
+    });
+
+    await sleep(3000);
+
+    // Verificar se logou com sucesso
+    const loggedIn = await page.evaluate(() => {
+      return document.cookie.includes('sessionid');
+    });
+
+    if (!loggedIn) {
+      throw new Error('Login falhou - não encontrou sessionid');
+    }
+
+    // Verificar se pediu 2FA ou verificação
+    const url = page.url();
+    if (url.includes('challenge') || url.includes('two_factor')) {
+      console.log(`${C.yellow}[SCRAPER] ⚠️  Instagram pediu verificação adicional${C.reset}`);
+      console.log(`${C.yellow}Use: node 0-scraper.js login --manual${C.reset}\n`);
+      await browser.close();
+      process.exit(1);
+    }
+
+    await saveSession(context);
+    console.log(`${C.green}✅ Login automático OK!${C.reset}`);
+    console.log(`${C.green}🔒 Sessão protegida com AES-256${C.reset}\n`);
+
+  } catch (e) {
+    console.error(`${C.red}[SCRAPER] Erro no login: ${e.message}${C.reset}`);
+    console.log(`${C.yellow}Tente login manual: node 0-scraper.js login --manual${C.reset}\n`);
+    await browser.close();
+    process.exit(1);
+  }
+
+  await browser.close();
+}
+
+// ---- LOGIN MANUAL (navegador visível) ----
+async function doManualLogin() {
   console.log(`\n${C.cyan}[SCRAPER] Abrindo navegador para login manual...${C.reset}`);
   console.log(`${C.yellow}1. Faça login no Instagram que aparecer${C.reset}`);
   console.log(`${C.yellow}2. Depois de logado, pressione ENTER aqui${C.reset}\n`);
@@ -407,7 +484,8 @@ if (require.main === module) {
     console.log(`\n${C.cyan}SCRAPER - Instagram sem Apify${C.reset}`);
     console.log(`${C.dim}🔒 Sessões protegidas com AES-256-GCM${C.reset}\n`);
     console.log('Comandos:');
-    console.log('  node 0-scraper.js login                     - Login no Instagram (1x)');
+    console.log('  node 0-scraper.js login                     - Login automático (usa .env)');
+    console.log('  node 0-scraper.js login --manual            - Login manual (navegador)');
     console.log('  node 0-scraper.js hashtag makecom 50        - Scrape por hashtag');
     console.log('  node 0-scraper.js profile n8nautomation     - Scrape perfil');
     console.log('  node 0-scraper.js profiles user1,user2,...  - Scrape multiplos perfis');
@@ -419,7 +497,11 @@ if (require.main === module) {
   (async () => {
     try {
       if (cmd === 'login') {
-        await doLogin();
+        if (arg1 === '--manual') {
+          await doManualLogin();
+        } else {
+          await doAutoLogin();
+        }
       } else if (cmd === 'rotate-key') {
         console.log(`\n${C.yellow}🔄 ROTACIONAR CHAVE DE CRIPTOGRAFIA${C.reset}\n`);
         const newKey = security.rotateKey(SESSION_DIR);
