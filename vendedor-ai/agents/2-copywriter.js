@@ -23,10 +23,10 @@ if (process.env.GOOGLE_API_KEY && process.env.GOOGLE_API_KEY.startsWith('AIza'))
   try {
     const { GoogleGenerativeAI } = require('@google/generative-ai');
     const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
-    // 🔧 FIXADO: gemini-1.5-flash-latest (auto-updated stable)
-    model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash-latest' });
+    // 🔧 FIXADO: gemini-1.5-flash (modelo estável v1beta)
+    model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
     provider = 'gemini';
-    console.log('[COPYWRITER] Using Google Gemini 1.5 Flash Latest');
+    console.log('[COPYWRITER] Using Google Gemini 1.5 Flash');
   } catch (e) {
     console.log('[COPYWRITER] Google Gemini falhou, usando Groq fallback');
     provider = null;
@@ -59,11 +59,11 @@ function sanitizeJSON(str) {
   for (let i = 0; i < str.length; i++) {
     const c = str[i];
     if (escaped) { result += c; escaped = false; continue; }
-    if (c === '\\\\') { escaped = true; result += c; continue; }
-    if (c === '\"')  { inString = !inString; result += c; continue; }
-    if (inString && c === '\n') { result += '\\\\n'; continue; }
-    if (inString && c === '\r') { result += '\\\\r'; continue; }
-    if (inString && c === '\t') { result += '\\\\t'; continue; }
+    if (c === '\\') { escaped = true; result += c; continue; }
+    if (c === '"')  { inString = !inString; result += c; continue; }
+    if (inString && c === '\n') { result += '\\n'; continue; }
+    if (inString && c === '\r') { result += '\\r'; continue; }
+    if (inString && c === '\t') { result += '\\t'; continue; }
     result += c;
   }
   return result;
@@ -245,7 +245,7 @@ Retorne SOMENTE o JSON (sem markdown, sem backticks, sem texto fora do JSON):
     console.log(`[COPYWRITER] Produto: ${prodLabel}${postsLbl}`);
     console.log(`[COPYWRITER] Recomendada: #${messages.mensagem_recomendada} - ${messages.motivo_recomendacao}`);
     console.log(`\n========== COPIE E COLE ESTA MENSAGEM ==========`);
-    console.log(recMsg?.texto?.replace(/\\\\n/g, '\n'));
+    console.log(recMsg?.texto?.replace(/\\n/g, '\n'));
     console.log(`================================================\n`);
     console.log(`[COPYWRITER] Arquivo: ${outputFile}`);
     console.log(`\nMESSAGES_OUTPUT=${JSON.stringify(resultData)}`);
