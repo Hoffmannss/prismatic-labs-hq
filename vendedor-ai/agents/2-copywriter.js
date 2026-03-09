@@ -2,7 +2,7 @@
 // MODULO 2: COPYWRITER AI - PRISMATIC LABS VENDEDOR AUTOMATICO
 // Gera DM hiperpersonalizada usando few-shot + analise de posts
 // + Aprendizado continuo via style-memory.json (11-learner.js)
-// Stack: Google Gemini 2.0 Flash (fallback: Groq se API key invalida)
+// Stack: Google Gemini 1.5 Flash (fallback: Groq se API key invalida)
 // =============================================================
 
 require('dotenv').config();
@@ -23,9 +23,10 @@ if (process.env.GOOGLE_API_KEY && process.env.GOOGLE_API_KEY.startsWith('AIza'))
   try {
     const { GoogleGenerativeAI } = require('@google/generative-ai');
     const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
-    model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
+    // 🔧 FIXADO: gemini-1.5-flash é o modelo estável atual
+    model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
     provider = 'gemini';
-    console.log('[COPYWRITER] Using Google Gemini 2.0 Flash');
+    console.log('[COPYWRITER] Using Google Gemini 1.5 Flash');
   } catch (e) {
     console.log('[COPYWRITER] Google Gemini falhou, usando Groq fallback');
     provider = null;
