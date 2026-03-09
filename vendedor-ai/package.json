@@ -10,15 +10,15 @@
     "scout": "node agents/6-scout.js",
     "autopilot": "node agents/10-autopilot.js",
     "dashboard": "node agents/8-dashboard.js",
-    "scheduler": "node agents/14-scheduler.js",
     "notion-sync": "node agents/9-notion-sync.js"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
+    "@notionhq/client": "^5.11.1",
+    "apify-client": "^2.9.3",
     "dotenv": "^16.4.5",
     "groq-sdk": "^0.7.0",
-    "@google/generative-ai": "^0.21.0",
-    "playwright": "^1.50.0",
-    "@notionhq/client": "^2.3.0"
+    "playwright": "^1.58.2"
   },
   "engines": {
     "node": ">=18.0.0"

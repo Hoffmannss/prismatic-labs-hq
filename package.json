@@ -21,12 +21,13 @@
   "dependencies": {
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
-    "node-fetch": "^2.7.0"
+    "node-fetch": "^2.7.0",
+    "puppeteer": "^24.38.0"
   },
   "devDependencies": {
+    "cross-env": "^7.0.3",
     "electron": "^28.2.3",
     "electron-builder": "^24.13.3",
-    "electron-updater": "^6.1.8",
-    "cross-env": "^7.0.3"
+    "electron-updater": "^6.1.8"
   }
 }
