@@ -23,6 +23,12 @@ const SESSION_FILE = path.join(SESSION_DIR, 'instagram-session.json');
 
 const security = new SessionSecurity();
 
+// 🎛️ DELAY MULTIPLIER - pode ser ajustado via env para autopilot diário
+const DELAY_MULT = parseFloat(process.env.AUTOPILOT_DELAY_MULTIPLIER || '1.0');
+if (DELAY_MULT > 1) {
+  console.log(`⏱️  [SCRAPER] Modo cauteloso: delays ${DELAY_MULT}x mais longos`);
+}
+
 const C = {
   reset:'\x1b[0m', bright:'\x1b[1m', green:'\x1b[32m',
   yellow:'\x1b[33m', red:'\x1b[31m', cyan:'\x1b[36m', magenta:'\x1b[35m'
@@ -32,7 +38,11 @@ const C = {
 // 1-2 requests por segundo = ~3.600/hora = seguro para nao banir
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const rand  = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
-const sleepRandom = async (minMs = 1500, maxMs = 3500) => sleep(rand(minMs, maxMs));
+const sleepRandom = async (minMs = 1500, maxMs = 3500) => {
+  const min = Math.floor(minMs * DELAY_MULT);
+  const max = Math.floor(maxMs * DELAY_MULT);
+  await sleep(rand(min, max));
+};
 
 if (!fs.existsSync(SESSION_DIR)) fs.mkdirSync(SESSION_DIR, { recursive: true });
 
@@ -176,7 +186,7 @@ async function scrapeHashtag(hashtag, limit = 50) {
       let scrolls = 0;
       while (usernames.size < limit && scrolls < 10) {
         await page.evaluate(() => window.scrollBy(0, 1500));
-        await sleep(2000);
+        await sleep(2000 * DELAY_MULT);
         const newLinks = await page.$$eval('a[href*="/p/"]', els =>
           els.map(el => el.querySelector('img')?.alt || '').filter(Boolean)
         );
@@ -324,9 +334,10 @@ async function scrapeProfiles(usernames) {
           process.stdout.write(`${C.yellow}vazio${C.reset}\n`);
         }
       } else if (response.status() === 429) {
-        // Rate limit atingido - esperar mais
-        console.log(`\n${C.red}[SCRAPER] Rate limit! Aguardando 60s...${C.reset}`);
-        await sleep(60000);
+        // Rate limit atingido - esperar mais (com multiplicador)
+        const waitTime = Math.floor(60000 * DELAY_MULT);
+        console.log(`\n${C.red}[SCRAPER] Rate limit! Aguardando ${waitTime/1000}s...${C.reset}`);
+        await sleep(waitTime);
         profiles.push({ username, bio:'', followers:0, posts:0 });
         fail++;
         process.stdout.write(`${C.red}rate-limit${C.reset}\n`);
@@ -341,7 +352,7 @@ async function scrapeProfiles(usernames) {
       process.stdout.write(`${C.red}erro${C.reset}\n`);
     }
 
-    // Rate limit seguro: 1.5-3.5s entre requests
+    // Rate limit seguro com multiplicador
     if (i < usernames.length - 1) await sleepRandom(1500, 3500);
   }
 
@@ -366,7 +377,7 @@ async function scrapeNicho(nichoConfig, limit = 30) {
     if (allUsernames.size >= limit * 2) break;
     const usernames = await scrapeHashtag(hashtag, Math.ceil(limit / hashtags.length) + 10);
     usernames.forEach(u => allUsernames.add(u));
-    await sleepRandom(3000, 6000); // Pausa entre hashtags
+    await sleepRandom(3000, 6000); // Pausa entre hashtags (com multiplicador)
   }
 
   console.log(`${C.cyan}[SCRAPER] Total usernames unicos: ${allUsernames.size}${C.reset}`);
