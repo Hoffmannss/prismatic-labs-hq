@@ -23,10 +23,10 @@ if (process.env.GOOGLE_API_KEY && process.env.GOOGLE_API_KEY.startsWith('AIza'))
   try {
     const { GoogleGenerativeAI } = require('@google/generative-ai');
     const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
-    // 🔧 FIXADO: gemini-1.5-flash é o modelo estável atual
-    model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    // 🔧 FIXADO: gemini-1.5-flash-latest (auto-updated stable)
+    model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash-latest' });
     provider = 'gemini';
-    console.log('[COPYWRITER] Using Google Gemini 1.5 Flash');
+    console.log('[COPYWRITER] Using Google Gemini 1.5 Flash Latest');
   } catch (e) {
     console.log('[COPYWRITER] Google Gemini falhou, usando Groq fallback');
     provider = null;
