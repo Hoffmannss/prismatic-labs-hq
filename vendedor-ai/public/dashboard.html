@@ -601,7 +601,6 @@
                 <div class="card">
                     <div class="card-header"><div class="card-title">Adicionar DM Manual</div></div>
                     <div class="card-body">
-                        <div id="queueAlert"></div>
                         <div class="form-grid form-grid-2">
                             <div class="form-group">
                                 <label class="form-label">Username (sem @)</label>
@@ -664,7 +663,6 @@
                         </div>
                     </div>
                     <div class="card-body">
-                        <div id="autopilotAlert"></div>
                         <div class="form-grid form-grid-3">
                             <div class="form-group" style="grid-column:1/-1">
                                 <label class="form-label">Nicho / Hashtag alvo</label>
@@ -708,7 +706,6 @@
                         </div>
                     </div>
                     <div class="card-body">
-                        <div id="trackerAlert"></div>
                         <div class="form-grid form-grid-2">
                             <div class="form-group">
                                 <label class="form-label">Username (sem @)</label>
@@ -843,7 +840,7 @@ function renderMetrics(leads) {
     const total    = leads.length;
     const hot      = leads.filter(l => l.prioridade === 'hot').length;
     const warm     = leads.filter(l => l.prioridade === 'warm').length;
-    const enviadas = leads.filter(l => l.dm_enviada || l.outcome === 'enviada').length;
+    const enviadas = leads.filter(l => l.dm_enviada || l.outcome === 'sent').length;
     const convert  = leads.filter(l => l.outcome === 'converteu').length;
 
     document.getElementById('leadsMetrics').innerHTML = `
@@ -885,7 +882,7 @@ function renderLeadsTable(leads) {
     }
 
     const outcomeClass = (o) => {
-        const map = { converteu:'converteu', enviada:'enviada', negociando:'negociando', respondeu:'respondeu', recusou:'recusou', ignorou:'ignorou' };
+        const map = { sent:'enviada', enviada:'enviada', converteu:'converteu', negociando:'negociando', respondeu:'respondeu', recusou:'recusou', ignorou:'ignorou' };
         return map[o] || 'novo';
     };
 
@@ -938,7 +935,7 @@ function viewLead(username) {
     const l = leadsData.find(x => x.username === username);
     if (!l) return;
     document.getElementById('modalTitle').textContent = `@${l.username}`;
-    const msgEscaped = (l.mensagem_final || '').replace(/`/g, '\\`').replace(/\\/g, '\\\\');
+    const msgEscaped = (l.mensagem_final || '').replace(/\\/g, '\\\\').replace(/`/g, '\\`');
     document.getElementById('modalBody').innerHTML = `
         <div class="detail-grid">
             <div class="detail-item">
@@ -987,6 +984,10 @@ function viewLead(username) {
 function closeModal() { document.getElementById('leadModal').classList.remove('open'); }
 document.getElementById('leadModal').addEventListener('click', e => {
     if (e.target === e.currentTarget) closeModal();
+});
+
+document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeModal();
 });
 
 function copyToClipboard(text) {
@@ -1107,6 +1108,11 @@ async function toggleSender(enabled) {
 }
 
 async function startSender() {
+    // Verifica se sender está ativo antes de disparar
+    const cfg = await fetch('/api/sender/config').then(r => r.json()).catch(() => null);
+    if (cfg && !cfg.enabled) {
+        return toast('Ative o Disparador primeiro (toggle acima da fila)', 'info', 6000);
+    }
     const data = await post('/api/sender/start', {});
     if (data.ok) toast('Lote de envio iniciado', 'success');
     else toast('Erro: ' + (data.error || 'Desconhecido'), 'error');
@@ -1216,7 +1222,7 @@ async function loadStats() {
         </div>
         <div class="metric-card">
             <div class="metric-label">DMs Enviadas</div>
-            <div class="metric-value">${b.enviada || 0}</div>
+            <div class="metric-value">${b.sent || 0}</div>
         </div>
         <div class="metric-card">
             <div class="metric-label">Responderam</div>

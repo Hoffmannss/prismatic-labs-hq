@@ -297,7 +297,7 @@ const server = http.createServer(async (req, res) => {
     const db    = loadJSON(DB_FILE, { leads: [] });
     const leads = db.leads || [];
     const byPriority = { hot: 0, warm: 0, cold: 0 };
-    const byOutcome  = { enviada: 0, respondeu: 0, ignorou: 0, negociando: 0, converteu: 0 };
+    const byOutcome  = { sent: 0, respondeu: 0, ignorou: 0, negociando: 0, converteu: 0, recusou: 0 };
     let totalValue = 0;
     leads.forEach(l => {
       if (l.prioridade in byPriority) byPriority[l.prioridade]++;
