@@ -353,7 +353,8 @@ async function scrapeProfile(username) {
       const u = data?.data?.user;
       if (u) {
         profile = {
-          username, bio: u.biography||'',
+          username,  bio: u.biography||'',
+          user_id:   u.id||'',
           followers: u.edge_followed_by?.count||0,
           following: u.edge_follow?.count||0,
           posts:     u.edge_owner_to_timeline_media?.count||0,
@@ -386,7 +387,8 @@ async function scrapeProfile(username) {
       if (apiData?.data?.user) {
         const u = apiData.data.user;
         profile = {
-          username, bio: u.biography||'',
+          username,  bio: u.biography||'',
+          user_id:   u.id||'',
           followers: u.edge_followed_by?.count||0,
           following: u.edge_follow?.count||0,
           posts:     u.edge_owner_to_timeline_media?.count||0,
@@ -445,7 +447,8 @@ async function scrapeProfiles(usernames) {
         const data = await resp.json();
         const u = data?.data?.user;
         if (u) profile = {
-          username, bio:u.biography||'', followers:u.edge_followed_by?.count||0,
+          username, bio:u.biography||'', user_id:u.id||'',
+          followers:u.edge_followed_by?.count||0,
           following:u.edge_follow?.count||0, posts:u.edge_owner_to_timeline_media?.count||0,
           fullName:u.full_name||'', isPrivate:u.is_private||false, externalUrl:u.external_url||''
         };
@@ -465,7 +468,8 @@ async function scrapeProfiles(usernames) {
         if (apiData?.data?.user) {
           const u = apiData.data.user;
           profile = {
-            username, bio:u.biography||'', followers:u.edge_followed_by?.count||0,
+            username, bio:u.biography||'', user_id:u.id||'',
+            followers:u.edge_followed_by?.count||0,
             following:u.edge_follow?.count||0, posts:u.edge_owner_to_timeline_media?.count||0,
             fullName:u.full_name||'', isPrivate:u.is_private||false, externalUrl:u.external_url||''
           };
@@ -555,6 +559,119 @@ async function scrapeBySearch(query, limit = 20) {
   return result;
 }
 
+// ---- SCORE DE SEED ACCOUNT ----
+// Quanto maior o score, melhor o perfil como seed (0-100)
+function scoreSeedAccount(profile) {
+  let score = 0;
+  const f = profile.followers || 0;
+  const bio = (profile.bio || '').toLowerCase();
+
+  // 1. Sweet spot de seguidores: 5k-500k (micro e médio influencers)
+  // Muito pequeno = audiência irrelevante; muito grande = seguidores genéricos
+  if      (f >= 10000  && f <= 100000) score += 40;  // ideal
+  else if (f >= 5000   && f < 10000)   score += 30;
+  else if (f >= 100001 && f <= 500000) score += 25;
+  else if (f >= 1000   && f < 5000)    score += 10;
+  else                                 score += 0;   // <1k ou >500k: penaliza
+
+  // 2. Bio com palavras de conteúdo relevante (educativo, negócios, criadores)
+  const seedKeywords = [
+    // autoridade / educação
+    'coach','mentor','especialista','professor','consultor','treinador',
+    'ensino','educação','cursos','formação','mba','certificad',
+    // negócios
+    'agência','agencia','marketing','vendas','empreendedor','empresário',
+    'startup','business','ceo','cofundador','co-fundador','diretor',
+    // criadores sérios
+    'criador','creator','conteúdo','canal','podcast','newsletter',
+    // tech / automação (alinhado ao nicho IA)
+    'automação','automacao','inteligência artificial','ia ','tecnologia',
+    'software','developer','programador','saas','n8n','make.com'
+  ];
+  const keyHits = seedKeywords.filter(k => bio.includes(k)).length;
+  score += Math.min(keyHits * 6, 25);  // até +25
+
+  // 3. Conta ativa (tem posts)
+  if (profile.posts >= 12) score += 10;
+  else if (profile.posts >= 4) score += 5;
+
+  // 4. Ratio followers/following saudável (criadores reais têm mais seguidores que seguindo)
+  const ratio = profile.following > 0 ? f / profile.following : 0;
+  if (ratio >= 3)   score += 10;
+  else if (ratio >= 1.5) score += 5;
+
+  // 5. Tem link externo (sinal de negócio/profissional)
+  if (profile.externalUrl) score += 5;
+
+  // 6. Não privada (se privada, não conseguimos scrape dos seguidores)
+  if (!profile.isPrivate) score += 5;
+
+  // Penalidade: verificada com > 500k followers (celebridades têm fãs, não compradores)
+  if (profile.isVerified && f > 500000) score -= 15;
+
+  return Math.max(0, Math.min(100, score));
+}
+
+// ---- SCRAPE DE SEGUIDORES DE UM PERFIL SEED ----
+async function scrapeFollowers(userId, limit = 100) {
+  if (!userId) {
+    console.log(`${C.yellow}[SCRAPER] scrapeFollowers: user_id ausente, pulando${C.reset}`);
+    return [];
+  }
+  console.log(`${C.cyan}[SCRAPER] Buscando seguidores de user_id=${userId} | meta: ${limit}${C.reset}`);
+
+  const { browser, context } = await launchBrowser(true);
+  const collected = [];
+  let maxId = null;
+  let page = 0;
+
+  try {
+    while (collected.length < limit) {
+      page++;
+      const url = `https://www.instagram.com/api/v1/friendships/${userId}/followers/?count=50&search_surface=follow_list_page${maxId ? `&max_id=${maxId}` : ''}`;
+      const resp = await context.request.get(url, {
+        headers: {
+          'X-IG-App-ID': '936619743392459',
+          'X-Requested-With': 'XMLHttpRequest',
+          'Referer': 'https://www.instagram.com/'
+        }
+      });
+
+      if (!resp.ok()) {
+        const status = resp.status();
+        if (status === 429) console.log(`${C.yellow}[SCRAPER] Followers rate-limit (429) — parando${C.reset}`);
+        else if (status === 401) console.log(`${C.yellow}[SCRAPER] Followers não autorizado (401) — conta privada?${C.reset}`);
+        else console.log(`${C.yellow}[SCRAPER] Followers HTTP ${status} — parando${C.reset}`);
+        break;
+      }
+
+      const json = await resp.json();
+      const users = json.users || [];
+      if (users.length === 0) break;
+
+      for (const u of users) {
+        if (collected.length >= limit) break;
+        if (!u.username || u.is_private) continue;
+        collected.push(u.username.toLowerCase());
+      }
+
+      console.log(`  Página ${page}: +${users.length} → total ${collected.length}/${limit}`);
+
+      maxId = json.next_max_id || null;
+      if (!maxId) break;  // sem próxima página
+
+      await sleepRandom(1500, 3000);
+    }
+  } catch(e) {
+    console.error(`${C.red}[SCRAPER] Erro scrapeFollowers: ${e.message}${C.reset}`);
+  } finally {
+    await browser.close();
+  }
+
+  console.log(`${C.green}[SCRAPER] Seguidores coletados: ${collected.length}${C.reset}`);
+  return collected;
+}
+
 // ---- SCRAPER POR NICHO ----
 async function scrapeNicho(nichoConfig, limit = 30) {
   const hashtags = nichoConfig.hashtags.slice(0, 4);
@@ -567,7 +684,7 @@ async function scrapeNicho(nichoConfig, limit = 30) {
 
   const allUsernames = new Set();
 
-  // Rota 1: hashtag scraping (método original)
+  // ── ROTA 1: hashtag scraping (tende a ser bloqueada pelo Instagram) ──────
   for (const hashtag of hashtags) {
     if (allUsernames.size >= limit * 2) break;
     const list = await scrapeHashtag(hashtag, Math.ceil(limit / hashtags.length) + 10);
@@ -575,27 +692,85 @@ async function scrapeNicho(nichoConfig, limit = 30) {
     if (list.length > 0) await sleepRandom(3000, 6000);
   }
 
-  // Rota 2: busca por palavra-chave (fallback automático se hashtag bloqueada)
+  // ── ROTA 2: smart seed selection via topsearch + followers ───────────────
+  // Usa topsearch para encontrar candidatos a seed → enriquece perfis →
+  // pontua → escolhe os 2 melhores → scrapa seus seguidores como leads reais
   if (allUsernames.size === 0) {
-    console.log(`${C.yellow}[SCRAPER] Hashtags bloqueadas — ativando busca por palavra-chave...${C.reset}`);
-    const queries = [nichoConfig.nome, ...hashtags].slice(0, 3);
-    for (const q of queries) {
-      if (allUsernames.size >= limit * 2) break;
-      const list = await scrapeBySearch(q, Math.ceil(limit / queries.length) + 10);
-      list.forEach(u => allUsernames.add(u));
-      if (list.length > 0) await sleepRandom(2000, 4000);
+    console.log(`${C.yellow}[SCRAPER] Hashtags bloqueadas — ativando pipeline Smart Seed + Followers...${C.reset}`);
+
+    // 2a. Topsearch multi-query para candidatos a seed
+    const { browser: bSearch, context: ctxSearch } = await launchBrowser(true);
+    const seedCandidates = new Set();
+    try {
+      const words = nichoConfig.nome.replace('#','').split(/\s+/).filter(w => w.length > 2);
+      const queries = [...new Set([nichoConfig.nome, ...hashtags.slice(0,2), ...words])].slice(0, 6);
+      for (const q of queries) {
+        const results = await topsearchQuery(ctxSearch, q);
+        results.forEach(u => seedCandidates.add(u.toLowerCase()));
+        if (results.length > 0)
+          console.log(`  topsearch "${q}": +${results.length} candidatos`);
+        await sleep(700);
+      }
+    } finally {
+      await bSearch.close();
+    }
+
+    if (seedCandidates.size === 0) {
+      console.log(`${C.yellow}[SCRAPER] Topsearch sem resultados.${C.reset}`);
+    } else {
+      console.log(`${C.cyan}[SCRAPER] ${seedCandidates.size} candidatos a seed — enriquecendo perfis...${C.reset}`);
+
+      // 2b. Enriquecer candidatos (para ter user_id + dados para score)
+      const candidateProfiles = await scrapeProfiles(Array.from(seedCandidates));
+
+      // 2c. Pontuar e selecionar melhores seeds
+      const scored = candidateProfiles
+        .map(p => ({ ...p, _score: scoreSeedAccount(p) }))
+        .sort((a, b) => b._score - a._score);
+
+      const topSeeds = scored.filter(p => p._score >= 20 && p.user_id && !p.isPrivate).slice(0, 2);
+
+      if (topSeeds.length === 0) {
+        // Seeds com score baixo: usa todos os candidatos como leads diretos
+        console.log(`${C.yellow}[SCRAPER] Seeds com score baixo — usando candidatos diretamente como leads.${C.reset}`);
+        candidateProfiles.forEach(p => allUsernames.add(p.username));
+      } else {
+        console.log(`${C.green}[SCRAPER] Top seeds selecionados:${C.reset}`);
+        topSeeds.forEach(s => console.log(`  @${s.username} | score=${s._score} | followers=${s.followers.toLocaleString()}`));
+
+        // 2d. Scrapa seguidores de cada seed
+        for (const seed of topSeeds) {
+          const perSeed = Math.ceil((limit * 1.5) / topSeeds.length);
+          const followers = await scrapeFollowers(seed.user_id, perSeed);
+          followers.forEach(u => allUsernames.add(u));
+          if (allUsernames.size >= limit * 2) break;
+          await sleepRandom(3000, 6000);
+        }
+        console.log(`${C.cyan}[SCRAPER] Total de leads via followers: ${allUsernames.size}${C.reset}`);
+      }
     }
   }
 
-  // Rota 3: seed accounts como fonte de usernames (se configurado e ainda sem resultado)
+  // ── ROTA 3: seed accounts manuais configurados no nicho ──────────────────
   if (allUsernames.size === 0 && seedAccounts.length > 0) {
-    console.log(`${C.yellow}[SCRAPER] Usando seed accounts como fonte...${C.reset}`);
-    seedAccounts.forEach(u => allUsernames.add(u.replace('@','').toLowerCase()));
+    console.log(`${C.yellow}[SCRAPER] Usando seed accounts manuais do nicho...${C.reset}`);
+    // Enriquece seeds manuais para pegar user_id
+    const manualProfiles = await scrapeProfiles(seedAccounts.map(u => u.replace('@','')));
+    const validSeeds = manualProfiles.filter(p => p.user_id && !p.isPrivate);
+    for (const seed of validSeeds.slice(0, 2)) {
+      const followers = await scrapeFollowers(seed.user_id, Math.ceil(limit * 1.5));
+      followers.forEach(u => allUsernames.add(u));
+      if (allUsernames.size >= limit * 2) break;
+      await sleepRandom(3000, 6000);
+    }
+    // Se ainda sem resultado: usa os seeds como leads diretos
+    if (allUsernames.size === 0)
+      seedAccounts.forEach(u => allUsernames.add(u.replace('@','').toLowerCase()));
   }
 
-  console.log(`${C.cyan}[SCRAPER] Total únicos: ${allUsernames.size}${C.reset}`);
+  console.log(`${C.cyan}[SCRAPER] Total únicos coletados: ${allUsernames.size}${C.reset}`);
 
-  const list = Array.from(allUsernames).slice(0, Math.min(limit * 2, 60));
+  const list = Array.from(allUsernames).slice(0, Math.min(limit * 2, 100));
   const profiles = await scrapeProfiles(list);
 
   const keywords = (nichoConfig.keywords_bio||[]).map(k => k.toLowerCase());
@@ -603,7 +778,7 @@ async function scrapeNicho(nichoConfig, limit = 30) {
     if (!p.bio) return true;
     return keywords.length === 0 || keywords.some(k => p.bio.toLowerCase().includes(k));
   });
-  console.log(`${C.green}[SCRAPER] Filtrados: ${filtered.length}/${profiles.length}${C.reset}`);
+  console.log(`${C.green}[SCRAPER] Filtrados por bio: ${filtered.length}/${profiles.length}${C.reset}`);
   return filtered.slice(0, limit);
 }
 
@@ -620,6 +795,8 @@ if (require.main === module) {
     console.log('  search <query> [limite]   Busca por palavra-chave (fallback)');
     console.log('  profile <user>            Scrape de perfil');
     console.log('  profiles <u1,u2,...>      Scrape múltiplos perfis');
+    console.log('  followers <user_id> [n]   Scrape seguidores pelo user_id numérico');
+    console.log('  score <user>              Pontua perfil como seed account (0-100)');
     console.log('  test                      Teste rápido');
     console.log('  rotate-key                Rotacionar chave\n');
     process.exit(0);
@@ -646,6 +823,20 @@ if (require.main === module) {
         const ps = await scrapeProfiles((arg1||'').split(',').filter(Boolean));
         console.log(JSON.stringify(ps, null, 2));
       }
+      else if (cmd === 'followers')  {
+        const uid = arg1;
+        const n   = parseInt(arg2||'50');
+        if (!uid) { console.log('Uso: node 0-scraper.js followers <user_id> [limite]'); process.exit(1); }
+        const r = await scrapeFollowers(uid, n);
+        console.log('\nSeguidores:'); r.forEach((u,i) => console.log(`  ${i+1}. @${u}`));
+      }
+      else if (cmd === 'score')      {
+        const p = await scrapeProfile(arg1||'instagram');
+        const s = scoreSeedAccount(p);
+        console.log(`\n@${p.username} — Score seed: ${s}/100`);
+        console.log(`  Followers: ${p.followers.toLocaleString()} | Posts: ${p.posts} | Privado: ${p.isPrivate}`);
+        console.log(`  Bio: ${p.bio.slice(0,80)}`);
+      }
       else if (cmd === 'test') {
         const p = await scrapeProfile('instagram');
         if (p.followers > 0) console.log(`${C.green}✅ OK! @instagram: ${p.followers.toLocaleString()} followers${C.reset}`);
@@ -658,4 +849,4 @@ if (require.main === module) {
   })();
 }
 
-module.exports = { scrapeHashtag, scrapeBySearch, scrapeProfile, scrapeProfiles, scrapeNicho };
+module.exports = { scrapeHashtag, scrapeBySearch, scrapeProfile, scrapeProfiles, scrapeNicho, scrapeFollowers, scoreSeedAccount };
