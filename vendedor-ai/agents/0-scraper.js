@@ -500,72 +500,42 @@ async function scrapeProfiles(usernames) {
 }
 
 // ---- SCRAPER POR BUSCA (fallback quando hashtag é bloqueada) ----
-async function scrapeBySearch(query, limit = 20) {
+async function topsearchQuery(context, query) {
   const q = encodeURIComponent(query.replace('#',''));
+  const rankToken = `0.${Math.random().toString().slice(2, 10)}`;
+  try {
+    const resp = await context.request.get(
+      `https://www.instagram.com/api/v1/web/search/topsearch/?context=blended&query=${q}&rank_token=${rankToken}&count=30`,
+      { headers: {
+          'X-IG-App-ID': '936619743392459',
+          'X-Requested-With': 'XMLHttpRequest',
+          'Referer': 'https://www.instagram.com/'
+      }}
+    );
+    if (!resp.ok()) return [];
+    const json = await resp.json();
+    return (json.users || []).map(item => item?.user?.username).filter(Boolean);
+  } catch(_) { return []; }
+}
+
+async function scrapeBySearch(query, limit = 20) {
   console.log(`\n${C.cyan}[SCRAPER] Busca: "${query}" | Meta: ${limit} perfis${C.reset}`);
 
   const { browser, context } = await launchBrowser(true);
-  const page = await context.newPage();
-  await page.route('**/*.{png,jpg,jpeg,gif,webp,mp4,mov}', r => r.abort());
-
   const usernames = new Set();
 
   try {
-    // Método 1: API topsearch direta (mais confiável)
-    try {
-      const rankToken = `0.${Math.random().toString().slice(2, 10)}`;
-      const resp = await context.request.get(
-        `https://www.instagram.com/api/v1/web/search/topsearch/?context=blended&query=${q}&rank_token=${rankToken}&count=30`,
-        { headers: {
-            'X-IG-App-ID': '936619743392459',
-            'X-Requested-With': 'XMLHttpRequest',
-            'Referer': 'https://www.instagram.com/'
-        }}
-      );
-      if (resp.ok()) {
-        const json = await resp.json();
-        for (const item of (json.users || []))
-          if (item?.user?.username) usernames.add(item.user.username.toLowerCase());
-        if (usernames.size > 0)
-          console.log(`${C.green}[SCRAPER] Método 1 (topsearch API): ${usernames.size} usernames${C.reset}`);
-      }
-    } catch(_) {}
+    // Gera variações da query (topsearch retorna ~5 por query, então rodamos várias)
+    const words   = query.replace('#','').split(/\s+/).filter(w => w.length > 2);
+    const queries = [...new Set([query, ...words])].slice(0, 5);
 
-    // Método 2: Navegar + interceptar XHR do search
-    if (usernames.size < limit) {
-      const captured = new Set();
-      page.on('response', async resp => {
-        const url = resp.url();
-        if (!url.includes('topsearch') && !url.includes('web/search')) return;
-        try {
-          const json = await resp.json().catch(() => null);
-          if (!json) return;
-          for (const item of (json.users || []))
-            if (item?.user?.username) captured.add(item.user.username.toLowerCase());
-        } catch(_) {}
-      });
-
-      // Navega para home e usa a barra de busca do Instagram
-      await page.goto('https://www.instagram.com/', { waitUntil: 'domcontentloaded', timeout: 30000 });
-      if (page.url().includes('login')) throw new Error('Sessão expirada');
-
-      await sleep(2000);
-
-      // Clica no ícone de busca e digita
-      const searchBtn = await page.$('svg[aria-label="Search"], a[href="/explore/"], [aria-label="Buscar"]');
-      if (searchBtn) {
-        await searchBtn.click();
-        await sleep(1000);
-        const input = await page.$('input[placeholder*="Search"], input[placeholder*="Pesquisar"], input[type="text"]');
-        if (input) {
-          await input.fill(query.replace('#', ''));
-          await sleep(3000); // aguarda XHR do topsearch
-        }
-      }
-
-      captured.forEach(u => usernames.add(u));
-      if (captured.size > 0)
-        console.log(`${C.green}[SCRAPER] Método 2 (search UI + XHR): ${captured.size} usernames${C.reset}`);
+    for (const q of queries) {
+      if (usernames.size >= limit) break;
+      const results = await topsearchQuery(context, q);
+      results.forEach(u => usernames.add(u.toLowerCase()));
+      if (results.length > 0)
+        console.log(`${C.green}[SCRAPER] topsearch "${q}": +${results.length} → total ${usernames.size}${C.reset}`);
+      if (queries.indexOf(q) < queries.length - 1) await sleep(800);
     }
 
   } catch(e) {
@@ -575,15 +545,13 @@ async function scrapeBySearch(query, limit = 20) {
   }
 
   const blocked = new Set(['explore','reels','stories','direct','accounts','p','tv','reel','instagram']);
-  // Filtra usernames gerados automaticamente (padrão pd + caracteres aleatórios)
+  const looksLikeBot = u => /^[a-z]{2}[0-9a-z_]{9,}$/.test(u) && !/[aeiou]/.test(u);
   const isValid = u =>
-    u && !u.includes('.') && !u.includes('@') &&
-    u.length >= 3 && u.length <= 30 &&
-    !blocked.has(u) &&
-    !/^pd[a-z0-9]{8,}$/.test(u); // remove padrão de bots
+    u && u.length >= 3 && u.length <= 30 &&
+    !blocked.has(u) && !looksLikeBot(u);
 
   const result = Array.from(usernames).filter(isValid).slice(0, limit);
-  console.log(`${C.green}[SCRAPER] Busca: ${result.length} perfis relevantes encontrados${C.reset}`);
+  console.log(`${C.green}[SCRAPER] Busca: ${result.length} perfis encontrados${C.reset}`);
   return result;
 }
 
