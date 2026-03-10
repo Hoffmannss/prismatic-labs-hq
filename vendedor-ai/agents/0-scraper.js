@@ -511,41 +511,61 @@ async function scrapeBySearch(query, limit = 20) {
   const usernames = new Set();
 
   try {
-    // Interceptar XHR do search do Instagram
-    page.on('response', async resp => {
-      const url = resp.url();
-      if (!url.includes('topsearch') && !url.includes('web/search')) return;
-      try {
-        const json = await resp.json().catch(() => null);
-        if (!json) return;
+    // Método 1: API topsearch direta (mais confiável)
+    try {
+      const rankToken = `0.${Math.random().toString().slice(2, 10)}`;
+      const resp = await context.request.get(
+        `https://www.instagram.com/api/v1/web/search/topsearch/?context=blended&query=${q}&rank_token=${rankToken}&count=30`,
+        { headers: {
+            'X-IG-App-ID': '936619743392459',
+            'X-Requested-With': 'XMLHttpRequest',
+            'Referer': 'https://www.instagram.com/'
+        }}
+      );
+      if (resp.ok()) {
+        const json = await resp.json();
         for (const item of (json.users || []))
           if (item?.user?.username) usernames.add(item.user.username.toLowerCase());
-      } catch(_) {}
-    });
-
-    await page.goto(`https://www.instagram.com/explore/search/keyword/?q=${q}`, {
-      waitUntil: 'domcontentloaded', timeout: 30000
-    });
-
-    if (page.url().includes('login')) throw new Error('Sessão expirada');
-
-    await sleep(3000);
-    for (let i = 0; i < 3 && usernames.size < limit; i++) {
-      await page.evaluate(() => window.scrollBy(0, 1500));
-      await sleep(1500);
-    }
-
-    // Fallback: extrair hrefs de perfis visíveis na página
-    if (usernames.size < 3) {
-      const blocked = new Set(['explore','reels','stories','direct','accounts','p','tv','reel']);
-      const hrefs = await page.$$eval('a[href^="/"]', links =>
-        links.map(a => new URL(a.href).pathname.replace(/\//g,'').toLowerCase())
-      ).catch(() => []);
-      for (const u of hrefs) {
-        if (u && u.length >= 2 && u.length <= 30 && !u.includes('.') && !blocked.has(u))
-          usernames.add(u);
-        if (usernames.size >= limit) break;
+        if (usernames.size > 0)
+          console.log(`${C.green}[SCRAPER] Método 1 (topsearch API): ${usernames.size} usernames${C.reset}`);
       }
+    } catch(_) {}
+
+    // Método 2: Navegar + interceptar XHR do search
+    if (usernames.size < limit) {
+      const captured = new Set();
+      page.on('response', async resp => {
+        const url = resp.url();
+        if (!url.includes('topsearch') && !url.includes('web/search')) return;
+        try {
+          const json = await resp.json().catch(() => null);
+          if (!json) return;
+          for (const item of (json.users || []))
+            if (item?.user?.username) captured.add(item.user.username.toLowerCase());
+        } catch(_) {}
+      });
+
+      // Navega para home e usa a barra de busca do Instagram
+      await page.goto('https://www.instagram.com/', { waitUntil: 'domcontentloaded', timeout: 30000 });
+      if (page.url().includes('login')) throw new Error('Sessão expirada');
+
+      await sleep(2000);
+
+      // Clica no ícone de busca e digita
+      const searchBtn = await page.$('svg[aria-label="Search"], a[href="/explore/"], [aria-label="Buscar"]');
+      if (searchBtn) {
+        await searchBtn.click();
+        await sleep(1000);
+        const input = await page.$('input[placeholder*="Search"], input[placeholder*="Pesquisar"], input[type="text"]');
+        if (input) {
+          await input.fill(query.replace('#', ''));
+          await sleep(3000); // aguarda XHR do topsearch
+        }
+      }
+
+      captured.forEach(u => usernames.add(u));
+      if (captured.size > 0)
+        console.log(`${C.green}[SCRAPER] Método 2 (search UI + XHR): ${captured.size} usernames${C.reset}`);
     }
 
   } catch(e) {
@@ -554,10 +574,16 @@ async function scrapeBySearch(query, limit = 20) {
     await browser.close();
   }
 
-  const blocked = new Set(['explore','reels','stories','direct','accounts','p','tv','reel']);
-  const isValid = u => u && !u.includes('.') && !u.includes('@') && u.length >= 2 && u.length <= 30 && !blocked.has(u);
+  const blocked = new Set(['explore','reels','stories','direct','accounts','p','tv','reel','instagram']);
+  // Filtra usernames gerados automaticamente (padrão pd + caracteres aleatórios)
+  const isValid = u =>
+    u && !u.includes('.') && !u.includes('@') &&
+    u.length >= 3 && u.length <= 30 &&
+    !blocked.has(u) &&
+    !/^pd[a-z0-9]{8,}$/.test(u); // remove padrão de bots
+
   const result = Array.from(usernames).filter(isValid).slice(0, limit);
-  console.log(`${C.green}[SCRAPER] Busca: ${result.length} perfis encontrados${C.reset}`);
+  console.log(`${C.green}[SCRAPER] Busca: ${result.length} perfis relevantes encontrados${C.reset}`);
   return result;
 }
 
