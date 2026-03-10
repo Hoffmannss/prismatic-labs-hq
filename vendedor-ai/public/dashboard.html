@@ -3,816 +3,1272 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Prismatic Labs — Vendedor AI Cockpit</title>
+    <title>Vendedor AI — Prismatic Labs</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
-        :root {
-            --bg-main: #06070f;
-            --bg-secondary: #0d1025;
-            --bg-card: #121631;
-            --bg-card-hover: #181e42;
-            --accent: #667eea;
-            --accent2: #764ba2;
-            --cyan: #06d6a0;
-            --neon: #00f0ff;
-            --text: #e8ecf4;
-            --text2: #7b8ab8;
-            --border: #1e2548;
-            --success: #10b981;
-            --warning: #fbbf24;
-            --danger: #ef4444;
-            --hot: #ff4757;
-            --warm: #ffa502;
-            --cold: #1e90ff;
-            --glow: 0 0 20px rgba(102,126,234,0.15);
-        }
+    :root {
+        --bg:        #07081a;
+        --bg-panel:  #0d1030;
+        --bg-card:   #111530;
+        --bg-hover:  #161c3e;
+        --border:    #1d2452;
+        --border-light: #252d5a;
+        --accent:    #667eea;
+        --accent2:   #764ba2;
+        --cyan:      #06d6a0;
+        --neon:      #00f0ff;
+        --text:      #e2e8f8;
+        --text2:     #6b7aaa;
+        --text3:     #3d4a7a;
+        --success:   #10b981;
+        --warning:   #f59e0b;
+        --danger:    #ef4444;
+        --hot:       #ff4757;
+        --warm:      #ff9f43;
+        --cold:      #4d9de0;
+        --sidebar-w: 240px;
+        --topbar-h:  60px;
+        --radius:    12px;
+        --radius-sm: 8px;
+        --shadow:    0 4px 24px rgba(0,0,0,0.3);
+        --glow:      0 0 24px rgba(102,126,234,0.15);
+    }
 
-        body {
-            font-family: 'Inter', system-ui, -apple-system, sans-serif;
-            background: var(--bg-main);
-            color: var(--text);
-            display: flex;
-            min-height: 100vh;
-            overflow: hidden;
-        }
+    /* ─── LAYOUT BASE ─── */
+    html, body {
+        height: 100%;
+        font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        overflow: hidden;
+    }
 
-        /* ---- SIDEBAR ---- */
-        .sidebar {
-            width: 72px;
-            background: var(--bg-secondary);
-            border-right: 1px solid var(--border);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 20px 0;
-            gap: 8px;
-            transition: width 0.3s;
-            z-index: 10;
-        }
-        .sidebar:hover { width: 220px; }
-        .sidebar:hover .nav-label { opacity:1; width:auto; }
-        .sidebar:hover .brand-text { opacity:1; }
+    .app {
+        display: flex;
+        height: 100vh;
+        overflow: hidden;
+    }
 
-        .brand {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 10px;
-            margin-bottom: 20px;
-            white-space: nowrap;
-            overflow: hidden;
-        }
-        .brand-icon {
-            min-width: 36px;
-            height: 36px;
-            background: linear-gradient(135deg, var(--accent), var(--cyan));
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 18px;
-            font-weight: 800;
-            color: #fff;
-        }
-        .brand-text {
-            font-weight: 700;
-            font-size: 14px;
-            background: linear-gradient(135deg, var(--accent), var(--cyan));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            opacity: 0;
-            transition: opacity 0.2s;
-        }
+    /* ─── SIDEBAR ─── */
+    .sidebar {
+        width: var(--sidebar-w);
+        flex-shrink: 0;
+        background: var(--bg-panel);
+        border-right: 1px solid var(--border);
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+        overflow: hidden;
+        z-index: 20;
+    }
 
-        .nav-item {
-            display: flex;
-            align-items: center;
-            gap: 14px;
-            width: 100%;
-            padding: 12px 22px;
-            cursor: pointer;
-            color: var(--text2);
-            transition: all 0.15s;
-            border-left: 3px solid transparent;
-            white-space: nowrap;
-            overflow: hidden;
-        }
-        .nav-item:hover { background: var(--bg-card); color: var(--text); }
-        .nav-item.active {
-            color: var(--cyan);
-            border-left-color: var(--cyan);
-            background: rgba(6,214,160,0.06);
-        }
-        .nav-icon { font-size: 18px; min-width: 24px; text-align: center; }
-        .nav-label { opacity:0; transition: opacity 0.2s; font-size: 13px; font-weight: 500; }
-        .nav-badge {
-            margin-left: auto;
-            background: var(--danger);
-            color: #fff;
-            font-size: 10px;
-            font-weight: 700;
-            padding: 2px 7px;
-            border-radius: 8px;
-            min-width: 20px;
-            text-align: center;
-        }
+    .sidebar-brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 20px 18px 16px;
+        border-bottom: 1px solid var(--border);
+        flex-shrink: 0;
+    }
+    .brand-logo {
+        width: 34px; height: 34px;
+        background: linear-gradient(135deg, var(--accent), var(--cyan));
+        border-radius: 10px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 16px; font-weight: 800; color: #fff;
+        flex-shrink: 0;
+    }
+    .brand-info {}
+    .brand-name {
+        font-size: 13px; font-weight: 700;
+        background: linear-gradient(135deg, var(--accent), var(--cyan));
+        -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        line-height: 1.2;
+    }
+    .brand-sub { font-size: 10px; color: var(--text2); text-transform: uppercase; letter-spacing: 1px; }
 
-        .nav-divider { width: 32px; height: 1px; background: var(--border); margin: 10px 0; }
+    .sidebar-nav {
+        flex: 1;
+        padding: 12px 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        overflow-y: auto;
+    }
 
-        /* ---- MAIN ---- */
-        .main {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-        }
+    .nav-section-label {
+        font-size: 10px; color: var(--text3); text-transform: uppercase;
+        letter-spacing: 1.2px; padding: 12px 8px 6px; font-weight: 600;
+    }
 
-        .topbar {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 16px 32px;
-            border-bottom: 1px solid var(--border);
-            background: var(--bg-secondary);
-        }
-        .topbar-left h1 {
-            font-size: 18px;
-            font-weight: 700;
-        }
-        .topbar-left p { font-size: 12px; color: var(--text2); margin-top: 2px; }
-        .topbar-right { display: flex; align-items: center; gap: 16px; }
+    .nav-item {
+        display: flex;
+        align-items: center;
+        gap: 11px;
+        padding: 9px 10px;
+        border-radius: var(--radius-sm);
+        cursor: pointer;
+        color: var(--text2);
+        font-size: 13px;
+        font-weight: 500;
+        transition: all 0.15s;
+        position: relative;
+        white-space: nowrap;
+        user-select: none;
+    }
+    .nav-item:hover { background: var(--bg-hover); color: var(--text); }
+    .nav-item.active {
+        background: rgba(102,126,234,0.12);
+        color: var(--accent);
+        font-weight: 600;
+    }
+    .nav-item.active .nav-icon svg { stroke: var(--accent); }
+    .nav-icon { width: 20px; height: 20px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+    .nav-icon svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+    .nav-badge {
+        margin-left: auto;
+        background: var(--danger);
+        color: #fff;
+        font-size: 10px; font-weight: 700;
+        padding: 1px 6px; border-radius: 10px;
+        min-width: 18px; text-align: center;
+    }
 
-        .status-pill {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            padding: 6px 14px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
-            background: rgba(16,185,129,0.1);
-            color: var(--success);
-            border: 1px solid rgba(16,185,129,0.2);
-        }
-        .status-pill.warning { background: rgba(251,191,36,0.1); color: var(--warning); border-color: rgba(251,191,36,0.2); }
-        .status-pill.error { background: rgba(239,68,68,0.1); color: var(--danger); border-color: rgba(239,68,68,0.2); }
-        .status-dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
-        .status-dot.pulse { animation: pulse 2s infinite; }
-        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+    .sidebar-footer {
+        padding: 12px 10px;
+        border-top: 1px solid var(--border);
+        flex-shrink: 0;
+    }
+    .version-tag { font-size: 11px; color: var(--text3); text-align: center; padding: 4px; }
 
-        .content { flex:1; overflow-y:auto; padding: 28px 32px; }
-        .section { display: none; }
-        .section.active { display: block; }
+    /* ─── MAIN ─── */
+    .main {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+        overflow: hidden;
+        min-width: 0;
+    }
 
-        /* ---- METRIC CARDS ---- */
-        .metrics-row {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 16px;
-            margin-bottom: 28px;
-        }
-        .metric {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 14px;
-            padding: 20px;
-            transition: all 0.2s;
-        }
-        .metric:hover { border-color: var(--accent); box-shadow: var(--glow); transform: translateY(-2px); }
-        .metric-label { font-size: 11px; color: var(--text2); text-transform: uppercase; letter-spacing: 1.2px; margin-bottom: 10px; }
-        .metric-value { font-size: 32px; font-weight: 800; color: var(--cyan); line-height: 1; }
-        .metric-value.hot { color: var(--hot); }
-        .metric-value.warm { color: var(--warm); }
-        .metric-value.cold { color: var(--cold); }
-        .metric-value.success { color: var(--success); }
+    /* ─── TOPBAR ─── */
+    .topbar {
+        height: var(--topbar-h);
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 28px;
+        border-bottom: 1px solid var(--border);
+        background: var(--bg-panel);
+        gap: 16px;
+    }
+    .topbar-title {
+        font-size: 16px; font-weight: 700;
+        white-space: nowrap;
+    }
+    .topbar-pills { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
 
-        /* ---- CARDS ---- */
-        .card {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 14px;
-            padding: 24px;
-            margin-bottom: 20px;
-        }
-        .card-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 20px;
-        }
-        .card-title { font-size: 16px; font-weight: 700; }
+    .pill {
+        display: inline-flex; align-items: center; gap: 6px;
+        padding: 5px 12px; border-radius: 20px;
+        font-size: 11px; font-weight: 600;
+        border: 1px solid transparent;
+        white-space: nowrap;
+    }
+    .pill-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+    .pill-dot.blink { animation: blink 1.8s infinite; }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.25} }
 
-        /* ---- TABLE ---- */
-        .table-wrap { overflow-x: auto; }
-        table { width:100%; border-collapse:collapse; }
-        th { text-align:left; padding:10px 14px; font-size:11px; color:var(--text2); text-transform:uppercase; letter-spacing:1px; border-bottom:2px solid var(--border); }
-        td { padding:14px; border-bottom:1px solid var(--border); font-size:13px; }
-        tr:hover { background: var(--bg-card-hover); }
-        .user-cell { display:flex; align-items:center; gap:10px; }
-        .user-avatar { width:32px; height:32px; border-radius:50%; background:linear-gradient(135deg,var(--accent),var(--accent2)); display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700; color:#fff; }
+    .pill-idle    { background: rgba(107,122,170,.1); color: var(--text2);    border-color: rgba(107,122,170,.2); }
+    .pill-running { background: rgba(6,214,160,.1);   color: var(--cyan);     border-color: rgba(6,214,160,.2); }
+    .pill-paused  { background: rgba(245,158,11,.1);  color: var(--warning);  border-color: rgba(245,158,11,.2); }
+    .pill-error   { background: rgba(239,68,68,.1);   color: var(--danger);   border-color: rgba(239,68,68,.2); }
+    .pill-on      { background: rgba(102,126,234,.1); color: var(--accent);   border-color: rgba(102,126,234,.2); }
+    .pill-off     { background: rgba(107,122,170,.1); color: var(--text2);    border-color: rgba(107,122,170,.2); }
 
-        /* ---- BADGES ---- */
-        .badge { display:inline-block; padding:3px 10px; border-radius:6px; font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; }
-        .badge-hot { background:rgba(255,71,87,0.15); color:var(--hot); }
-        .badge-warm { background:rgba(255,165,2,0.15); color:var(--warm); }
-        .badge-cold { background:rgba(30,144,255,0.15); color:var(--cold); }
-        .badge-sent { background:rgba(16,185,129,0.15); color:var(--success); }
-        .badge-pending { background:rgba(251,191,36,0.15); color:var(--warning); }
-        .badge-failed { background:rgba(239,68,68,0.15); color:var(--danger); }
-        .badge-sending { background:rgba(0,240,255,0.15); color:var(--neon); }
+    /* ─── CONTENT AREA ─── */
+    .content {
+        flex: 1;
+        overflow-y: auto;
+        padding: 28px;
+        min-height: 0;
+    }
 
-        /* ---- BUTTONS ---- */
-        .btn {
-            padding:8px 18px; border:none; border-radius:8px; font-size:13px; font-weight:600;
-            cursor:pointer; transition:all 0.15s; display:inline-flex; align-items:center; gap:6px;
-        }
-        .btn-primary { background:linear-gradient(135deg,var(--accent),var(--accent2)); color:#fff; }
-        .btn-primary:hover { transform:translateY(-1px); box-shadow:0 6px 20px rgba(102,126,234,0.3); }
-        .btn-success { background:var(--success); color:#fff; }
-        .btn-danger { background:var(--danger); color:#fff; }
-        .btn-ghost { background:transparent; color:var(--text2); border:1px solid var(--border); }
-        .btn-ghost:hover { border-color:var(--accent); color:var(--text); }
-        .btn-sm { padding:5px 12px; font-size:12px; }
-        .btn-icon { padding:6px 8px; }
+    .section { display: none; animation: fadeIn .18s ease; }
+    .section.active { display: block; }
+    @keyframes fadeIn { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:none} }
 
-        /* ---- FORMS ---- */
-        .form-row { display:flex; gap:16px; margin-bottom:16px; }
-        .form-group { flex:1; }
-        .form-group label { display:block; font-size:12px; color:var(--text2); margin-bottom:6px; font-weight:500; }
-        .form-group input, .form-group select, .form-group textarea {
-            width:100%; padding:10px 14px; background:var(--bg-main); border:1px solid var(--border);
-            border-radius:8px; color:var(--text); font-size:13px; font-family:inherit;
-            transition: border-color 0.2s;
-        }
-        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
-            outline:none; border-color:var(--accent);
-        }
-        .form-group textarea { resize:vertical; min-height:80px; }
+    /* ─── CARDS ─── */
+    .card {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        margin-bottom: 20px;
+    }
+    .card-header {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 18px 22px 0;
+    }
+    .card-body { padding: 18px 22px 22px; }
+    .card-title { font-size: 14px; font-weight: 700; }
+    .card-desc { font-size: 12px; color: var(--text2); margin-top: 3px; }
 
-        /* ---- TOGGLE SWITCH ---- */
-        .toggle { position:relative; width:44px; height:24px; cursor:pointer; }
-        .toggle input { display:none; }
-        .toggle-track {
-            width:100%; height:100%; background:var(--border); border-radius:12px;
-            transition:background 0.2s;
-        }
-        .toggle input:checked + .toggle-track { background:var(--success); }
-        .toggle-thumb {
-            position:absolute; top:3px; left:3px; width:18px; height:18px;
-            background:#fff; border-radius:50%; transition:transform 0.2s;
-        }
-        .toggle input:checked ~ .toggle-thumb { transform:translateX(20px); }
+    /* ─── MÉTRICAS ─── */
+    .metrics-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 14px;
+        margin-bottom: 22px;
+    }
+    .metric-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 18px 20px;
+        transition: border-color .2s, box-shadow .2s;
+    }
+    .metric-card:hover { border-color: var(--border-light); box-shadow: var(--glow); }
+    .metric-label { font-size: 11px; color: var(--text2); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; font-weight: 500; }
+    .metric-value { font-size: 30px; font-weight: 800; line-height: 1; color: var(--text); }
+    .metric-value.v-cyan    { color: var(--cyan); }
+    .metric-value.v-hot     { color: var(--hot); }
+    .metric-value.v-warm    { color: var(--warm); }
+    .metric-value.v-blue    { color: var(--cold); }
+    .metric-value.v-success { color: var(--success); }
 
-        /* ---- ALERT ---- */
-        .alert {
-            padding:12px 16px; border-radius:8px; margin-bottom:16px; font-size:13px;
-            display:flex; align-items:center; gap:8px;
-        }
-        .alert-success { background:rgba(16,185,129,0.1); border:1px solid rgba(16,185,129,0.2); color:var(--success); }
-        .alert-error { background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.2); color:var(--danger); }
-        .alert-info { background:rgba(102,126,234,0.1); border:1px solid rgba(102,126,234,0.2); color:var(--accent); }
+    /* ─── TABELA ─── */
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; }
+    th {
+        text-align: left; padding: 10px 16px;
+        font-size: 11px; color: var(--text2);
+        text-transform: uppercase; letter-spacing: .9px; font-weight: 600;
+        border-bottom: 1px solid var(--border);
+        white-space: nowrap;
+    }
+    td { padding: 13px 16px; font-size: 13px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    tr:last-child td { border-bottom: none; }
+    tbody tr:hover { background: var(--bg-hover); }
+    .td-user { display: flex; align-items: center; gap: 10px; }
+    .avatar {
+        width: 32px; height: 32px; border-radius: 50%;
+        background: linear-gradient(135deg, var(--accent), var(--accent2));
+        display: flex; align-items: center; justify-content: center;
+        font-size: 12px; font-weight: 700; color: #fff;
+        flex-shrink: 0;
+    }
+    .user-name { font-weight: 600; font-size: 13px; }
+    .user-sub  { font-size: 11px; color: var(--text2); margin-top: 1px; }
 
-        /* ---- MODAL ---- */
-        .modal-overlay {
-            position:fixed; inset:0; background:rgba(0,0,0,0.7); display:none;
-            align-items:center; justify-content:center; z-index:100;
-            backdrop-filter:blur(4px);
-        }
-        .modal-overlay.open { display:flex; }
-        .modal {
-            background:var(--bg-card); border:1px solid var(--border); border-radius:16px;
-            width:560px; max-height:80vh; overflow-y:auto; padding:28px;
-        }
-        .modal-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; }
-        .modal-close { background:none; border:none; color:var(--text2); font-size:20px; cursor:pointer; }
+    /* ─── BADGES ─── */
+    .badge {
+        display: inline-flex; align-items: center;
+        padding: 3px 9px; border-radius: 6px;
+        font-size: 11px; font-weight: 600;
+        text-transform: uppercase; letter-spacing: .4px;
+    }
+    .badge-hot      { background: rgba(255,71,87,.15);   color: var(--hot); }
+    .badge-warm     { background: rgba(255,159,67,.15);  color: var(--warm); }
+    .badge-cold     { background: rgba(77,157,224,.15);  color: var(--cold); }
+    .badge-pending  { background: rgba(245,158,11,.12);  color: var(--warning); }
+    .badge-sending  { background: rgba(0,240,255,.12);   color: var(--neon); }
+    .badge-sent     { background: rgba(16,185,129,.12);  color: var(--success); }
+    .badge-failed   { background: rgba(239,68,68,.12);   color: var(--danger); }
+    .badge-novo     { background: rgba(107,122,170,.12); color: var(--text2); }
+    .badge-converteu{ background: rgba(16,185,129,.15);  color: var(--success); }
+    .badge-negociando{ background: rgba(102,126,234,.15);color: var(--accent); }
+    .badge-respondeu{ background: rgba(6,214,160,.12);   color: var(--cyan); }
+    .badge-recusou  { background: rgba(239,68,68,.12);   color: var(--danger); }
+    .badge-ignorou  { background: rgba(107,122,170,.12); color: var(--text2); }
+    .badge-enviada  { background: rgba(16,185,129,.12);  color: var(--success); }
 
-        /* ---- EMPTY STATE ---- */
-        .empty { text-align:center; padding:60px 20px; color:var(--text2); }
-        .empty-icon { font-size:48px; margin-bottom:16px; }
-        .empty p { font-size:14px; }
+    /* ─── BOTÕES ─── */
+    .btn {
+        display: inline-flex; align-items: center; gap: 6px;
+        padding: 8px 16px; border: none; border-radius: var(--radius-sm);
+        font-size: 13px; font-weight: 600; cursor: pointer;
+        transition: all .15s; font-family: inherit; white-space: nowrap;
+    }
+    .btn svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    .btn-primary { background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #fff; }
+    .btn-primary:hover { opacity: .9; transform: translateY(-1px); box-shadow: 0 6px 18px rgba(102,126,234,.3); }
+    .btn-success { background: var(--success); color: #fff; }
+    .btn-success:hover { opacity: .9; transform: translateY(-1px); }
+    .btn-danger  { background: var(--danger); color: #fff; }
+    .btn-danger:hover { opacity: .9; }
+    .btn-ghost   { background: transparent; color: var(--text2); border: 1px solid var(--border); }
+    .btn-ghost:hover { border-color: var(--border-light); color: var(--text); }
+    .btn-sm { padding: 5px 11px; font-size: 12px; }
+    .btn-xs { padding: 3px 8px; font-size: 11px; }
 
-        /* ---- QUEUE ITEM ---- */
-        .queue-item {
-            display:flex; align-items:center; gap:16px; padding:14px 0;
-            border-bottom:1px solid var(--border);
-        }
-        .queue-item:last-child { border-bottom:none; }
-        .queue-msg {
-            flex:1; font-size:12px; color:var(--text2); max-height:40px;
-            overflow:hidden; text-overflow:ellipsis; line-height:1.5;
-        }
-        .queue-actions { display:flex; gap:6px; }
+    /* ─── FORMULÁRIOS ─── */
+    .form-grid { display: grid; gap: 14px; margin-bottom: 16px; }
+    .form-grid-2 { grid-template-columns: 1fr 1fr; }
+    .form-grid-3 { grid-template-columns: 1fr 1fr 1fr; }
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    .form-label {
+        font-size: 12px; color: var(--text2); font-weight: 500;
+    }
+    .form-input, .form-select, .form-textarea {
+        width: 100%; padding: 9px 13px;
+        background: var(--bg); border: 1px solid var(--border);
+        border-radius: var(--radius-sm); color: var(--text);
+        font-size: 13px; font-family: inherit;
+        transition: border-color .2s;
+    }
+    .form-input:focus, .form-select:focus, .form-textarea:focus {
+        outline: none; border-color: var(--accent);
+    }
+    .form-textarea { resize: vertical; min-height: 88px; line-height: 1.5; }
+    .form-hint { font-size: 11px; color: var(--text3); }
 
-        /* ---- SENDER BAR ---- */
-        .sender-bar {
-            display: flex; align-items: center; gap: 16px;
-            padding: 14px 20px; background: var(--bg-secondary);
-            border: 1px solid var(--border); border-radius: 12px;
-            margin-bottom: 20px;
-        }
-        .sender-bar .info { flex:1; }
-        .sender-bar .label { font-size:11px; color:var(--text2); text-transform:uppercase; letter-spacing:1px; }
-        .sender-bar .value { font-size:20px; font-weight:700; color:var(--cyan); }
+    /* ─── TOGGLE ─── */
+    .toggle-wrap { display: flex; align-items: center; gap: 9px; }
+    .toggle-label { font-size: 13px; color: var(--text2); font-weight: 500; }
+    .toggle { position: relative; width: 42px; height: 22px; cursor: pointer; flex-shrink: 0; }
+    .toggle input { display: none; }
+    .toggle-track {
+        width: 100%; height: 100%; border-radius: 11px;
+        background: var(--border-light); transition: background .2s;
+    }
+    .toggle input:checked + .toggle-track { background: var(--success); }
+    .toggle-thumb {
+        position: absolute; top: 3px; left: 3px;
+        width: 16px; height: 16px; border-radius: 50%;
+        background: #fff; transition: transform .2s;
+        box-shadow: 0 1px 4px rgba(0,0,0,.3);
+    }
+    .toggle input:checked ~ .toggle-thumb { transform: translateX(20px); }
 
-        /* ---- SCROLLBAR ---- */
-        ::-webkit-scrollbar { width:6px; }
-        ::-webkit-scrollbar-track { background:transparent; }
-        ::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
-        ::-webkit-scrollbar-thumb:hover { background:var(--text2); }
+    /* ─── SENDER BAR ─── */
+    .sender-bar {
+        display: flex; align-items: center; gap: 0;
+        background: var(--bg-card); border: 1px solid var(--border);
+        border-radius: var(--radius); margin-bottom: 20px;
+        overflow: hidden;
+    }
+    .sender-stat {
+        flex: 1; padding: 16px 20px; border-right: 1px solid var(--border);
+        text-align: center;
+    }
+    .sender-stat:last-of-type { border-right: 1px solid var(--border); }
+    .sender-stat-label { font-size: 10px; color: var(--text2); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; font-weight: 500; }
+    .sender-stat-value { font-size: 22px; font-weight: 800; color: var(--cyan); }
+    .sender-stat-value.v-warn { color: var(--warning); }
+    .sender-controls { padding: 16px 20px; display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+
+    /* ─── FILA DE DMs ─── */
+    .queue-list { display: flex; flex-direction: column; }
+    .queue-item {
+        display: flex; align-items: center; gap: 14px;
+        padding: 13px 0; border-bottom: 1px solid var(--border);
+    }
+    .queue-item:last-child { border-bottom: none; }
+    .queue-username { font-weight: 600; font-size: 13px; min-width: 120px; }
+    .queue-msg { flex: 1; font-size: 12px; color: var(--text2); overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.4; }
+    .queue-meta { font-size: 11px; color: var(--text3); min-width: 80px; text-align: right; }
+    .queue-actions { display: flex; gap: 6px; flex-shrink: 0; }
+
+    /* ─── ESTADO VAZIO ─── */
+    .empty-state {
+        display: flex; flex-direction: column; align-items: center;
+        padding: 56px 24px; color: var(--text2); text-align: center; gap: 12px;
+    }
+    .empty-state svg { width: 40px; height: 40px; stroke: var(--text3); fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; margin-bottom: 4px; }
+    .empty-state h3 { font-size: 15px; font-weight: 600; color: var(--text2); }
+    .empty-state p  { font-size: 13px; color: var(--text3); max-width: 280px; line-height: 1.5; }
+
+    /* ─── MODAL ─── */
+    .overlay {
+        position: fixed; inset: 0;
+        background: rgba(0,0,0,.6); backdrop-filter: blur(4px);
+        display: none; align-items: center; justify-content: center; z-index: 100;
+    }
+    .overlay.open { display: flex; }
+    .modal {
+        background: var(--bg-card); border: 1px solid var(--border);
+        border-radius: 16px; width: 560px; max-height: 85vh;
+        overflow-y: auto; padding: 28px; box-shadow: var(--shadow);
+    }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 22px; }
+    .modal-title { font-size: 16px; font-weight: 700; }
+    .modal-close { background: none; border: none; color: var(--text2); font-size: 22px; cursor: pointer; line-height: 1; padding: 2px 6px; border-radius: 4px; }
+    .modal-close:hover { background: var(--bg-hover); color: var(--text); }
+    .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 20px; }
+    .detail-item { display: flex; flex-direction: column; gap: 5px; }
+    .detail-item-label { font-size: 11px; color: var(--text2); text-transform: uppercase; letter-spacing: .8px; font-weight: 500; }
+    .msg-preview {
+        background: var(--bg); border: 1px solid var(--border);
+        border-radius: var(--radius-sm); padding: 14px; margin-top: 6px;
+        font-size: 13px; line-height: 1.65; white-space: pre-wrap; color: var(--text);
+    }
+
+    /* ─── SEPARADOR ─── */
+    .divider { height: 1px; background: var(--border); margin: 20px 0; }
+
+    /* ─── TOAST ─── */
+    .toast-container {
+        position: fixed; bottom: 24px; right: 24px;
+        display: flex; flex-direction: column; gap: 10px;
+        z-index: 999; pointer-events: none;
+    }
+    .toast {
+        display: flex; align-items: center; gap: 10px;
+        padding: 12px 18px; border-radius: var(--radius-sm);
+        font-size: 13px; font-weight: 500;
+        box-shadow: 0 8px 24px rgba(0,0,0,.4);
+        pointer-events: auto;
+        animation: slideUp .25s ease;
+        min-width: 240px; max-width: 360px;
+    }
+    @keyframes slideUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:none} }
+    .toast-success { background: #0f2a1e; border: 1px solid rgba(16,185,129,.3); color: var(--success); }
+    .toast-error   { background: #2a0f0f; border: 1px solid rgba(239,68,68,.3);  color: var(--danger); }
+    .toast-info    { background: #141c3a; border: 1px solid rgba(102,126,234,.3);color: var(--accent); }
+    .toast-icon    { font-size: 16px; flex-shrink: 0; }
+
+    /* ─── LOADING SKELETON ─── */
+    .skeleton { border-radius: 6px; background: var(--bg-hover); animation: shimmer 1.4s infinite; }
+    @keyframes shimmer { 0%,100%{opacity:.4} 50%{opacity:.8} }
+
+    /* ─── SCROLLBAR ─── */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border-light); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--text3); }
+
+    /* ─── MISC ─── */
+    .flex-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .ml-auto { margin-left: auto; }
+    .text-muted { color: var(--text2); }
+    .text-sm { font-size: 12px; }
+    .mt-4 { margin-top: 16px; }
+    .mb-0 { margin-bottom: 0 !important; }
+    .info-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+    .info-row:last-child { border-bottom: none; }
     </style>
 </head>
 <body>
-    <!-- SIDEBAR -->
+<div class="app">
+
+    <!-- ═══════════════════ SIDEBAR ═══════════════════ -->
     <nav class="sidebar">
-        <div class="brand">
-            <div class="brand-icon">P</div>
-            <span class="brand-text">Prismatic Labs</span>
+        <div class="sidebar-brand">
+            <div class="brand-logo">P</div>
+            <div class="brand-info">
+                <div class="brand-name">Prismatic Labs</div>
+                <div class="brand-sub">Vendedor AI v2.0</div>
+            </div>
         </div>
-        <div class="nav-item active" data-section="leads">
-            <span class="nav-icon">&#9783;</span>
-            <span class="nav-label">Leads</span>
+
+        <div class="sidebar-nav">
+            <span class="nav-section-label">Principal</span>
+
+            <div class="nav-item active" data-section="leads">
+                <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
+                <span>Leads</span>
+            </div>
+
+            <div class="nav-item" data-section="queue">
+                <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.35 2 2 0 0 1 3.6 1h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 8.7a16 16 0 0 0 6.39 6.39l.94-.94a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg></span>
+                <span>Fila de DMs</span>
+                <span class="nav-badge" id="queueBadge" style="display:none">0</span>
+            </div>
+
+            <div class="nav-item" data-section="autopilot">
+                <span class="nav-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07M8.46 8.46a5 5 0 0 0 0 7.07"/></svg></span>
+                <span>Autopilot</span>
+            </div>
+
+            <span class="nav-section-label">Dados</span>
+
+            <div class="nav-item" data-section="tracker">
+                <span class="nav-icon"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></span>
+                <span>Registrar Resultado</span>
+            </div>
+
+            <div class="nav-item" data-section="stats">
+                <span class="nav-icon"><svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span>
+                <span>Análise</span>
+            </div>
         </div>
-        <div class="nav-item" data-section="queue">
-            <span class="nav-icon">&#9993;</span>
-            <span class="nav-label">DM Queue</span>
-            <span class="nav-badge" id="queueBadge" style="display:none">0</span>
-        </div>
-        <div class="nav-item" data-section="autopilot">
-            <span class="nav-icon">&#9881;</span>
-            <span class="nav-label">Autopilot</span>
-        </div>
-        <div class="nav-divider"></div>
-        <div class="nav-item" data-section="tracker">
-            <span class="nav-icon">&#8982;</span>
-            <span class="nav-label">Tracker</span>
-        </div>
-        <div class="nav-item" data-section="stats">
-            <span class="nav-icon">&#9636;</span>
-            <span class="nav-label">Analytics</span>
+
+        <div class="sidebar-footer">
+            <div class="version-tag">Prismatic Labs © 2026</div>
         </div>
     </nav>
 
-    <!-- MAIN CONTENT -->
+    <!-- ═══════════════════ MAIN ═══════════════════ -->
     <div class="main">
+
         <!-- TOPBAR -->
         <header class="topbar">
-            <div class="topbar-left">
-                <h1 id="pageTitle">Leads Pipeline</h1>
-                <p id="pageSubtitle">Vendedor AI v2.0 Cockpit</p>
-            </div>
-            <div class="topbar-right">
-                <div class="status-pill" id="senderStatus">
-                    <span class="status-dot pulse"></span>
-                    <span>Sender: idle</span>
+            <div class="topbar-title" id="pageTitle">Leads Pipeline</div>
+            <div class="topbar-pills">
+                <div class="pill pill-idle" id="senderPill">
+                    <span class="pill-dot"></span>
+                    <span id="senderPillText">Disparador: aguardando</span>
                 </div>
-                <div class="status-pill" id="autopilotStatus">
-                    <span class="status-dot"></span>
-                    <span>Autopilot: off</span>
+                <div class="pill pill-off" id="autopilotPill">
+                    <span class="pill-dot"></span>
+                    <span id="autopilotPillText">Autopilot: desativado</span>
                 </div>
             </div>
         </header>
 
+        <!-- CONTENT -->
         <div class="content">
-            <!-- =================== LEADS SECTION =================== -->
+
+            <!-- ══════════ LEADS ══════════ -->
             <div id="section-leads" class="section active">
-                <div class="metrics-row" id="leadsMetrics"></div>
+                <div class="metrics-grid" id="leadsMetrics">
+                    <!-- preenchido por JS -->
+                </div>
                 <div class="card">
                     <div class="card-header">
-                        <span class="card-title">Todos os Leads</span>
-                        <div style="display:flex;gap:8px">
-                            <select id="filterPriority" style="padding:6px 10px;background:var(--bg-main);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px">
-                                <option value="all">Todos</option>
-                                <option value="hot">Hot</option>
-                                <option value="warm">Warm</option>
-                                <option value="cold">Cold</option>
+                        <div>
+                            <div class="card-title">Todos os Leads</div>
+                            <div class="card-desc">Leads gerados pelo Autopilot e analisados pela IA</div>
+                        </div>
+                        <div class="flex-row">
+                            <select id="filterPriority" class="form-select" style="width:auto;padding:6px 10px;font-size:12px">
+                                <option value="all">Todas as prioridades</option>
+                                <option value="hot">🔥 Hot</option>
+                                <option value="warm">⚡ Warm</option>
+                                <option value="cold">❄️ Cold</option>
                             </select>
-                            <button class="btn btn-sm btn-ghost" onclick="loadLeads()">Atualizar</button>
+                            <button class="btn btn-sm btn-ghost" onclick="loadLeads()">
+                                <svg viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.95"/></svg>
+                                Atualizar
+                            </button>
                         </div>
                     </div>
-                    <div class="table-wrap" id="leadsTableContainer"></div>
+                    <div class="card-body" style="padding-top:12px">
+                        <div class="table-wrap" id="leadsTableWrap"></div>
+                    </div>
                 </div>
             </div>
 
-            <!-- =================== DM QUEUE SECTION =================== -->
+            <!-- ══════════ FILA DE DMs ══════════ -->
             <div id="section-queue" class="section">
+                <!-- Status bar do disparador -->
                 <div class="sender-bar">
-                    <div class="info">
-                        <div class="label">Enviadas Hoje</div>
-                        <div class="value" id="sentToday">0/15</div>
+                    <div class="sender-stat">
+                        <div class="sender-stat-label">Enviadas Hoje</div>
+                        <div class="sender-stat-value" id="statSentToday">0/15</div>
                     </div>
-                    <div class="info">
-                        <div class="label">Na Fila</div>
-                        <div class="value" id="queuePending">0</div>
+                    <div class="sender-stat">
+                        <div class="sender-stat-label">Aguardando</div>
+                        <div class="sender-stat-value" id="statPending">0</div>
                     </div>
-                    <div class="info">
-                        <div class="label">Status</div>
-                        <div class="value" id="senderStatusText">idle</div>
+                    <div class="sender-stat">
+                        <div class="sender-stat-label">Status</div>
+                        <div class="sender-stat-value" id="statSenderStatus" style="font-size:15px;padding-top:4px">aguardando</div>
                     </div>
-                    <div style="display:flex;align-items:center;gap:12px">
-                        <label class="toggle" title="Ativar/Desativar Sender">
-                            <input type="checkbox" id="senderToggle" onchange="toggleSender(this.checked)">
-                            <div class="toggle-track"></div>
-                            <div class="toggle-thumb"></div>
-                        </label>
-                        <button class="btn btn-sm btn-primary" onclick="startSender()">Enviar Batch</button>
+                    <div class="sender-controls">
+                        <div class="toggle-wrap">
+                            <label class="toggle" title="Ativar disparador">
+                                <input type="checkbox" id="senderToggle" onchange="toggleSender(this.checked)">
+                                <div class="toggle-track"></div>
+                                <div class="toggle-thumb"></div>
+                            </label>
+                            <span class="toggle-label">Ativar</span>
+                        </div>
+                        <button class="btn btn-sm btn-primary" onclick="startSender()">Disparar Lote</button>
+                    </div>
+                </div>
+
+                <div class="card mb-0">
+                    <div class="card-header">
+                        <div>
+                            <div class="card-title">Fila de Envio</div>
+                            <div class="card-desc">DMs aguardando disparo automático</div>
+                        </div>
+                        <button class="btn btn-sm btn-ghost" onclick="loadQueue()">
+                            <svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.95"/></svg>
+                            Atualizar
+                        </button>
+                    </div>
+                    <div class="card-body" style="padding-top:10px">
+                        <div id="queueList"></div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header"><div class="card-title">Adicionar DM Manual</div></div>
+                    <div class="card-body">
+                        <div id="queueAlert"></div>
+                        <div class="form-grid form-grid-2">
+                            <div class="form-group">
+                                <label class="form-label">Username (sem @)</label>
+                                <input class="form-input" type="text" id="q-user" placeholder="ex: joao.silva">
+                            </div>
+                            <div class="form-group" style="grid-column:1/-1">
+                                <label class="form-label">Mensagem</label>
+                                <textarea class="form-textarea" id="q-msg" placeholder="Texto da DM..."></textarea>
+                            </div>
+                        </div>
+                        <button class="btn btn-primary" onclick="addToQueue()">Adicionar à Fila</button>
                     </div>
                 </div>
 
                 <div class="card">
                     <div class="card-header">
-                        <span class="card-title">Fila de DMs</span>
-                        <button class="btn btn-sm btn-ghost" onclick="loadQueue()">Atualizar</button>
+                        <div>
+                            <div class="card-title">Configurações do Disparador</div>
+                            <div class="card-desc">Ajuste o comportamento do envio automático</div>
+                        </div>
                     </div>
-                    <div id="queueList"></div>
-                </div>
-
-                <div class="card">
-                    <div class="card-header">
-                        <span class="card-title">Adicionar DM Manual</span>
+                    <div class="card-body">
+                        <div class="form-grid form-grid-3">
+                            <div class="form-group">
+                                <label class="form-label">Máx. DMs por dia</label>
+                                <input class="form-input" type="number" id="cfg-maxDay" value="15">
+                                <span class="form-hint">Recomendado: até 15</span>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Intervalo mín. (seg)</label>
+                                <input class="form-input" type="number" id="cfg-delayMin" value="180">
+                                <span class="form-hint">Entre envios</span>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Intervalo máx. (seg)</label>
+                                <input class="form-input" type="number" id="cfg-delayMax" value="480">
+                                <span class="form-hint">Variação humana</span>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Digitação mín. (ms/char)</label>
+                                <input class="form-input" type="number" id="cfg-typeMin" value="50">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Digitação máx. (ms/char)</label>
+                                <input class="form-input" type="number" id="cfg-typeMax" value="150">
+                            </div>
+                        </div>
+                        <button class="btn btn-ghost" onclick="saveSenderConfig()">Salvar Configurações</button>
                     </div>
-                    <div id="queueAlert"></div>
-                    <div class="form-row">
-                        <div class="form-group"><label>Username</label><input type="text" id="q-user" placeholder="sem @"></div>
-                    </div>
-                    <div class="form-group"><label>Mensagem</label><textarea id="q-msg" placeholder="Texto da DM..."></textarea></div>
-                    <button class="btn btn-primary" onclick="addToQueue()">Adicionar na Fila</button>
-                </div>
-
-                <div class="card">
-                    <div class="card-header"><span class="card-title">Config do Sender</span></div>
-                    <div class="form-row">
-                        <div class="form-group"><label>Max DMs/dia</label><input type="number" id="cfg-maxDay" value="15"></div>
-                        <div class="form-group"><label>Delay Min (seg)</label><input type="number" id="cfg-delayMin" value="180"></div>
-                        <div class="form-group"><label>Delay Max (seg)</label><input type="number" id="cfg-delayMax" value="480"></div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group"><label>Typing Min (ms)</label><input type="number" id="cfg-typeMin" value="50"></div>
-                        <div class="form-group"><label>Typing Max (ms)</label><input type="number" id="cfg-typeMax" value="150"></div>
-                    </div>
-                    <button class="btn btn-ghost" onclick="saveSenderConfig()">Salvar Config</button>
                 </div>
             </div>
 
-            <!-- =================== AUTOPILOT SECTION =================== -->
+            <!-- ══════════ AUTOPILOT ══════════ -->
             <div id="section-autopilot" class="section">
                 <div class="card">
-                    <div class="card-header"><span class="card-title">Pipeline Autopilot</span></div>
-                    <div id="autopilotAlert"></div>
-                    <div class="form-row">
-                        <div class="form-group"><label>Nicho / Hashtag</label><input type="text" id="ap-nicho" placeholder="automacao n8n" value="automacao n8n"></div>
-                        <div class="form-group"><label>Qtd Leads</label><input type="number" id="ap-qtd" value="20"></div>
-                        <div class="form-group"><label>Max Analyze</label><input type="number" id="ap-max" value="8"></div>
-                    </div>
-                    <div style="display:flex;gap:10px">
-                        <button class="btn btn-primary" onclick="runAutopilot()">Iniciar Pipeline</button>
-                        <label class="toggle" style="display:flex;align-items:center;gap:8px" title="Autopilot ativo">
-                            <input type="checkbox" id="ap-toggle" onchange="toggleAutopilot(this.checked)">
-                            <div class="toggle-track"></div>
-                            <div class="toggle-thumb"></div>
-                            <span style="font-size:12px;color:var(--text2)">Auto</span>
-                        </label>
-                    </div>
-                </div>
-            </div>
-
-            <!-- =================== TRACKER SECTION =================== -->
-            <div id="section-tracker" class="section">
-                <div class="card">
-                    <div class="card-header"><span class="card-title">Registrar Outcome</span></div>
-                    <div id="trackerAlert"></div>
-                    <div class="form-row">
-                        <div class="form-group"><label>Username (sem @)</label><input type="text" id="trk-user" placeholder="usuario"></div>
-                        <div class="form-group">
-                            <label>Ação</label>
-                            <select id="trk-action">
-                                <option value="sent">Mensagem Enviada</option>
-                                <option value="respondeu">Respondeu</option>
-                                <option value="ignorou">Ignorou</option>
-                                <option value="negociando">Em Negociação</option>
-                                <option value="converteu">Converteu</option>
-                                <option value="recusou">Recusou</option>
-                            </select>
+                    <div class="card-header">
+                        <div>
+                            <div class="card-title">Pipeline Autopilot</div>
+                            <div class="card-desc">Prospecção automatizada: scraping → análise → copywriting</div>
                         </div>
                     </div>
-                    <div class="form-group"><label>Extra (nota ou R$)</label><input type="text" id="trk-extra" placeholder="Opcional"></div>
-                    <button class="btn btn-success" onclick="submitTracker()">Registrar</button>
+                    <div class="card-body">
+                        <div id="autopilotAlert"></div>
+                        <div class="form-grid form-grid-3">
+                            <div class="form-group" style="grid-column:1/-1">
+                                <label class="form-label">Nicho / Hashtag alvo</label>
+                                <input class="form-input" type="text" id="ap-nicho" placeholder="ex: automacao n8n, marketing digital" value="automacao n8n">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Leads a prospectar</label>
+                                <input class="form-input" type="number" id="ap-qtd" value="20">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Máx. para analisar</label>
+                                <input class="form-input" type="number" id="ap-max" value="8">
+                                <span class="form-hint">Controla custo de IA</span>
+                            </div>
+                        </div>
+                        <div class="flex-row">
+                            <button class="btn btn-primary" onclick="runAutopilot()">
+                                <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                                Iniciar Pipeline
+                            </button>
+                            <div class="toggle-wrap">
+                                <label class="toggle">
+                                    <input type="checkbox" id="ap-toggle" onchange="toggleAutopilot(this.checked)">
+                                    <div class="toggle-track"></div>
+                                    <div class="toggle-thumb"></div>
+                                </label>
+                                <span class="toggle-label">Agendamento automático (08h diário)</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <!-- =================== STATS SECTION =================== -->
-            <div id="section-stats" class="section">
-                <div class="metrics-row" id="statsMetrics"></div>
+            <!-- ══════════ TRACKER ══════════ -->
+            <div id="section-tracker" class="section">
                 <div class="card">
-                    <div class="card-header"><span class="card-title">Learning System</span></div>
-                    <div id="learningData"><p style="color:var(--text2)">Carregando...</p></div>
+                    <div class="card-header">
+                        <div>
+                            <div class="card-title">Registrar Resultado</div>
+                            <div class="card-desc">Atualize o status de um lead após interação manual</div>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div id="trackerAlert"></div>
+                        <div class="form-grid form-grid-2">
+                            <div class="form-group">
+                                <label class="form-label">Username (sem @)</label>
+                                <input class="form-input" type="text" id="trk-user" placeholder="ex: joao.silva">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Resultado</label>
+                                <select class="form-select" id="trk-action">
+                                    <option value="sent">DM Enviada</option>
+                                    <option value="respondeu">Respondeu</option>
+                                    <option value="ignorou">Ignorou</option>
+                                    <option value="negociando">Em Negociação</option>
+                                    <option value="converteu">Converteu ✓</option>
+                                    <option value="recusou">Recusou</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="grid-column:1/-1">
+                                <label class="form-label">Observação (opcional)</label>
+                                <input class="form-input" type="text" id="trk-extra" placeholder="Nota ou valor da venda (ex: R$ 500)">
+                            </div>
+                        </div>
+                        <button class="btn btn-success" onclick="submitTracker()">Registrar</button>
+                    </div>
                 </div>
             </div>
-        </div>
-    </div>
 
-    <!-- LEAD DETAIL MODAL -->
-    <div class="modal-overlay" id="leadModal">
-        <div class="modal">
-            <div class="modal-header">
-                <span class="card-title" id="modalTitle">Lead Details</span>
-                <button class="modal-close" onclick="closeModal()">&times;</button>
+            <!-- ══════════ ANÁLISE ══════════ -->
+            <div id="section-stats" class="section">
+                <div class="metrics-grid" id="statsMetrics"></div>
+                <div class="card">
+                    <div class="card-header">
+                        <div>
+                            <div class="card-title">Sistema de Aprendizado</div>
+                            <div class="card-desc">Dados do modelo de scoring e copywriting adaptativo</div>
+                        </div>
+                    </div>
+                    <div class="card-body" id="learningData">
+                        <p class="text-muted text-sm">Carregando...</p>
+                    </div>
+                </div>
             </div>
-            <div id="modalBody"></div>
+
+        </div><!-- /content -->
+    </div><!-- /main -->
+</div><!-- /app -->
+
+<!-- ═══════════════════ MODAL LEAD ═══════════════════ -->
+<div class="overlay" id="leadModal">
+    <div class="modal">
+        <div class="modal-header">
+            <span class="modal-title" id="modalTitle">Detalhes do Lead</span>
+            <button class="modal-close" onclick="closeModal()">×</button>
         </div>
+        <div id="modalBody"></div>
     </div>
+</div>
 
-    <script>
-    // =================== STATE ===================
-    let leadsData = [];
-    let queueData = [];
-    let senderConfig = {};
+<!-- TOAST CONTAINER -->
+<div class="toast-container" id="toastContainer"></div>
 
-    // =================== NAVIGATION ===================
-    const titles = {
-        leads:'Leads Pipeline', queue:'DM Queue', autopilot:'Autopilot',
-        tracker:'Tracker', stats:'Analytics'
-    };
-    document.querySelectorAll('.nav-item').forEach(item => {
-        item.addEventListener('click', () => {
-            const s = item.dataset.section;
-            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
-            item.classList.add('active');
-            document.querySelectorAll('.section').forEach(x => x.classList.remove('active'));
-            document.getElementById(`section-${s}`).classList.add('active');
-            document.getElementById('pageTitle').textContent = titles[s] || s;
-            if (s === 'stats') loadStats();
-            if (s === 'queue') loadQueue();
-        });
+<script>
+// ══════════════════════════════════════════════
+//  TOAST NOTIFICATIONS
+// ══════════════════════════════════════════════
+function toast(msg, type = 'success', duration = 4000) {
+    const icons = { success: '✓', error: '✕', info: 'ℹ' };
+    const el = document.createElement('div');
+    el.className = `toast toast-${type}`;
+    el.innerHTML = `<span class="toast-icon">${icons[type]||'ℹ'}</span><span>${msg}</span>`;
+    const container = document.getElementById('toastContainer');
+    container.appendChild(el);
+    setTimeout(() => { el.style.opacity='0'; el.style.transition='opacity .3s'; setTimeout(()=>el.remove(), 300); }, duration);
+}
+
+// ══════════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════════
+let leadsData = [];
+let queueData = [];
+let senderConfig = {};
+
+// ══════════════════════════════════════════════
+//  NAVEGAÇÃO
+// ══════════════════════════════════════════════
+const pageTitles = {
+    leads:    'Leads Pipeline',
+    queue:    'Fila de DMs',
+    autopilot:'Autopilot',
+    tracker:  'Registrar Resultado',
+    stats:    'Análise'
+};
+
+document.querySelectorAll('.nav-item[data-section]').forEach(item => {
+    item.addEventListener('click', () => {
+        const s = item.dataset.section;
+        document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+        item.classList.add('active');
+        document.querySelectorAll('.section').forEach(x => x.classList.remove('active'));
+        document.getElementById(`section-${s}`).classList.add('active');
+        document.getElementById('pageTitle').textContent = pageTitles[s] || s;
+        if (s === 'stats')  loadStats();
+        if (s === 'queue')  loadQueue();
+        if (s === 'leads')  loadLeads();
     });
+});
 
-    // =================== API HELPERS ===================
-    async function api(url, opts) {
-        const r = await fetch(url, { headers:{'Content-Type':'application/json'}, ...opts });
-        return r.json();
+// ══════════════════════════════════════════════
+//  API HELPERS
+// ══════════════════════════════════════════════
+async function api(url, opts = {}) {
+    try {
+        const r = await fetch(url, { headers: {'Content-Type':'application/json'}, ...opts });
+        return await r.json();
+    } catch(e) {
+        console.error('API error:', url, e);
+        return { ok: false, error: 'Erro de conexão com o servidor' };
     }
-    const post = (url, body) => api(url, { method:'POST', body:JSON.stringify(body) });
+}
+const post = (url, body) => api(url, { method:'POST', body: JSON.stringify(body) });
 
-    function showAlert(id, msg, type='success') {
-        document.getElementById(id).innerHTML = `<div class="alert alert-${type}">${msg}</div>`;
-        setTimeout(() => { document.getElementById(id).innerHTML = ''; }, 5000);
+// ══════════════════════════════════════════════
+//  LEADS
+// ══════════════════════════════════════════════
+async function loadLeads() {
+    const data = await api('/api/leads');
+    leadsData = data.leads || [];
+    renderMetrics(leadsData);
+    renderLeadsTable(leadsData);
+}
+
+function renderMetrics(leads) {
+    const total    = leads.length;
+    const hot      = leads.filter(l => l.prioridade === 'hot').length;
+    const warm     = leads.filter(l => l.prioridade === 'warm').length;
+    const enviadas = leads.filter(l => l.dm_enviada || l.outcome === 'enviada').length;
+    const convert  = leads.filter(l => l.outcome === 'converteu').length;
+
+    document.getElementById('leadsMetrics').innerHTML = `
+        <div class="metric-card">
+            <div class="metric-label">Total de Leads</div>
+            <div class="metric-value v-cyan">${total}</div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-label">🔥 Hot</div>
+            <div class="metric-value v-hot">${hot}</div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-label">⚡ Warm</div>
+            <div class="metric-value v-warm">${warm}</div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-label">DMs Enviadas</div>
+            <div class="metric-value">${enviadas}</div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-label">Convertidos</div>
+            <div class="metric-value v-success">${convert}</div>
+        </div>
+    `;
+}
+
+function renderLeadsTable(leads) {
+    const filter   = document.getElementById('filterPriority').value;
+    const filtered = filter === 'all' ? leads : leads.filter(l => l.prioridade === filter);
+
+    if (!filtered.length) {
+        document.getElementById('leadsTableWrap').innerHTML = `
+            <div class="empty-state">
+                <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                <h3>Nenhum lead encontrado</h3>
+                <p>Inicie o Autopilot para começar a prospectar leads no Instagram.</p>
+            </div>`;
+        return;
     }
 
-    // =================== LEADS ===================
-    async function loadLeads() {
-        const data = await api('/api/leads');
-        leadsData = data.leads || [];
-        renderLeadsMetrics(leadsData);
-        renderLeadsTable(leadsData);
-    }
+    const outcomeClass = (o) => {
+        const map = { converteu:'converteu', enviada:'enviada', negociando:'negociando', respondeu:'respondeu', recusou:'recusou', ignorou:'ignorou' };
+        return map[o] || 'novo';
+    };
 
-    function renderLeadsMetrics(leads) {
-        const t = leads.length;
-        const h = leads.filter(l=>l.prioridade==='hot').length;
-        const w = leads.filter(l=>l.prioridade==='warm').length;
-        const c = leads.filter(l=>l.dm_enviada).length;
-        const f = leads.filter(l=>l.outcome==='converteu').length;
-        document.getElementById('leadsMetrics').innerHTML = `
-            <div class="metric"><div class="metric-label">Total Leads</div><div class="metric-value">${t}</div></div>
-            <div class="metric"><div class="metric-label">Hot</div><div class="metric-value hot">${h}</div></div>
-            <div class="metric"><div class="metric-label">Warm</div><div class="metric-value warm">${w}</div></div>
-            <div class="metric"><div class="metric-label">DM Enviada</div><div class="metric-value">${c}</div></div>
-            <div class="metric"><div class="metric-label">Convertidos</div><div class="metric-value success">${f}</div></div>
-        `;
-    }
+    document.getElementById('leadsTableWrap').innerHTML = `
+        <table>
+            <thead>
+                <tr>
+                    <th>Lead</th>
+                    <th>Prioridade</th>
+                    <th>Score</th>
+                    <th>Resultado</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${filtered.map(l => `
+                <tr>
+                    <td>
+                        <div class="td-user">
+                            <div class="avatar">${(l.username||'?')[0].toUpperCase()}</div>
+                            <div>
+                                <div class="user-name">@${l.username}</div>
+                                <div class="user-sub">${l.nicho||'—'}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td><span class="badge badge-${l.prioridade||'cold'}">${l.prioridade||'cold'}</span></td>
+                    <td><strong style="font-size:15px">${l.score||0}</strong><span class="text-muted text-sm">/100</span></td>
+                    <td>
+                        ${l.outcome
+                            ? `<span class="badge badge-${outcomeClass(l.outcome)}">${l.outcome}</span>`
+                            : `<span class="text-muted text-sm">—</span>`}
+                    </td>
+                    <td>
+                        <div class="flex-row">
+                            <button class="btn btn-xs btn-ghost" onclick="viewLead('${l.username}')">Detalhes</button>
+                            ${l.mensagem_final
+                                ? `<button class="btn btn-xs btn-primary" onclick="enqueueLead('${l.username}')">Agendar DM</button>`
+                                : ''}
+                        </div>
+                    </td>
+                </tr>`).join('')}
+            </tbody>
+        </table>`;
+}
 
-    function renderLeadsTable(leads) {
-        const filter = document.getElementById('filterPriority').value;
-        const filtered = filter === 'all' ? leads : leads.filter(l => l.prioridade === filter);
+document.getElementById('filterPriority').addEventListener('change', () => renderLeadsTable(leadsData));
 
-        if (!filtered.length) {
-            document.getElementById('leadsTableContainer').innerHTML = '<div class="empty"><div class="empty-icon">&#128173;</div><p>Nenhum lead encontrado</p></div>';
-            return;
-        }
-        document.getElementById('leadsTableContainer').innerHTML = `<table>
-            <thead><tr><th>Lead</th><th>Prioridade</th><th>Score</th><th>Status</th><th>Outcome</th><th>Ações</th></tr></thead>
-            <tbody>${filtered.map(l => `<tr>
-                <td><div class="user-cell"><div class="user-avatar">${(l.username||'?')[0].toUpperCase()}</div><div><strong>@${l.username}</strong><br><span style="font-size:11px;color:var(--text2)">${l.nicho||''}</span></div></div></td>
-                <td><span class="badge badge-${l.prioridade}">${l.prioridade}</span></td>
-                <td style="font-weight:700">${l.score||0}</td>
-                <td><span class="badge badge-sent">${l.status||'novo'}</span></td>
-                <td>${l.outcome ? `<span class="badge badge-${l.outcome==='converteu'?'sent':l.outcome==='enviada'?'pending':'failed'}">${l.outcome}</span>` : '<span style="color:var(--text2)">-</span>'}</td>
-                <td style="display:flex;gap:6px;flex-wrap:wrap">
-                    <button class="btn btn-sm btn-ghost" onclick="viewLead('${l.username}')">Detalhes</button>
-                    ${l.mensagem_final ? `<button class="btn btn-sm btn-primary" onclick="enqueueLead('${l.username}')">Enfileirar DM</button>` : ''}
-                </td>
-            </tr>`).join('')}</tbody></table>`;
-    }
-
-    document.getElementById('filterPriority').addEventListener('change', () => renderLeadsTable(leadsData));
-
-    function viewLead(username) {
-        const l = leadsData.find(x => x.username === username);
-        if (!l) return;
-        document.getElementById('modalTitle').textContent = `@${l.username}`;
-        document.getElementById('modalBody').innerHTML = `
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px">
-                <div><span style="color:var(--text2);font-size:12px">Prioridade</span><br><span class="badge badge-${l.prioridade}">${l.prioridade}</span></div>
-                <div><span style="color:var(--text2);font-size:12px">Score</span><br><strong style="font-size:24px">${l.score||0}/100</strong></div>
-                <div><span style="color:var(--text2);font-size:12px">Nicho</span><br>${l.nicho||'N/A'}</div>
-                <div><span style="color:var(--text2);font-size:12px">Status</span><br>${l.status||'novo'}</div>
+function viewLead(username) {
+    const l = leadsData.find(x => x.username === username);
+    if (!l) return;
+    document.getElementById('modalTitle').textContent = `@${l.username}`;
+    const msgEscaped = (l.mensagem_final || '').replace(/`/g, '\\`').replace(/\\/g, '\\\\');
+    document.getElementById('modalBody').innerHTML = `
+        <div class="detail-grid">
+            <div class="detail-item">
+                <span class="detail-item-label">Prioridade</span>
+                <span class="badge badge-${l.prioridade||'cold'}" style="width:fit-content">${l.prioridade||'cold'}</span>
             </div>
-            ${l.mensagem_final ? `<div style="margin-bottom:16px"><span style="color:var(--text2);font-size:12px">DM Final (Reviewer)</span><div style="background:var(--bg-main);border:1px solid var(--border);border-radius:8px;padding:14px;margin-top:6px;font-size:13px;line-height:1.6;white-space:pre-wrap">${l.mensagem_final}</div></div>` : ''}
-            ${l.followups?.length ? `<div style="margin-bottom:16px"><span style="color:var(--text2);font-size:12px">Follow-ups</span>${l.followups.map(f => `<div style="background:var(--bg-main);border:1px solid var(--border);border-radius:8px;padding:10px;margin-top:6px;font-size:12px"><strong>Dia ${f.dia}:</strong> ${f.texto}</div>`).join('')}</div>` : ''}
-            <div style="display:flex;gap:8px;margin-top:16px">
-                ${l.mensagem_final ? `<button class="btn btn-primary" onclick="enqueueLead('${l.username}');closeModal()">Enfileirar DM</button>` : ''}
-                <button class="btn btn-ghost" onclick="copyText('${(l.mensagem_final||'').replace(/'/g,"\\'")}')">Copiar Mensagem</button>
+            <div class="detail-item">
+                <span class="detail-item-label">Score</span>
+                <strong style="font-size:22px">${l.score||0}<span class="text-muted" style="font-size:14px;font-weight:400">/100</span></strong>
             </div>
-        `;
-        document.getElementById('leadModal').classList.add('open');
-    }
-
-    function closeModal() { document.getElementById('leadModal').classList.remove('open'); }
-    document.getElementById('leadModal').addEventListener('click', e => { if (e.target.classList.contains('modal-overlay')) closeModal(); });
-
-    function copyText(t) { navigator.clipboard.writeText(t).then(() => alert('Copiado!')); }
-
-    async function enqueueLead(username) {
-        const data = await post('/api/dm-queue/enqueue-lead', { username });
-        if (data.ok) {
-            showAlert('queueAlert', `DM para @${username} adicionada na fila`);
-            loadQueue();
-        } else {
-            alert('Erro: ' + (data.error||'Desconhecido'));
-        }
-    }
-
-    // =================== DM QUEUE ===================
-    async function loadQueue() {
-        const data = await api('/api/dm-queue');
-        queueData = data.queue || [];
-        senderConfig = data.sender || {};
-
-        // Update sender bar
-        document.getElementById('sentToday').textContent = `${senderConfig.today_count||0}/${senderConfig.max_per_day||15}`;
-        document.getElementById('queuePending').textContent = (data.stats?.pending||0);
-        document.getElementById('senderStatusText').textContent = senderConfig.status || 'idle';
-        document.getElementById('senderToggle').checked = senderConfig.enabled || false;
-
-        // Config fields
-        document.getElementById('cfg-maxDay').value = senderConfig.max_per_day || 15;
-        document.getElementById('cfg-delayMin').value = senderConfig.delay_between_min_sec || 180;
-        document.getElementById('cfg-delayMax').value = senderConfig.delay_between_max_sec || 480;
-        document.getElementById('cfg-typeMin').value = senderConfig.typing_speed_min_ms || 50;
-        document.getElementById('cfg-typeMax').value = senderConfig.typing_speed_max_ms || 150;
-
-        // Badge
-        const badge = document.getElementById('queueBadge');
-        const pending = data.stats?.pending || 0;
-        badge.textContent = pending;
-        badge.style.display = pending > 0 ? 'block' : 'none';
-
-        // Update topbar sender status
-        updateSenderPill(senderConfig);
-
-        // Render queue
-        renderQueue(queueData);
-    }
-
-    function renderQueue(items) {
-        if (!items.length) {
-            document.getElementById('queueList').innerHTML = '<div class="empty"><div class="empty-icon">&#9993;</div><p>Fila vazia</p></div>';
-            return;
-        }
-        document.getElementById('queueList').innerHTML = items.map(i => `
-            <div class="queue-item">
-                <div class="user-avatar" style="min-width:32px">${(i.username||'?')[0].toUpperCase()}</div>
-                <div style="min-width:100px"><strong>@${i.username}</strong></div>
-                <span class="badge badge-${i.status}">${i.status}</span>
-                <div class="queue-msg">${i.message}</div>
-                <div class="queue-actions">
-                    ${i.status === 'pending' ? `<button class="btn btn-sm btn-danger" onclick="removeFromQueue('${i.id}')">Remover</button>` : ''}
-                    ${i.status === 'failed' ? `<button class="btn btn-sm btn-ghost" onclick="retryQueue('${i.id}')">Retry</button>` : ''}
-                </div>
+            <div class="detail-item">
+                <span class="detail-item-label">Nicho</span>
+                <span>${l.nicho||'—'}</span>
             </div>
-        `).join('');
-    }
+            <div class="detail-item">
+                <span class="detail-item-label">Status</span>
+                <span>${l.status||'novo'}</span>
+            </div>
+        </div>
 
-    function updateSenderPill(cfg) {
-        const pill = document.getElementById('senderStatus');
-        const st = cfg.status || 'idle';
-        pill.className = 'status-pill' + (st==='running'?' ':st==='error'||st==='paused'?' error':' warning');
-        pill.innerHTML = `<span class="status-dot ${st==='running'?'pulse':''}"></span><span>Sender: ${st}</span>`;
-    }
+        ${l.mensagem_final ? `
+        <div style="margin-bottom:18px">
+            <span class="detail-item-label">Mensagem gerada pela IA</span>
+            <div class="msg-preview">${l.mensagem_final}</div>
+        </div>` : ''}
 
-    async function toggleSender(enabled) {
-        await post('/api/sender/config', { enabled });
+        ${l.followups?.length ? `
+        <div style="margin-bottom:18px">
+            <span class="detail-item-label">Follow-ups</span>
+            ${l.followups.map(f => `
+            <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-top:8px">
+                <span class="text-muted text-sm">Dia ${f.dia}:</span>
+                <p style="font-size:13px;margin-top:4px;line-height:1.5">${f.texto}</p>
+            </div>`).join('')}
+        </div>` : ''}
+
+        <div class="divider"></div>
+        <div class="flex-row">
+            ${l.mensagem_final ? `
+            <button class="btn btn-primary" onclick="enqueueLead('${l.username}');closeModal()">Agendar DM</button>
+            <button class="btn btn-ghost" onclick="copyToClipboard(\`${msgEscaped}\`)">Copiar Mensagem</button>` : ''}
+        </div>`;
+    document.getElementById('leadModal').classList.add('open');
+}
+
+function closeModal() { document.getElementById('leadModal').classList.remove('open'); }
+document.getElementById('leadModal').addEventListener('click', e => {
+    if (e.target === e.currentTarget) closeModal();
+});
+
+function copyToClipboard(text) {
+    navigator.clipboard.writeText(text)
+        .then(() => toast('Mensagem copiada!', 'success'))
+        .catch(() => toast('Erro ao copiar', 'error'));
+}
+
+async function enqueueLead(username) {
+    const data = await post('/api/dm-queue/enqueue-lead', { username });
+    if (data.ok) {
+        toast(`DM para @${username} agendada com sucesso`, 'success');
         loadQueue();
+    } else {
+        toast('Erro: ' + (data.error || 'Desconhecido'), 'error');
+    }
+}
+
+// ══════════════════════════════════════════════
+//  DM QUEUE
+// ══════════════════════════════════════════════
+async function loadQueue() {
+    const data = await api('/api/dm-queue');
+    queueData    = data.queue  || [];
+    senderConfig = data.sender || {};
+
+    // Sender bar
+    const todayCount = senderConfig.today_count || 0;
+    const maxPerDay  = senderConfig.max_per_day  || 15;
+    const pending    = data.stats?.pending || 0;
+
+    document.getElementById('statSentToday').textContent    = `${todayCount}/${maxPerDay}`;
+    document.getElementById('statPending').textContent      = pending;
+    document.getElementById('statSenderStatus').textContent = senderConfig.status || 'aguardando';
+    document.getElementById('senderToggle').checked         = senderConfig.enabled || false;
+
+    // Config fields
+    document.getElementById('cfg-maxDay').value   = senderConfig.max_per_day             || 15;
+    document.getElementById('cfg-delayMin').value = senderConfig.delay_between_min_sec   || 180;
+    document.getElementById('cfg-delayMax').value = senderConfig.delay_between_max_sec   || 480;
+    document.getElementById('cfg-typeMin').value  = senderConfig.typing_speed_min_ms     || 50;
+    document.getElementById('cfg-typeMax').value  = senderConfig.typing_speed_max_ms     || 150;
+
+    // Badge na sidebar
+    const badge = document.getElementById('queueBadge');
+    badge.textContent    = pending;
+    badge.style.display  = pending > 0 ? 'inline-block' : 'none';
+
+    // Topbar pill
+    updateSenderPill(senderConfig);
+    renderQueueList(queueData);
+}
+
+function renderQueueList(items) {
+    if (!items.length) {
+        document.getElementById('queueList').innerHTML = `
+            <div class="empty-state" style="padding:36px 20px">
+                <svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.35 2 2 0 0 1 3.6 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.7a16 16 0 0 0 6.39 6.39l.94-.94a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                <h3>Fila vazia</h3>
+                <p>Agende DMs pelos leads ou adicione manualmente abaixo.</p>
+            </div>`;
+        return;
     }
 
-    async function startSender() {
-        const data = await post('/api/sender/start', {});
-        if (data.ok) showAlert('queueAlert', 'Sender batch iniciado');
-        else showAlert('queueAlert', 'Erro: ' + (data.error||''), 'error');
-        setTimeout(loadQueue, 2000);
-    }
+    const fmtDate = (d) => {
+        if (!d) return '';
+        const dt = new Date(d);
+        return dt.toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' });
+    };
 
-    async function addToQueue() {
-        const username = document.getElementById('q-user').value.trim();
-        const message = document.getElementById('q-msg').value.trim();
-        if (!username || !message) return showAlert('queueAlert','Username e mensagem obrigatórios','error');
-        const data = await post('/api/dm-queue', { username, message });
-        if (data.ok) {
-            showAlert('queueAlert', `DM para @${username} adicionada`);
-            document.getElementById('q-user').value = '';
-            document.getElementById('q-msg').value = '';
-            loadQueue();
-        }
-    }
+    document.getElementById('queueList').innerHTML = `<div class="queue-list">` +
+        items.map(i => `
+        <div class="queue-item">
+            <div class="avatar" style="min-width:32px">${(i.username||'?')[0].toUpperCase()}</div>
+            <div class="queue-username">@${i.username}</div>
+            <span class="badge badge-${i.status}">${statusLabel(i.status)}</span>
+            <div class="queue-msg">${i.message}</div>
+            <div class="queue-meta">${fmtDate(i.created_at)}</div>
+            <div class="queue-actions">
+                ${i.status === 'pending' ? `<button class="btn btn-xs btn-danger" onclick="removeFromQueue('${i.id}')">Remover</button>` : ''}
+                ${i.status === 'failed'  ? `<button class="btn btn-xs btn-ghost"  onclick="retryQueue('${i.id}')">Tentar novamente</button>` : ''}
+            </div>
+        </div>`).join('') + `</div>`;
+}
 
-    async function removeFromQueue(id) {
-        await fetch(`/api/dm-queue/${id}`, { method:'DELETE' });
-        loadQueue();
-    }
+const statusLabel = (s) => ({ pending:'aguardando', sending:'enviando', sent:'enviada', failed:'falhou' }[s] || s);
 
-    async function retryQueue(id) {
-        await fetch(`/api/dm-queue/${id}`, {
-            method:'PATCH', headers:{'Content-Type':'application/json'},
-            body:JSON.stringify({ status:'pending', retries:0, error:null })
-        });
-        loadQueue();
-    }
+function updateSenderPill(cfg) {
+    const pill     = document.getElementById('senderPill');
+    const pillText = document.getElementById('senderPillText');
+    const st       = cfg.status || 'idle';
+    const enabled  = cfg.enabled;
 
-    async function saveSenderConfig() {
-        await post('/api/sender/config', {
-            max_per_day: Number(document.getElementById('cfg-maxDay').value),
-            delay_between_min_sec: Number(document.getElementById('cfg-delayMin').value),
-            delay_between_max_sec: Number(document.getElementById('cfg-delayMax').value),
-            typing_speed_min_ms: Number(document.getElementById('cfg-typeMin').value),
-            typing_speed_max_ms: Number(document.getElementById('cfg-typeMax').value),
-        });
-        showAlert('queueAlert', 'Config salva');
-    }
+    const classMap = {
+        idle:    'pill-idle',
+        running: 'pill-running',
+        paused:  'pill-paused',
+        error:   'pill-error',
+    };
+    const labelMap = {
+        idle:    'Disparador: aguardando',
+        running: 'Disparador: enviando',
+        paused:  'Disparador: pausado',
+        error:   'Disparador: erro',
+    };
 
-    // =================== AUTOPILOT ===================
-    async function runAutopilot() {
-        const nicho = document.getElementById('ap-nicho').value;
-        const qtd = document.getElementById('ap-qtd').value;
-        const max = document.getElementById('ap-max').value;
-        const data = await post('/api/autopilot', { nicho, qtd:+qtd, maxAnalyze:+max });
-        showAlert('autopilotAlert', data.message || 'Autopilot iniciado');
-    }
+    pill.className = `pill ${classMap[st] || 'pill-idle'}`;
+    pillText.textContent = !enabled ? 'Disparador: desativado' : (labelMap[st] || `Disparador: ${st}`);
 
-    async function toggleAutopilot(active) {
-        await post('/api/autopilot/toggle', { active });
-        updateAutopilotPill(active);
-    }
+    const dot = pill.querySelector('.pill-dot');
+    dot.classList.toggle('blink', st === 'running');
+}
 
-    function updateAutopilotPill(active) {
-        const pill = document.getElementById('autopilotStatus');
-        pill.className = 'status-pill' + (active ? '' : ' warning');
-        pill.innerHTML = `<span class="status-dot ${active?'pulse':''}"></span><span>Autopilot: ${active?'on':'off'}</span>`;
-    }
-
-    // =================== TRACKER ===================
-    async function submitTracker() {
-        const username = document.getElementById('trk-user').value.trim();
-        const action = document.getElementById('trk-action').value;
-        const extra = document.getElementById('trk-extra').value.trim();
-        if (!username) return showAlert('trackerAlert','Username obrigatório','error');
-        const data = await post('/api/tracker', { username, action, extra: extra||undefined });
-        if (data.ok) {
-            showAlert('trackerAlert', 'Outcome registrado');
-            document.getElementById('trk-user').value = '';
-            document.getElementById('trk-extra').value = '';
-        } else showAlert('trackerAlert', data.error||'Erro','error');
-    }
-
-    // =================== STATS ===================
-    async function loadStats() {
-        const data = await api('/api/stats');
-        document.getElementById('statsMetrics').innerHTML = `
-            <div class="metric"><div class="metric-label">Total Leads</div><div class="metric-value">${data.total}</div></div>
-            <div class="metric"><div class="metric-label">DMs Enviadas</div><div class="metric-value">${data.byOutcome?.enviada||0}</div></div>
-            <div class="metric"><div class="metric-label">Responderam</div><div class="metric-value success">${data.byOutcome?.respondeu||0}</div></div>
-            <div class="metric"><div class="metric-label">Convertidos</div><div class="metric-value success">${data.byOutcome?.converteu||0}</div></div>
-            <div class="metric"><div class="metric-label">Valor Total</div><div class="metric-value success">R$ ${(data.totalValue||0).toFixed(0)}</div></div>
-        `;
-        if (data.learning) {
-            document.getElementById('learningData').innerHTML = `
-                <div class="metrics-row">
-                    <div class="metric"><div class="metric-label">Versão</div><div class="metric-value" style="font-size:18px">${data.learning.versao}</div></div>
-                    <div class="metric"><div class="metric-label">Score Médio</div><div class="metric-value" style="font-size:18px">${data.learning.score_medio}</div></div>
-                    <div class="metric"><div class="metric-label">Amostras</div><div class="metric-value" style="font-size:18px">${data.learning.total_amostras}</div></div>
-                </div>`;
-        } else {
-            document.getElementById('learningData').innerHTML = '<p style="color:var(--text2)">Nenhum dado de learning. Execute o autopilot primeiro.</p>';
-        }
-        updateAutopilotPill(data.autopilot?.active);
-    }
-
-    // =================== INIT ===================
-    loadLeads();
+async function toggleSender(enabled) {
+    await post('/api/sender/config', { enabled });
+    toast(enabled ? 'Disparador ativado' : 'Disparador desativado', 'info');
     loadQueue();
-    setInterval(loadLeads, 30000);
-    setInterval(loadQueue, 15000);
-    </script>
+}
+
+async function startSender() {
+    const data = await post('/api/sender/start', {});
+    if (data.ok) toast('Lote de envio iniciado', 'success');
+    else toast('Erro: ' + (data.error || 'Desconhecido'), 'error');
+    setTimeout(loadQueue, 2000);
+}
+
+async function addToQueue() {
+    const username = document.getElementById('q-user').value.trim().replace('@','');
+    const message  = document.getElementById('q-msg').value.trim();
+    if (!username) return toast('Informe o username', 'error');
+    if (!message)  return toast('Informe a mensagem', 'error');
+    const data = await post('/api/dm-queue', { username, message });
+    if (data.ok) {
+        toast(`@${username} adicionado à fila`, 'success');
+        document.getElementById('q-user').value = '';
+        document.getElementById('q-msg').value  = '';
+        loadQueue();
+    } else {
+        toast(data.error || 'Erro ao adicionar', 'error');
+    }
+}
+
+async function removeFromQueue(id) {
+    await fetch(`/api/dm-queue/${id}`, { method: 'DELETE' });
+    toast('Removido da fila', 'info');
+    loadQueue();
+}
+
+async function retryQueue(id) {
+    await fetch(`/api/dm-queue/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'pending', retries: 0, error: null })
+    });
+    toast('Reagendado para reenvio', 'success');
+    loadQueue();
+}
+
+async function saveSenderConfig() {
+    const cfg = {
+        max_per_day:              Number(document.getElementById('cfg-maxDay').value),
+        delay_between_min_sec:    Number(document.getElementById('cfg-delayMin').value),
+        delay_between_max_sec:    Number(document.getElementById('cfg-delayMax').value),
+        typing_speed_min_ms:      Number(document.getElementById('cfg-typeMin').value),
+        typing_speed_max_ms:      Number(document.getElementById('cfg-typeMax').value),
+    };
+    await post('/api/sender/config', cfg);
+    toast('Configurações salvas', 'success');
+}
+
+// ══════════════════════════════════════════════
+//  AUTOPILOT
+// ══════════════════════════════════════════════
+async function runAutopilot() {
+    const nicho = document.getElementById('ap-nicho').value.trim();
+    const qtd   = document.getElementById('ap-qtd').value;
+    const max   = document.getElementById('ap-max').value;
+    if (!nicho) return toast('Informe um nicho ou hashtag', 'error');
+    const data  = await post('/api/autopilot', { nicho, qtd: +qtd, maxAnalyze: +max });
+    toast(data.message || 'Pipeline iniciado', data.ok === false ? 'error' : 'success');
+}
+
+async function toggleAutopilot(active) {
+    await post('/api/autopilot/toggle', { active });
+    updateAutopilotPill(active);
+    toast(active ? 'Agendamento diário ativado' : 'Agendamento diário desativado', 'info');
+}
+
+function updateAutopilotPill(active) {
+    const pill = document.getElementById('autopilotPill');
+    const text = document.getElementById('autopilotPillText');
+    pill.className = `pill ${active ? 'pill-on' : 'pill-off'}`;
+    text.textContent = `Autopilot: ${active ? 'ativo' : 'desativado'}`;
+    const dot = pill.querySelector('.pill-dot');
+    dot.classList.toggle('blink', active);
+}
+
+// ══════════════════════════════════════════════
+//  TRACKER
+// ══════════════════════════════════════════════
+async function submitTracker() {
+    const username = document.getElementById('trk-user').value.trim().replace('@','');
+    const action   = document.getElementById('trk-action').value;
+    const extra    = document.getElementById('trk-extra').value.trim();
+    if (!username) return toast('Informe o username', 'error');
+    const data = await post('/api/tracker', { username, action, extra: extra || undefined });
+    if (data.ok) {
+        toast('Resultado registrado com sucesso', 'success');
+        document.getElementById('trk-user').value  = '';
+        document.getElementById('trk-extra').value = '';
+    } else {
+        toast(data.error || 'Erro ao registrar', 'error');
+    }
+}
+
+// ══════════════════════════════════════════════
+//  ANÁLISE
+// ══════════════════════════════════════════════
+async function loadStats() {
+    const data = await api('/api/stats');
+    const b    = data.byOutcome || {};
+
+    document.getElementById('statsMetrics').innerHTML = `
+        <div class="metric-card">
+            <div class="metric-label">Total de Leads</div>
+            <div class="metric-value v-cyan">${data.total || 0}</div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-label">DMs Enviadas</div>
+            <div class="metric-value">${b.enviada || 0}</div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-label">Responderam</div>
+            <div class="metric-value v-success">${b.respondeu || 0}</div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-label">Em Negociação</div>
+            <div class="metric-value" style="color:var(--accent)">${b.negociando || 0}</div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-label">Convertidos</div>
+            <div class="metric-value v-success">${b.converteu || 0}</div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-label">Receita Total</div>
+            <div class="metric-value v-success" style="font-size:22px">R$ ${(data.totalValue||0).toFixed(0)}</div>
+        </div>
+    `;
+
+    if (data.learning) {
+        document.getElementById('learningData').innerHTML = `
+            <div class="info-row">
+                <span class="text-muted">Versão do modelo</span>
+                <strong>${data.learning.versao}</strong>
+            </div>
+            <div class="info-row">
+                <span class="text-muted">Score médio dos leads</span>
+                <strong>${data.learning.score_medio}</strong>
+            </div>
+            <div class="info-row">
+                <span class="text-muted">Total de amostras</span>
+                <strong>${data.learning.total_amostras}</strong>
+            </div>`;
+    } else {
+        document.getElementById('learningData').innerHTML = `
+            <div class="empty-state" style="padding:32px">
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
+                <h3>Sem dados de aprendizado</h3>
+                <p>Execute o Autopilot para gerar dados de análise de leads.</p>
+            </div>`;
+    }
+
+    updateAutopilotPill(data.autopilot?.active);
+}
+
+// ══════════════════════════════════════════════
+//  INICIALIZAÇÃO
+// ══════════════════════════════════════════════
+loadLeads();
+loadQueue();
+setInterval(loadLeads, 30000);
+setInterval(loadQueue, 15000);
+</script>
 </body>
 </html>
