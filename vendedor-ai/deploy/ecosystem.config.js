@@ -51,6 +51,23 @@ module.exports = {
       out_file:   path.join(ROOT, 'logs', 'autopilot-out.log')
     },
 
+    // ---- DM SENDER (daemon — sempre online, auto-gerencia limites) ----
+    {
+      name: 'vendedor-sender',
+      script: path.join(AGENTS, '0-sender.js'),
+      cwd: ROOT,
+      watch: false,
+      autorestart: true,
+      max_restarts: 5,
+      restart_delay: 60000,       // 1 min entre restarts
+      env: {
+        NODE_ENV: 'production'
+      },
+      log_date_format: 'YYYY-MM-DD HH:mm:ss',
+      error_file: path.join(ROOT, 'logs', 'sender-error.log'),
+      out_file:   path.join(ROOT, 'logs', 'sender-out.log')
+    },
+
     // ---- NOTION SYNC (a cada 2h) ----
     {
       name: 'vendedor-notion-sync',

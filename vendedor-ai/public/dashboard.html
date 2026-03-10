@@ -3,612 +3,816 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vendedor IA Cockpit - Prismatic Labs</title>
+    <title>Prismatic Labs — Vendedor AI Cockpit</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
+        *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
         :root {
-            --bg-main: #0a0e27;
-            --bg-secondary: #131834;
-            --bg-card: #1a1f3a;
-            --accent-primary: #667eea;
-            --accent-secondary: #764ba2;
-            --accent-cyan: #06b6d4;
-            --text-primary: #e2e8f0;
-            --text-secondary: #94a3b8;
-            --border: #2d3748;
+            --bg-main: #06070f;
+            --bg-secondary: #0d1025;
+            --bg-card: #121631;
+            --bg-card-hover: #181e42;
+            --accent: #667eea;
+            --accent2: #764ba2;
+            --cyan: #06d6a0;
+            --neon: #00f0ff;
+            --text: #e8ecf4;
+            --text2: #7b8ab8;
+            --border: #1e2548;
             --success: #10b981;
-            --warning: #f59e0b;
+            --warning: #fbbf24;
             --danger: #ef4444;
+            --hot: #ff4757;
+            --warm: #ffa502;
+            --cold: #1e90ff;
+            --glow: 0 0 20px rgba(102,126,234,0.15);
         }
-        
+
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
             background: var(--bg-main);
-            color: var(--text-primary);
+            color: var(--text);
             display: flex;
             min-height: 100vh;
+            overflow: hidden;
         }
-        
+
+        /* ---- SIDEBAR ---- */
         .sidebar {
-            width: 260px;
+            width: 72px;
             background: var(--bg-secondary);
             border-right: 1px solid var(--border);
-            padding: 30px 20px;
             display: flex;
             flex-direction: column;
-            gap: 20px;
+            align-items: center;
+            padding: 20px 0;
+            gap: 8px;
+            transition: width 0.3s;
+            z-index: 10;
         }
-        
-        .logo {
-            font-size: 1.5em;
-            font-weight: 700;
-            background: linear-gradient(135deg, var(--accent-primary), var(--accent-cyan));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 20px;
-        }
-        
-        .nav-item {
-            padding: 12px 16px;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.2s;
-            font-weight: 500;
-            color: var(--text-secondary);
+        .sidebar:hover { width: 220px; }
+        .sidebar:hover .nav-label { opacity:1; width:auto; }
+        .sidebar:hover .brand-text { opacity:1; }
+
+        .brand {
             display: flex;
             align-items: center;
             gap: 12px;
+            padding: 10px;
+            margin-bottom: 20px;
+            white-space: nowrap;
+            overflow: hidden;
         }
-        
-        .nav-item:hover {
-            background: var(--bg-card);
-            color: var(--text-primary);
+        .brand-icon {
+            min-width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, var(--accent), var(--cyan));
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            font-weight: 800;
+            color: #fff;
         }
-        
-        .nav-item.active {
-            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
-            color: white;
-        }
-        
-        .main {
-            flex: 1;
-            padding: 30px;
-            overflow-y: auto;
-        }
-        
-        .header {
-            margin-bottom: 30px;
-        }
-        
-        .header h1 {
-            font-size: 2em;
-            margin-bottom: 8px;
-            background: linear-gradient(135deg, var(--accent-primary), var(--accent-cyan));
+        .brand-text {
+            font-weight: 700;
+            font-size: 14px;
+            background: linear-gradient(135deg, var(--accent), var(--cyan));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+            opacity: 0;
+            transition: opacity 0.2s;
         }
-        
-        .header p {
-            color: var(--text-secondary);
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            width: 100%;
+            padding: 12px 22px;
+            cursor: pointer;
+            color: var(--text2);
+            transition: all 0.15s;
+            border-left: 3px solid transparent;
+            white-space: nowrap;
+            overflow: hidden;
         }
-        
-        .section {
-            display: none;
+        .nav-item:hover { background: var(--bg-card); color: var(--text); }
+        .nav-item.active {
+            color: var(--cyan);
+            border-left-color: var(--cyan);
+            background: rgba(6,214,160,0.06);
         }
-        
-        .section.active {
-            display: block;
-        }
-        
-        .metrics-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-        
-        .metric-card {
-            background: var(--bg-card);
-            padding: 20px;
-            border-radius: 12px;
-            border: 1px solid var(--border);
-        }
-        
-        .metric-label {
-            color: var(--text-secondary);
-            font-size: 0.85em;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 8px;
-        }
-        
-        .metric-value {
-            font-size: 2.2em;
+        .nav-icon { font-size: 18px; min-width: 24px; text-align: center; }
+        .nav-label { opacity:0; transition: opacity 0.2s; font-size: 13px; font-weight: 500; }
+        .nav-badge {
+            margin-left: auto;
+            background: var(--danger);
+            color: #fff;
+            font-size: 10px;
             font-weight: 700;
-            color: var(--accent-cyan);
+            padding: 2px 7px;
+            border-radius: 8px;
+            min-width: 20px;
+            text-align: center;
         }
-        
-        .metric-value.hot { color: var(--danger); }
-        .metric-value.warm { color: var(--warning); }
+
+        .nav-divider { width: 32px; height: 1px; background: var(--border); margin: 10px 0; }
+
+        /* ---- MAIN ---- */
+        .main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 32px;
+            border-bottom: 1px solid var(--border);
+            background: var(--bg-secondary);
+        }
+        .topbar-left h1 {
+            font-size: 18px;
+            font-weight: 700;
+        }
+        .topbar-left p { font-size: 12px; color: var(--text2); margin-top: 2px; }
+        .topbar-right { display: flex; align-items: center; gap: 16px; }
+
+        .status-pill {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            background: rgba(16,185,129,0.1);
+            color: var(--success);
+            border: 1px solid rgba(16,185,129,0.2);
+        }
+        .status-pill.warning { background: rgba(251,191,36,0.1); color: var(--warning); border-color: rgba(251,191,36,0.2); }
+        .status-pill.error { background: rgba(239,68,68,0.1); color: var(--danger); border-color: rgba(239,68,68,0.2); }
+        .status-dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+        .status-dot.pulse { animation: pulse 2s infinite; }
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+        .content { flex:1; overflow-y:auto; padding: 28px 32px; }
+        .section { display: none; }
+        .section.active { display: block; }
+
+        /* ---- METRIC CARDS ---- */
+        .metrics-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 16px;
+            margin-bottom: 28px;
+        }
+        .metric {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 20px;
+            transition: all 0.2s;
+        }
+        .metric:hover { border-color: var(--accent); box-shadow: var(--glow); transform: translateY(-2px); }
+        .metric-label { font-size: 11px; color: var(--text2); text-transform: uppercase; letter-spacing: 1.2px; margin-bottom: 10px; }
+        .metric-value { font-size: 32px; font-weight: 800; color: var(--cyan); line-height: 1; }
+        .metric-value.hot { color: var(--hot); }
+        .metric-value.warm { color: var(--warm); }
+        .metric-value.cold { color: var(--cold); }
         .metric-value.success { color: var(--success); }
-        
+
+        /* ---- CARDS ---- */
         .card {
             background: var(--bg-card);
             border: 1px solid var(--border);
-            border-radius: 12px;
+            border-radius: 14px;
             padding: 24px;
             margin-bottom: 20px;
         }
-        
-        .card-title {
-            font-size: 1.3em;
-            margin-bottom: 20px;
-            color: var(--text-primary);
-        }
-        
-        .form-group {
-            margin-bottom: 20px;
-        }
-        
-        .form-group label {
-            display: block;
-            margin-bottom: 8px;
-            color: var(--text-secondary);
-            font-size: 0.9em;
-        }
-        
-        .form-group input, .form-group select {
-            width: 100%;
-            padding: 12px;
-            background: var(--bg-secondary);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            color: var(--text-primary);
-            font-size: 1em;
-        }
-        
-        .btn {
-            padding: 12px 24px;
-            border: none;
-            border-radius: 8px;
-            font-size: 1em;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        
-        .btn-primary {
-            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
-            color: white;
-        }
-        
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
-        }
-        
-        .btn-secondary {
-            background: var(--bg-secondary);
-            color: var(--text-primary);
-            border: 1px solid var(--border);
-        }
-        
-        .btn-success {
-            background: var(--success);
-            color: white;
-        }
-        
-        .btn-danger {
-            background: var(--danger);
-            color: white;
-        }
-        
-        .btn-sm {
-            padding: 6px 12px;
-            font-size: 0.85em;
-        }
-        
-        .leads-table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        
-        .leads-table th {
-            text-align: left;
-            padding: 12px;
-            border-bottom: 2px solid var(--border);
-            color: var(--text-secondary);
-            font-weight: 600;
-            font-size: 0.9em;
-        }
-        
-        .leads-table td {
-            padding: 16px 12px;
-            border-bottom: 1px solid var(--border);
-        }
-        
-        .leads-table tr:hover {
-            background: var(--bg-secondary);
-        }
-        
-        .badge {
-            display: inline-block;
-            padding: 4px 12px;
-            border-radius: 12px;
-            font-size: 0.8em;
-            font-weight: 600;
-            text-transform: uppercase;
-        }
-        
-        .badge-hot { background: rgba(239, 68, 68, 0.2); color: var(--danger); }
-        .badge-warm { background: rgba(245, 158, 11, 0.2); color: var(--warning); }
-        .badge-cold { background: rgba(6, 182, 212, 0.2); color: var(--accent-cyan); }
-        
-        .status-badge {
-            padding: 4px 10px;
-            border-radius: 8px;
-            font-size: 0.75em;
-            background: rgba(16, 185, 129, 0.2);
-            color: var(--success);
-        }
-        
-        .actions {
+        .card-header {
             display: flex;
-            gap: 8px;
-        }
-        
-        .empty-state {
-            text-align: center;
-            padding: 60px;
-            color: var(--text-secondary);
-        }
-        
-        .loading {
-            text-align: center;
-            padding: 40px;
-            color: var(--text-secondary);
-        }
-        
-        .alert {
-            padding: 16px;
-            border-radius: 8px;
+            align-items: center;
+            justify-content: space-between;
             margin-bottom: 20px;
         }
-        
-        .alert-success {
-            background: rgba(16, 185, 129, 0.1);
-            border: 1px solid rgba(16, 185, 129, 0.3);
-            color: var(--success);
+        .card-title { font-size: 16px; font-weight: 700; }
+
+        /* ---- TABLE ---- */
+        .table-wrap { overflow-x: auto; }
+        table { width:100%; border-collapse:collapse; }
+        th { text-align:left; padding:10px 14px; font-size:11px; color:var(--text2); text-transform:uppercase; letter-spacing:1px; border-bottom:2px solid var(--border); }
+        td { padding:14px; border-bottom:1px solid var(--border); font-size:13px; }
+        tr:hover { background: var(--bg-card-hover); }
+        .user-cell { display:flex; align-items:center; gap:10px; }
+        .user-avatar { width:32px; height:32px; border-radius:50%; background:linear-gradient(135deg,var(--accent),var(--accent2)); display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700; color:#fff; }
+
+        /* ---- BADGES ---- */
+        .badge { display:inline-block; padding:3px 10px; border-radius:6px; font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; }
+        .badge-hot { background:rgba(255,71,87,0.15); color:var(--hot); }
+        .badge-warm { background:rgba(255,165,2,0.15); color:var(--warm); }
+        .badge-cold { background:rgba(30,144,255,0.15); color:var(--cold); }
+        .badge-sent { background:rgba(16,185,129,0.15); color:var(--success); }
+        .badge-pending { background:rgba(251,191,36,0.15); color:var(--warning); }
+        .badge-failed { background:rgba(239,68,68,0.15); color:var(--danger); }
+        .badge-sending { background:rgba(0,240,255,0.15); color:var(--neon); }
+
+        /* ---- BUTTONS ---- */
+        .btn {
+            padding:8px 18px; border:none; border-radius:8px; font-size:13px; font-weight:600;
+            cursor:pointer; transition:all 0.15s; display:inline-flex; align-items:center; gap:6px;
         }
-        
-        .alert-error {
-            background: rgba(239, 68, 68, 0.1);
-            border: 1px solid rgba(239, 68, 68, 0.3);
-            color: var(--danger);
+        .btn-primary { background:linear-gradient(135deg,var(--accent),var(--accent2)); color:#fff; }
+        .btn-primary:hover { transform:translateY(-1px); box-shadow:0 6px 20px rgba(102,126,234,0.3); }
+        .btn-success { background:var(--success); color:#fff; }
+        .btn-danger { background:var(--danger); color:#fff; }
+        .btn-ghost { background:transparent; color:var(--text2); border:1px solid var(--border); }
+        .btn-ghost:hover { border-color:var(--accent); color:var(--text); }
+        .btn-sm { padding:5px 12px; font-size:12px; }
+        .btn-icon { padding:6px 8px; }
+
+        /* ---- FORMS ---- */
+        .form-row { display:flex; gap:16px; margin-bottom:16px; }
+        .form-group { flex:1; }
+        .form-group label { display:block; font-size:12px; color:var(--text2); margin-bottom:6px; font-weight:500; }
+        .form-group input, .form-group select, .form-group textarea {
+            width:100%; padding:10px 14px; background:var(--bg-main); border:1px solid var(--border);
+            border-radius:8px; color:var(--text); font-size:13px; font-family:inherit;
+            transition: border-color 0.2s;
         }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+            outline:none; border-color:var(--accent);
+        }
+        .form-group textarea { resize:vertical; min-height:80px; }
+
+        /* ---- TOGGLE SWITCH ---- */
+        .toggle { position:relative; width:44px; height:24px; cursor:pointer; }
+        .toggle input { display:none; }
+        .toggle-track {
+            width:100%; height:100%; background:var(--border); border-radius:12px;
+            transition:background 0.2s;
+        }
+        .toggle input:checked + .toggle-track { background:var(--success); }
+        .toggle-thumb {
+            position:absolute; top:3px; left:3px; width:18px; height:18px;
+            background:#fff; border-radius:50%; transition:transform 0.2s;
+        }
+        .toggle input:checked ~ .toggle-thumb { transform:translateX(20px); }
+
+        /* ---- ALERT ---- */
+        .alert {
+            padding:12px 16px; border-radius:8px; margin-bottom:16px; font-size:13px;
+            display:flex; align-items:center; gap:8px;
+        }
+        .alert-success { background:rgba(16,185,129,0.1); border:1px solid rgba(16,185,129,0.2); color:var(--success); }
+        .alert-error { background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.2); color:var(--danger); }
+        .alert-info { background:rgba(102,126,234,0.1); border:1px solid rgba(102,126,234,0.2); color:var(--accent); }
+
+        /* ---- MODAL ---- */
+        .modal-overlay {
+            position:fixed; inset:0; background:rgba(0,0,0,0.7); display:none;
+            align-items:center; justify-content:center; z-index:100;
+            backdrop-filter:blur(4px);
+        }
+        .modal-overlay.open { display:flex; }
+        .modal {
+            background:var(--bg-card); border:1px solid var(--border); border-radius:16px;
+            width:560px; max-height:80vh; overflow-y:auto; padding:28px;
+        }
+        .modal-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; }
+        .modal-close { background:none; border:none; color:var(--text2); font-size:20px; cursor:pointer; }
+
+        /* ---- EMPTY STATE ---- */
+        .empty { text-align:center; padding:60px 20px; color:var(--text2); }
+        .empty-icon { font-size:48px; margin-bottom:16px; }
+        .empty p { font-size:14px; }
+
+        /* ---- QUEUE ITEM ---- */
+        .queue-item {
+            display:flex; align-items:center; gap:16px; padding:14px 0;
+            border-bottom:1px solid var(--border);
+        }
+        .queue-item:last-child { border-bottom:none; }
+        .queue-msg {
+            flex:1; font-size:12px; color:var(--text2); max-height:40px;
+            overflow:hidden; text-overflow:ellipsis; line-height:1.5;
+        }
+        .queue-actions { display:flex; gap:6px; }
+
+        /* ---- SENDER BAR ---- */
+        .sender-bar {
+            display: flex; align-items: center; gap: 16px;
+            padding: 14px 20px; background: var(--bg-secondary);
+            border: 1px solid var(--border); border-radius: 12px;
+            margin-bottom: 20px;
+        }
+        .sender-bar .info { flex:1; }
+        .sender-bar .label { font-size:11px; color:var(--text2); text-transform:uppercase; letter-spacing:1px; }
+        .sender-bar .value { font-size:20px; font-weight:700; color:var(--cyan); }
+
+        /* ---- SCROLLBAR ---- */
+        ::-webkit-scrollbar { width:6px; }
+        ::-webkit-scrollbar-track { background:transparent; }
+        ::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
+        ::-webkit-scrollbar-thumb:hover { background:var(--text2); }
     </style>
 </head>
 <body>
-    <div class="sidebar">
-        <div class="logo">🤖 Vendedor IA</div>
+    <!-- SIDEBAR -->
+    <nav class="sidebar">
+        <div class="brand">
+            <div class="brand-icon">P</div>
+            <span class="brand-text">Prismatic Labs</span>
+        </div>
         <div class="nav-item active" data-section="leads">
-            <span>📈</span> Leads
+            <span class="nav-icon">&#9783;</span>
+            <span class="nav-label">Leads</span>
+        </div>
+        <div class="nav-item" data-section="queue">
+            <span class="nav-icon">&#9993;</span>
+            <span class="nav-label">DM Queue</span>
+            <span class="nav-badge" id="queueBadge" style="display:none">0</span>
         </div>
         <div class="nav-item" data-section="autopilot">
-            <span>🚀</span> Autopilot
+            <span class="nav-icon">&#9881;</span>
+            <span class="nav-label">Autopilot</span>
         </div>
+        <div class="nav-divider"></div>
         <div class="nav-item" data-section="tracker">
-            <span>🎯</span> Tracker
+            <span class="nav-icon">&#8982;</span>
+            <span class="nav-label">Tracker</span>
         </div>
         <div class="nav-item" data-section="stats">
-            <span>📊</span> Stats
+            <span class="nav-icon">&#9636;</span>
+            <span class="nav-label">Analytics</span>
         </div>
-    </div>
-    
+    </nav>
+
+    <!-- MAIN CONTENT -->
     <div class="main">
-        <div class="header">
-            <h1>Cockpit de Prospecção</h1>
-            <p>Prismatic Labs — Sistema de Vendas Automatizado</p>
-        </div>
-        
-        <!-- LEADS SECTION -->
-        <div id="section-leads" class="section active">
-            <div class="metrics-grid" id="leadsMetrics"></div>
-            <div class="card">
-                <div class="card-title">Todos os Leads</div>
-                <div id="leadsTableContainer"></div>
+        <!-- TOPBAR -->
+        <header class="topbar">
+            <div class="topbar-left">
+                <h1 id="pageTitle">Leads Pipeline</h1>
+                <p id="pageSubtitle">Vendedor AI v2.0 Cockpit</p>
             </div>
-        </div>
-        
-        <!-- AUTOPILOT SECTION -->
-        <div id="section-autopilot" class="section">
-            <div class="card">
-                <div class="card-title">🚀 Rodar Pipeline Autopilot</div>
-                <div id="autopilotAlert"></div>
-                <div class="form-group">
-                    <label>Nicho / Hashtag</label>
-                    <input type="text" id="autopilot-nicho" placeholder="api-automacao" value="api-automacao">
+            <div class="topbar-right">
+                <div class="status-pill" id="senderStatus">
+                    <span class="status-dot pulse"></span>
+                    <span>Sender: idle</span>
                 </div>
-                <div class="form-group">
-                    <label>Quantidade de Leads</label>
-                    <input type="number" id="autopilot-qtd" placeholder="20" value="20">
+                <div class="status-pill" id="autopilotStatus">
+                    <span class="status-dot"></span>
+                    <span>Autopilot: off</span>
                 </div>
-                <div class="form-group">
-                    <label>Máx. Analyze Simultâneo</label>
-                    <input type="number" id="autopilot-max" placeholder="8" value="8">
-                </div>
-                <button class="btn btn-primary" onclick="runAutopilot()">Iniciar Autopilot</button>
             </div>
-        </div>
-        
-        <!-- TRACKER SECTION -->
-        <div id="section-tracker" class="section">
-            <div class="card">
-                <div class="card-title">🎯 Registrar Outcome</div>
-                <div id="trackerAlert"></div>
-                <div class="form-group">
-                    <label>Username (sem @)</label>
-                    <input type="text" id="tracker-username" placeholder="usuario">
+        </header>
+
+        <div class="content">
+            <!-- =================== LEADS SECTION =================== -->
+            <div id="section-leads" class="section active">
+                <div class="metrics-row" id="leadsMetrics"></div>
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">Todos os Leads</span>
+                        <div style="display:flex;gap:8px">
+                            <select id="filterPriority" style="padding:6px 10px;background:var(--bg-main);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px">
+                                <option value="all">Todos</option>
+                                <option value="hot">Hot</option>
+                                <option value="warm">Warm</option>
+                                <option value="cold">Cold</option>
+                            </select>
+                            <button class="btn btn-sm btn-ghost" onclick="loadLeads()">Atualizar</button>
+                        </div>
+                    </div>
+                    <div class="table-wrap" id="leadsTableContainer"></div>
                 </div>
-                <div class="form-group">
-                    <label>Ação</label>
-                    <select id="tracker-action">
-                        <option value="sent">Mensagem Enviada</option>
-                        <option value="respondeu">Respondeu</option>
-                        <option value="ignorou">Ignorou</option>
-                        <option value="negociando">Em Negociação</option>
-                        <option value="converteu">Converteu</option>
-                        <option value="recusou">Recusou</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Extra (nota ou valor R$)</label>
-                    <input type="text" id="tracker-extra" placeholder="Opcional">
-                </div>
-                <button class="btn btn-success" onclick="submitTracker()">Registrar</button>
             </div>
-        </div>
-        
-        <!-- STATS SECTION -->
-        <div id="section-stats" class="section">
-            <div class="metrics-grid" id="statsMetrics"></div>
-            <div class="card">
-                <div class="card-title">🧠 Learning System</div>
-                <div id="learningData"></div>
+
+            <!-- =================== DM QUEUE SECTION =================== -->
+            <div id="section-queue" class="section">
+                <div class="sender-bar">
+                    <div class="info">
+                        <div class="label">Enviadas Hoje</div>
+                        <div class="value" id="sentToday">0/15</div>
+                    </div>
+                    <div class="info">
+                        <div class="label">Na Fila</div>
+                        <div class="value" id="queuePending">0</div>
+                    </div>
+                    <div class="info">
+                        <div class="label">Status</div>
+                        <div class="value" id="senderStatusText">idle</div>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:12px">
+                        <label class="toggle" title="Ativar/Desativar Sender">
+                            <input type="checkbox" id="senderToggle" onchange="toggleSender(this.checked)">
+                            <div class="toggle-track"></div>
+                            <div class="toggle-thumb"></div>
+                        </label>
+                        <button class="btn btn-sm btn-primary" onclick="startSender()">Enviar Batch</button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">Fila de DMs</span>
+                        <button class="btn btn-sm btn-ghost" onclick="loadQueue()">Atualizar</button>
+                    </div>
+                    <div id="queueList"></div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">Adicionar DM Manual</span>
+                    </div>
+                    <div id="queueAlert"></div>
+                    <div class="form-row">
+                        <div class="form-group"><label>Username</label><input type="text" id="q-user" placeholder="sem @"></div>
+                    </div>
+                    <div class="form-group"><label>Mensagem</label><textarea id="q-msg" placeholder="Texto da DM..."></textarea></div>
+                    <button class="btn btn-primary" onclick="addToQueue()">Adicionar na Fila</button>
+                </div>
+
+                <div class="card">
+                    <div class="card-header"><span class="card-title">Config do Sender</span></div>
+                    <div class="form-row">
+                        <div class="form-group"><label>Max DMs/dia</label><input type="number" id="cfg-maxDay" value="15"></div>
+                        <div class="form-group"><label>Delay Min (seg)</label><input type="number" id="cfg-delayMin" value="180"></div>
+                        <div class="form-group"><label>Delay Max (seg)</label><input type="number" id="cfg-delayMax" value="480"></div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group"><label>Typing Min (ms)</label><input type="number" id="cfg-typeMin" value="50"></div>
+                        <div class="form-group"><label>Typing Max (ms)</label><input type="number" id="cfg-typeMax" value="150"></div>
+                    </div>
+                    <button class="btn btn-ghost" onclick="saveSenderConfig()">Salvar Config</button>
+                </div>
+            </div>
+
+            <!-- =================== AUTOPILOT SECTION =================== -->
+            <div id="section-autopilot" class="section">
+                <div class="card">
+                    <div class="card-header"><span class="card-title">Pipeline Autopilot</span></div>
+                    <div id="autopilotAlert"></div>
+                    <div class="form-row">
+                        <div class="form-group"><label>Nicho / Hashtag</label><input type="text" id="ap-nicho" placeholder="automacao n8n" value="automacao n8n"></div>
+                        <div class="form-group"><label>Qtd Leads</label><input type="number" id="ap-qtd" value="20"></div>
+                        <div class="form-group"><label>Max Analyze</label><input type="number" id="ap-max" value="8"></div>
+                    </div>
+                    <div style="display:flex;gap:10px">
+                        <button class="btn btn-primary" onclick="runAutopilot()">Iniciar Pipeline</button>
+                        <label class="toggle" style="display:flex;align-items:center;gap:8px" title="Autopilot ativo">
+                            <input type="checkbox" id="ap-toggle" onchange="toggleAutopilot(this.checked)">
+                            <div class="toggle-track"></div>
+                            <div class="toggle-thumb"></div>
+                            <span style="font-size:12px;color:var(--text2)">Auto</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- =================== TRACKER SECTION =================== -->
+            <div id="section-tracker" class="section">
+                <div class="card">
+                    <div class="card-header"><span class="card-title">Registrar Outcome</span></div>
+                    <div id="trackerAlert"></div>
+                    <div class="form-row">
+                        <div class="form-group"><label>Username (sem @)</label><input type="text" id="trk-user" placeholder="usuario"></div>
+                        <div class="form-group">
+                            <label>Ação</label>
+                            <select id="trk-action">
+                                <option value="sent">Mensagem Enviada</option>
+                                <option value="respondeu">Respondeu</option>
+                                <option value="ignorou">Ignorou</option>
+                                <option value="negociando">Em Negociação</option>
+                                <option value="converteu">Converteu</option>
+                                <option value="recusou">Recusou</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group"><label>Extra (nota ou R$)</label><input type="text" id="trk-extra" placeholder="Opcional"></div>
+                    <button class="btn btn-success" onclick="submitTracker()">Registrar</button>
+                </div>
+            </div>
+
+            <!-- =================== STATS SECTION =================== -->
+            <div id="section-stats" class="section">
+                <div class="metrics-row" id="statsMetrics"></div>
+                <div class="card">
+                    <div class="card-header"><span class="card-title">Learning System</span></div>
+                    <div id="learningData"><p style="color:var(--text2)">Carregando...</p></div>
+                </div>
             </div>
         </div>
     </div>
-    
+
+    <!-- LEAD DETAIL MODAL -->
+    <div class="modal-overlay" id="leadModal">
+        <div class="modal">
+            <div class="modal-header">
+                <span class="card-title" id="modalTitle">Lead Details</span>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div id="modalBody"></div>
+        </div>
+    </div>
+
     <script>
-        let currentSection = 'leads';
-        let leadsData = [];
-        
-        // Navigation
-        document.querySelectorAll('.nav-item').forEach(item => {
-            item.addEventListener('click', () => {
-                const section = item.dataset.section;
-                document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
-                item.classList.add('active');
-                document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-                document.getElementById(`section-${section}`).classList.add('active');
-                currentSection = section;
-                if (section === 'stats') loadStats();
-            });
+    // =================== STATE ===================
+    let leadsData = [];
+    let queueData = [];
+    let senderConfig = {};
+
+    // =================== NAVIGATION ===================
+    const titles = {
+        leads:'Leads Pipeline', queue:'DM Queue', autopilot:'Autopilot',
+        tracker:'Tracker', stats:'Analytics'
+    };
+    document.querySelectorAll('.nav-item').forEach(item => {
+        item.addEventListener('click', () => {
+            const s = item.dataset.section;
+            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+            item.classList.add('active');
+            document.querySelectorAll('.section').forEach(x => x.classList.remove('active'));
+            document.getElementById(`section-${s}`).classList.add('active');
+            document.getElementById('pageTitle').textContent = titles[s] || s;
+            if (s === 'stats') loadStats();
+            if (s === 'queue') loadQueue();
         });
-        
-        // Load Leads
-        async function loadLeads() {
-            try {
-                const res = await fetch('/api/leads');
-                const data = await res.json();
-                leadsData = data.leads || [];
-                renderLeadsMetrics(leadsData);
-                renderLeadsTable(leadsData);
-            } catch (err) {
-                console.error('Erro ao carregar leads:', err);
-            }
+    });
+
+    // =================== API HELPERS ===================
+    async function api(url, opts) {
+        const r = await fetch(url, { headers:{'Content-Type':'application/json'}, ...opts });
+        return r.json();
+    }
+    const post = (url, body) => api(url, { method:'POST', body:JSON.stringify(body) });
+
+    function showAlert(id, msg, type='success') {
+        document.getElementById(id).innerHTML = `<div class="alert alert-${type}">${msg}</div>`;
+        setTimeout(() => { document.getElementById(id).innerHTML = ''; }, 5000);
+    }
+
+    // =================== LEADS ===================
+    async function loadLeads() {
+        const data = await api('/api/leads');
+        leadsData = data.leads || [];
+        renderLeadsMetrics(leadsData);
+        renderLeadsTable(leadsData);
+    }
+
+    function renderLeadsMetrics(leads) {
+        const t = leads.length;
+        const h = leads.filter(l=>l.prioridade==='hot').length;
+        const w = leads.filter(l=>l.prioridade==='warm').length;
+        const c = leads.filter(l=>l.dm_enviada).length;
+        const f = leads.filter(l=>l.outcome==='converteu').length;
+        document.getElementById('leadsMetrics').innerHTML = `
+            <div class="metric"><div class="metric-label">Total Leads</div><div class="metric-value">${t}</div></div>
+            <div class="metric"><div class="metric-label">Hot</div><div class="metric-value hot">${h}</div></div>
+            <div class="metric"><div class="metric-label">Warm</div><div class="metric-value warm">${w}</div></div>
+            <div class="metric"><div class="metric-label">DM Enviada</div><div class="metric-value">${c}</div></div>
+            <div class="metric"><div class="metric-label">Convertidos</div><div class="metric-value success">${f}</div></div>
+        `;
+    }
+
+    function renderLeadsTable(leads) {
+        const filter = document.getElementById('filterPriority').value;
+        const filtered = filter === 'all' ? leads : leads.filter(l => l.prioridade === filter);
+
+        if (!filtered.length) {
+            document.getElementById('leadsTableContainer').innerHTML = '<div class="empty"><div class="empty-icon">&#128173;</div><p>Nenhum lead encontrado</p></div>';
+            return;
         }
-        
-        function renderLeadsMetrics(leads) {
-            const total = leads.length;
-            const hot = leads.filter(l => l.prioridade === 'hot').length;
-            const warm = leads.filter(l => l.prioridade === 'warm').length;
-            const contatados = leads.filter(l => l.primeira_mensagem_enviada).length;
-            const fechados = leads.filter(l => l.status === 'fechado').length;
-            
-            document.getElementById('leadsMetrics').innerHTML = `
-                <div class="metric-card">
-                    <div class="metric-label">Total Leads</div>
-                    <div class="metric-value">${total}</div>
+        document.getElementById('leadsTableContainer').innerHTML = `<table>
+            <thead><tr><th>Lead</th><th>Prioridade</th><th>Score</th><th>Status</th><th>Outcome</th><th>Ações</th></tr></thead>
+            <tbody>${filtered.map(l => `<tr>
+                <td><div class="user-cell"><div class="user-avatar">${(l.username||'?')[0].toUpperCase()}</div><div><strong>@${l.username}</strong><br><span style="font-size:11px;color:var(--text2)">${l.nicho||''}</span></div></div></td>
+                <td><span class="badge badge-${l.prioridade}">${l.prioridade}</span></td>
+                <td style="font-weight:700">${l.score||0}</td>
+                <td><span class="badge badge-sent">${l.status||'novo'}</span></td>
+                <td>${l.outcome ? `<span class="badge badge-${l.outcome==='converteu'?'sent':l.outcome==='enviada'?'pending':'failed'}">${l.outcome}</span>` : '<span style="color:var(--text2)">-</span>'}</td>
+                <td style="display:flex;gap:6px;flex-wrap:wrap">
+                    <button class="btn btn-sm btn-ghost" onclick="viewLead('${l.username}')">Detalhes</button>
+                    ${l.mensagem_final ? `<button class="btn btn-sm btn-primary" onclick="enqueueLead('${l.username}')">Enfileirar DM</button>` : ''}
+                </td>
+            </tr>`).join('')}</tbody></table>`;
+    }
+
+    document.getElementById('filterPriority').addEventListener('change', () => renderLeadsTable(leadsData));
+
+    function viewLead(username) {
+        const l = leadsData.find(x => x.username === username);
+        if (!l) return;
+        document.getElementById('modalTitle').textContent = `@${l.username}`;
+        document.getElementById('modalBody').innerHTML = `
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px">
+                <div><span style="color:var(--text2);font-size:12px">Prioridade</span><br><span class="badge badge-${l.prioridade}">${l.prioridade}</span></div>
+                <div><span style="color:var(--text2);font-size:12px">Score</span><br><strong style="font-size:24px">${l.score||0}/100</strong></div>
+                <div><span style="color:var(--text2);font-size:12px">Nicho</span><br>${l.nicho||'N/A'}</div>
+                <div><span style="color:var(--text2);font-size:12px">Status</span><br>${l.status||'novo'}</div>
+            </div>
+            ${l.mensagem_final ? `<div style="margin-bottom:16px"><span style="color:var(--text2);font-size:12px">DM Final (Reviewer)</span><div style="background:var(--bg-main);border:1px solid var(--border);border-radius:8px;padding:14px;margin-top:6px;font-size:13px;line-height:1.6;white-space:pre-wrap">${l.mensagem_final}</div></div>` : ''}
+            ${l.followups?.length ? `<div style="margin-bottom:16px"><span style="color:var(--text2);font-size:12px">Follow-ups</span>${l.followups.map(f => `<div style="background:var(--bg-main);border:1px solid var(--border);border-radius:8px;padding:10px;margin-top:6px;font-size:12px"><strong>Dia ${f.dia}:</strong> ${f.texto}</div>`).join('')}</div>` : ''}
+            <div style="display:flex;gap:8px;margin-top:16px">
+                ${l.mensagem_final ? `<button class="btn btn-primary" onclick="enqueueLead('${l.username}');closeModal()">Enfileirar DM</button>` : ''}
+                <button class="btn btn-ghost" onclick="copyText('${(l.mensagem_final||'').replace(/'/g,"\\'")}')">Copiar Mensagem</button>
+            </div>
+        `;
+        document.getElementById('leadModal').classList.add('open');
+    }
+
+    function closeModal() { document.getElementById('leadModal').classList.remove('open'); }
+    document.getElementById('leadModal').addEventListener('click', e => { if (e.target.classList.contains('modal-overlay')) closeModal(); });
+
+    function copyText(t) { navigator.clipboard.writeText(t).then(() => alert('Copiado!')); }
+
+    async function enqueueLead(username) {
+        const data = await post('/api/dm-queue/enqueue-lead', { username });
+        if (data.ok) {
+            showAlert('queueAlert', `DM para @${username} adicionada na fila`);
+            loadQueue();
+        } else {
+            alert('Erro: ' + (data.error||'Desconhecido'));
+        }
+    }
+
+    // =================== DM QUEUE ===================
+    async function loadQueue() {
+        const data = await api('/api/dm-queue');
+        queueData = data.queue || [];
+        senderConfig = data.sender || {};
+
+        // Update sender bar
+        document.getElementById('sentToday').textContent = `${senderConfig.today_count||0}/${senderConfig.max_per_day||15}`;
+        document.getElementById('queuePending').textContent = (data.stats?.pending||0);
+        document.getElementById('senderStatusText').textContent = senderConfig.status || 'idle';
+        document.getElementById('senderToggle').checked = senderConfig.enabled || false;
+
+        // Config fields
+        document.getElementById('cfg-maxDay').value = senderConfig.max_per_day || 15;
+        document.getElementById('cfg-delayMin').value = senderConfig.delay_between_min_sec || 180;
+        document.getElementById('cfg-delayMax').value = senderConfig.delay_between_max_sec || 480;
+        document.getElementById('cfg-typeMin').value = senderConfig.typing_speed_min_ms || 50;
+        document.getElementById('cfg-typeMax').value = senderConfig.typing_speed_max_ms || 150;
+
+        // Badge
+        const badge = document.getElementById('queueBadge');
+        const pending = data.stats?.pending || 0;
+        badge.textContent = pending;
+        badge.style.display = pending > 0 ? 'block' : 'none';
+
+        // Update topbar sender status
+        updateSenderPill(senderConfig);
+
+        // Render queue
+        renderQueue(queueData);
+    }
+
+    function renderQueue(items) {
+        if (!items.length) {
+            document.getElementById('queueList').innerHTML = '<div class="empty"><div class="empty-icon">&#9993;</div><p>Fila vazia</p></div>';
+            return;
+        }
+        document.getElementById('queueList').innerHTML = items.map(i => `
+            <div class="queue-item">
+                <div class="user-avatar" style="min-width:32px">${(i.username||'?')[0].toUpperCase()}</div>
+                <div style="min-width:100px"><strong>@${i.username}</strong></div>
+                <span class="badge badge-${i.status}">${i.status}</span>
+                <div class="queue-msg">${i.message}</div>
+                <div class="queue-actions">
+                    ${i.status === 'pending' ? `<button class="btn btn-sm btn-danger" onclick="removeFromQueue('${i.id}')">Remover</button>` : ''}
+                    ${i.status === 'failed' ? `<button class="btn btn-sm btn-ghost" onclick="retryQueue('${i.id}')">Retry</button>` : ''}
                 </div>
-                <div class="metric-card">
-                    <div class="metric-label">Hot Leads</div>
-                    <div class="metric-value hot">${hot}</div>
-                </div>
-                <div class="metric-card">
-                    <div class="metric-label">Warm Leads</div>
-                    <div class="metric-value warm">${warm}</div>
-                </div>
-                <div class="metric-card">
-                    <div class="metric-label">Contatados</div>
-                    <div class="metric-value">${contatados}</div>
-                </div>
-                <div class="metric-card">
-                    <div class="metric-label">Fechados</div>
-                    <div class="metric-value success">${fechados}</div>
-                </div>
-            `;
+            </div>
+        `).join('');
+    }
+
+    function updateSenderPill(cfg) {
+        const pill = document.getElementById('senderStatus');
+        const st = cfg.status || 'idle';
+        pill.className = 'status-pill' + (st==='running'?' ':st==='error'||st==='paused'?' error':' warning');
+        pill.innerHTML = `<span class="status-dot ${st==='running'?'pulse':''}"></span><span>Sender: ${st}</span>`;
+    }
+
+    async function toggleSender(enabled) {
+        await post('/api/sender/config', { enabled });
+        loadQueue();
+    }
+
+    async function startSender() {
+        const data = await post('/api/sender/start', {});
+        if (data.ok) showAlert('queueAlert', 'Sender batch iniciado');
+        else showAlert('queueAlert', 'Erro: ' + (data.error||''), 'error');
+        setTimeout(loadQueue, 2000);
+    }
+
+    async function addToQueue() {
+        const username = document.getElementById('q-user').value.trim();
+        const message = document.getElementById('q-msg').value.trim();
+        if (!username || !message) return showAlert('queueAlert','Username e mensagem obrigatórios','error');
+        const data = await post('/api/dm-queue', { username, message });
+        if (data.ok) {
+            showAlert('queueAlert', `DM para @${username} adicionada`);
+            document.getElementById('q-user').value = '';
+            document.getElementById('q-msg').value = '';
+            loadQueue();
         }
-        
-        function renderLeadsTable(leads) {
-            if (leads.length === 0) {
-                document.getElementById('leadsTableContainer').innerHTML = '<div class="empty-state">💭 Nenhum lead cadastrado</div>';
-                return;
-            }
-            
-            const html = `
-                <table class="leads-table">
-                    <thead>
-                        <tr>
-                            <th>Username</th>
-                            <th>Prioridade</th>
-                            <th>Score</th>
-                            <th>Status</th>
-                            <th>Nicho</th>
-                            <th>Outcome</th>
-                            <th>Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${leads.map(l => `
-                            <tr>
-                                <td><strong>@${l.username}</strong></td>
-                                <td><span class="badge badge-${l.prioridade}">${l.prioridade}</span></td>
-                                <td>${l.score}/100</td>
-                                <td><span class="status-badge">${l.status}</span></td>
-                                <td>${l.nicho || 'N/A'}</td>
-                                <td>${l.outcome || '-'}</td>
-                                <td>
-                                    <div class="actions">
-                                        <button class="btn btn-sm btn-secondary" onclick="viewLead('${l.username}')">Ver</button>
-                                        <button class="btn btn-sm btn-success" onclick="quickTrack('${l.username}', 'respondeu')">Respondeu</button>
-                                    </div>
-                                </td>
-                            </tr>
-                        `).join('')}
-                    </tbody>
-                </table>
-            `;
-            document.getElementById('leadsTableContainer').innerHTML = html;
+    }
+
+    async function removeFromQueue(id) {
+        await fetch(`/api/dm-queue/${id}`, { method:'DELETE' });
+        loadQueue();
+    }
+
+    async function retryQueue(id) {
+        await fetch(`/api/dm-queue/${id}`, {
+            method:'PATCH', headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({ status:'pending', retries:0, error:null })
+        });
+        loadQueue();
+    }
+
+    async function saveSenderConfig() {
+        await post('/api/sender/config', {
+            max_per_day: Number(document.getElementById('cfg-maxDay').value),
+            delay_between_min_sec: Number(document.getElementById('cfg-delayMin').value),
+            delay_between_max_sec: Number(document.getElementById('cfg-delayMax').value),
+            typing_speed_min_ms: Number(document.getElementById('cfg-typeMin').value),
+            typing_speed_max_ms: Number(document.getElementById('cfg-typeMax').value),
+        });
+        showAlert('queueAlert', 'Config salva');
+    }
+
+    // =================== AUTOPILOT ===================
+    async function runAutopilot() {
+        const nicho = document.getElementById('ap-nicho').value;
+        const qtd = document.getElementById('ap-qtd').value;
+        const max = document.getElementById('ap-max').value;
+        const data = await post('/api/autopilot', { nicho, qtd:+qtd, maxAnalyze:+max });
+        showAlert('autopilotAlert', data.message || 'Autopilot iniciado');
+    }
+
+    async function toggleAutopilot(active) {
+        await post('/api/autopilot/toggle', { active });
+        updateAutopilotPill(active);
+    }
+
+    function updateAutopilotPill(active) {
+        const pill = document.getElementById('autopilotStatus');
+        pill.className = 'status-pill' + (active ? '' : ' warning');
+        pill.innerHTML = `<span class="status-dot ${active?'pulse':''}"></span><span>Autopilot: ${active?'on':'off'}</span>`;
+    }
+
+    // =================== TRACKER ===================
+    async function submitTracker() {
+        const username = document.getElementById('trk-user').value.trim();
+        const action = document.getElementById('trk-action').value;
+        const extra = document.getElementById('trk-extra').value.trim();
+        if (!username) return showAlert('trackerAlert','Username obrigatório','error');
+        const data = await post('/api/tracker', { username, action, extra: extra||undefined });
+        if (data.ok) {
+            showAlert('trackerAlert', 'Outcome registrado');
+            document.getElementById('trk-user').value = '';
+            document.getElementById('trk-extra').value = '';
+        } else showAlert('trackerAlert', data.error||'Erro','error');
+    }
+
+    // =================== STATS ===================
+    async function loadStats() {
+        const data = await api('/api/stats');
+        document.getElementById('statsMetrics').innerHTML = `
+            <div class="metric"><div class="metric-label">Total Leads</div><div class="metric-value">${data.total}</div></div>
+            <div class="metric"><div class="metric-label">DMs Enviadas</div><div class="metric-value">${data.byOutcome?.enviada||0}</div></div>
+            <div class="metric"><div class="metric-label">Responderam</div><div class="metric-value success">${data.byOutcome?.respondeu||0}</div></div>
+            <div class="metric"><div class="metric-label">Convertidos</div><div class="metric-value success">${data.byOutcome?.converteu||0}</div></div>
+            <div class="metric"><div class="metric-label">Valor Total</div><div class="metric-value success">R$ ${(data.totalValue||0).toFixed(0)}</div></div>
+        `;
+        if (data.learning) {
+            document.getElementById('learningData').innerHTML = `
+                <div class="metrics-row">
+                    <div class="metric"><div class="metric-label">Versão</div><div class="metric-value" style="font-size:18px">${data.learning.versao}</div></div>
+                    <div class="metric"><div class="metric-label">Score Médio</div><div class="metric-value" style="font-size:18px">${data.learning.score_medio}</div></div>
+                    <div class="metric"><div class="metric-label">Amostras</div><div class="metric-value" style="font-size:18px">${data.learning.total_amostras}</div></div>
+                </div>`;
+        } else {
+            document.getElementById('learningData').innerHTML = '<p style="color:var(--text2)">Nenhum dado de learning. Execute o autopilot primeiro.</p>';
         }
-        
-        function viewLead(username) {
-            const lead = leadsData.find(l => l.username === username);
-            if (!lead) return;
-            alert(JSON.stringify(lead, null, 2));
-        }
-        
-        async function quickTrack(username, action) {
-            try {
-                const res = await fetch('/api/tracker', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username, action })
-                });
-                const data = await res.json();
-                if (data.ok) {
-                    alert(`✅ ${username} marcado como ${action}`);
-                    loadLeads();
-                } else {
-                    alert(`❌ Erro: ${data.error || 'Desconhecido'}`);
-                }
-            } catch (err) {
-                alert(`❌ Erro: ${err.message}`);
-            }
-        }
-        
-        async function runAutopilot() {
-            const nicho = document.getElementById('autopilot-nicho').value;
-            const qtd = document.getElementById('autopilot-qtd').value;
-            const max = document.getElementById('autopilot-max').value;
-            
-            try {
-                const res = await fetch('/api/autopilot', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ nicho, qtd: Number(qtd), maxAnalyze: Number(max) })
-                });
-                const data = await res.json();
-                document.getElementById('autopilotAlert').innerHTML = 
-                    `<div class="alert alert-success">✅ ${data.message}</div>`;
-            } catch (err) {
-                document.getElementById('autopilotAlert').innerHTML = 
-                    `<div class="alert alert-error">❌ Erro: ${err.message}</div>`;
-            }
-        }
-        
-        async function submitTracker() {
-            const username = document.getElementById('tracker-username').value;
-            const action = document.getElementById('tracker-action').value;
-            const extra = document.getElementById('tracker-extra').value;
-            
-            if (!username) {
-                alert('❌ Username obrigatório');
-                return;
-            }
-            
-            try {
-                const res = await fetch('/api/tracker', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username, action, extra })
-                });
-                const data = await res.json();
-                if (data.ok) {
-                    document.getElementById('trackerAlert').innerHTML = 
-                        `<div class="alert alert-success">✅ Outcome registrado</div>`;
-                    document.getElementById('tracker-username').value = '';
-                    document.getElementById('tracker-extra').value = '';
-                } else {
-                    document.getElementById('trackerAlert').innerHTML = 
-                        `<div class="alert alert-error">❌ ${data.error}</div>`;
-                }
-            } catch (err) {
-                document.getElementById('trackerAlert').innerHTML = 
-                    `<div class="alert alert-error">❌ ${err.message}</div>`;
-            }
-        }
-        
-        async function loadStats() {
-            try {
-                const res = await fetch('/api/stats');
-                const data = await res.json();
-                
-                document.getElementById('statsMetrics').innerHTML = `
-                    <div class="metric-card">
-                        <div class="metric-label">Total Leads</div>
-                        <div class="metric-value">${data.total}</div>
-                    </div>
-                    <div class="metric-card">
-                        <div class="metric-label">Enviadas</div>
-                        <div class="metric-value">${data.byOutcome.enviada}</div>
-                    </div>
-                    <div class="metric-card">
-                        <div class="metric-label">Responderam</div>
-                        <div class="metric-value success">${data.byOutcome.respondeu}</div>
-                    </div>
-                    <div class="metric-card">
-                        <div class="metric-label">Convertidos</div>
-                        <div class="metric-value success">${data.byOutcome.converteu}</div>
-                    </div>
-                    <div class="metric-card">
-                        <div class="metric-label">Valor Total</div>
-                        <div class="metric-value success">R$ ${data.totalValue.toFixed(2)}</div>
-                    </div>
-                `;
-                
-                if (data.learning) {
-                    document.getElementById('learningData').innerHTML = `
-                        <p><strong>Versão:</strong> ${data.learning.versao}</p>
-                        <p><strong>Score Médio:</strong> ${data.learning.score_medio}</p>
-                        <p><strong>Amostras:</strong> ${data.learning.total_amostras}</p>
-                    `;
-                } else {
-                    document.getElementById('learningData').innerHTML = '<p>Nenhum dado de learning disponível</p>';
-                }
-            } catch (err) {
-                console.error('Erro ao carregar stats:', err);
-            }
-        }
-        
-        // Init
-        loadLeads();
-        setInterval(loadLeads, 30000);
+        updateAutopilotPill(data.autopilot?.active);
+    }
+
+    // =================== INIT ===================
+    loadLeads();
+    loadQueue();
+    setInterval(loadLeads, 30000);
+    setInterval(loadQueue, 15000);
     </script>
 </body>
 </html>

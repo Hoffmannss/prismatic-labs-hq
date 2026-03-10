@@ -101,4 +101,142 @@ class AutopilotDB {
   }
 }
 
-module.exports = { AutopilotDB, DEFAULT_CONFIG };
+// =============================================================
+// DM QUEUE DATABASE — Fila de envio de DMs
+// =============================================================
+
+const DM_QUEUE_FILE = path.join(DATA_DIR, 'dm-queue.json');
+const DM_SENDER_CONFIG_FILE = path.join(DATA_DIR, 'sender-config.json');
+
+const DEFAULT_SENDER_CONFIG = {
+  enabled: false,
+  max_per_day: 15,
+  delay_between_min_sec: 180,  // 3 min
+  delay_between_max_sec: 480,  // 8 min
+  typing_speed_min_ms: 50,
+  typing_speed_max_ms: 150,
+  pause_on_challenge: true,
+  today_count: 0,
+  today_date: null,
+  last_send_at: null,
+  status: 'idle'  // idle | running | paused | error
+};
+
+class DmQueueDB {
+  constructor() {
+    this.ensureFiles();
+  }
+
+  ensureFiles() {
+    if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+    if (!fs.existsSync(DM_QUEUE_FILE)) this._saveQueue([]);
+    if (!fs.existsSync(DM_SENDER_CONFIG_FILE)) this._saveConfig(DEFAULT_SENDER_CONFIG);
+  }
+
+  _loadJSON(f, def) {
+    try { return fs.existsSync(f) ? JSON.parse(fs.readFileSync(f, 'utf8')) : def; }
+    catch { return def; }
+  }
+  _saveJSON(f, data) {
+    fs.mkdirSync(path.dirname(f), { recursive: true });
+    fs.writeFileSync(f, JSON.stringify(data, null, 2));
+  }
+  _saveQueue(q) { this._saveJSON(DM_QUEUE_FILE, q); }
+  _saveConfig(c) { this._saveJSON(DM_SENDER_CONFIG_FILE, { ...c, updated_at: new Date().toISOString() }); }
+
+  // --- Queue CRUD ---
+  loadQueue() { return this._loadJSON(DM_QUEUE_FILE, []); }
+
+  addToQueue(username, message, followup_day = null) {
+    const queue = this.loadQueue();
+    const id = `dm_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    const item = {
+      id, username: username.replace('@','').toLowerCase(), message,
+      followup_day, status: 'pending', retries: 0,
+      created_at: new Date().toISOString(), sent_at: null, error: null
+    };
+    queue.push(item);
+    this._saveQueue(queue);
+    return item;
+  }
+
+  getNextPending() {
+    return this.loadQueue().find(i => i.status === 'pending') || null;
+  }
+
+  updateItem(id, updates) {
+    const queue = this.loadQueue();
+    const idx = queue.findIndex(i => i.id === id);
+    if (idx === -1) return false;
+    queue[idx] = { ...queue[idx], ...updates };
+    this._saveQueue(queue);
+    return true;
+  }
+
+  markSent(id) {
+    return this.updateItem(id, { status: 'sent', sent_at: new Date().toISOString() });
+  }
+
+  markFailed(id, error) {
+    const queue = this.loadQueue();
+    const item = queue.find(i => i.id === id);
+    if (!item) return false;
+    item.retries = (item.retries || 0) + 1;
+    item.status = item.retries >= 3 ? 'failed' : 'pending';
+    item.error = error;
+    this._saveQueue(queue);
+    return true;
+  }
+
+  removeItem(id) {
+    const queue = this.loadQueue().filter(i => i.id !== id);
+    this._saveQueue(queue);
+    return true;
+  }
+
+  getStats() {
+    const queue = this.loadQueue();
+    return {
+      total: queue.length,
+      pending: queue.filter(i => i.status === 'pending').length,
+      sending: queue.filter(i => i.status === 'sending').length,
+      sent: queue.filter(i => i.status === 'sent').length,
+      failed: queue.filter(i => i.status === 'failed').length,
+    };
+  }
+
+  // --- Sender Config ---
+  loadSenderConfig() {
+    const config = this._loadJSON(DM_SENDER_CONFIG_FILE, DEFAULT_SENDER_CONFIG);
+    // Reset daily count if new day
+    const today = new Date().toISOString().slice(0, 10);
+    if (config.today_date !== today) {
+      config.today_count = 0;
+      config.today_date = today;
+      this._saveConfig(config);
+    }
+    return config;
+  }
+
+  updateSenderConfig(updates) {
+    const current = this.loadSenderConfig();
+    const updated = { ...current, ...updates };
+    this._saveConfig(updated);
+    return updated;
+  }
+
+  incrementDailyCount() {
+    const config = this.loadSenderConfig();
+    config.today_count = (config.today_count || 0) + 1;
+    config.last_send_at = new Date().toISOString();
+    this._saveConfig(config);
+    return config;
+  }
+
+  canSendMore() {
+    const config = this.loadSenderConfig();
+    return config.enabled && config.today_count < config.max_per_day;
+  }
+}
+
+module.exports = { AutopilotDB, DEFAULT_CONFIG, DmQueueDB, DEFAULT_SENDER_CONFIG };

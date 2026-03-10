@@ -10,7 +10,7 @@ const fs     = require('fs');
 const path   = require('path');
 const url    = require('url');
 const { spawnSync, spawn } = require('child_process');
-const { AutopilotDB } = require('../config/database');
+const { AutopilotDB, DmQueueDB } = require('../config/database');
 
 const PORT          = parseInt(process.argv[2]) || 3131;
 const DATA_DIR      = path.join(__dirname, '..', 'data');
@@ -22,6 +22,7 @@ const TRACKER_DIR   = path.join(DATA_DIR, 'tracker');
 const LEARNING_FILE = path.join(DATA_DIR, 'learning', 'style-memory.json');
 
 const autopilotDB = new AutopilotDB();
+const dmQueueDB = new DmQueueDB();
 
 function json(res, data, status = 200) {
   res.writeHead(status, {
@@ -185,7 +186,71 @@ const server = http.createServer(async (req, res) => {
     return json(res, { ok: true, active: autopilotDB.loadConfig().active });
   }
 
-  // ====== FIM NOVAS ROTAS ======
+  // ====== DM QUEUE API ======
+
+  if (req.method === 'GET' && pathname === '/api/dm-queue') {
+    const queue = dmQueueDB.loadQueue();
+    const stats = dmQueueDB.getStats();
+    const config = dmQueueDB.loadSenderConfig();
+    return json(res, { queue, stats, sender: config });
+  }
+
+  if (req.method === 'POST' && pathname === '/api/dm-queue') {
+    const { username, message, followup_day } = await bodyJSON(req);
+    if (!username || !message) return json(res, { ok: false, error: 'username e message obrigatórios' }, 400);
+    const item = dmQueueDB.addToQueue(username, message, followup_day || null);
+    return json(res, { ok: true, item });
+  }
+
+  if (req.method === 'POST' && pathname === '/api/dm-queue/enqueue-lead') {
+    // Enqueue a lead's best message directly from CRM
+    const { username } = await bodyJSON(req);
+    if (!username) return json(res, { ok: false, error: 'username obrigatório' }, 400);
+    const msg = getLeadMessages(username);
+    const text = msg?.revisao?.mensagem_final || msg?.mensagens?.mensagem1?.texto;
+    if (!text) return json(res, { ok: false, error: 'Nenhuma mensagem encontrada para este lead' }, 404);
+    const item = dmQueueDB.addToQueue(username, text);
+    return json(res, { ok: true, item });
+  }
+
+  if (req.method === 'PATCH' && pathname.startsWith('/api/dm-queue/')) {
+    const id = pathname.split('/').pop();
+    const updates = await bodyJSON(req);
+    const ok = dmQueueDB.updateItem(id, updates);
+    return json(res, { ok });
+  }
+
+  if (req.method === 'DELETE' && pathname.startsWith('/api/dm-queue/')) {
+    const id = pathname.split('/').pop();
+    dmQueueDB.removeItem(id);
+    return json(res, { ok: true });
+  }
+
+  // Sender config
+  if (req.method === 'GET' && pathname === '/api/sender/config') {
+    return json(res, dmQueueDB.loadSenderConfig());
+  }
+
+  if (req.method === 'POST' && pathname === '/api/sender/config') {
+    const body = await bodyJSON(req);
+    const config = dmQueueDB.updateSenderConfig(body);
+    return json(res, { ok: true, config });
+  }
+
+  if (req.method === 'POST' && pathname === '/api/sender/start') {
+    const config = dmQueueDB.loadSenderConfig();
+    if (!config.enabled) return json(res, { ok: false, error: 'Sender está desabilitado' }, 400);
+    setTimeout(() => {
+      const child = spawn('node', [path.join(__dirname, '0-sender.js'), '--once'], {
+        detached: true, stdio: 'ignore', cwd: __dirname, env: process.env
+      });
+      child.unref();
+    }, 100);
+    dmQueueDB.updateSenderConfig({ status: 'running' });
+    return json(res, { ok: true, message: 'Sender iniciado (modo single batch)' });
+  }
+
+  // ====== FIM DM QUEUE API ======
 
   if (req.method === 'POST' && pathname === '/api/tracker') {
     const { username, action, extra } = await bodyJSON(req);
