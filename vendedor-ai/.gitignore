@@ -1,54 +1,60 @@
 # =============================================================
-# GITIGNORE - VENDEDOR AI
-# Protege dados sensíveis, sessões e arquivos locais
+# PRISMATIC LABS — VENDEDOR AI .gitignore
 # =============================================================
 
-# Ambiente e credenciais
+# ---- SEGURANÇA (NUNCA commitar) ----
 .env
 .env.*
 !.env.example
-
-# Sessões criptografadas do Instagram
 data/session/
 *.json.enc
 
-# CRM e dados locais
-data/crm/
+# ---- DADOS DE RUNTIME (regenerados automaticamente) ----
 data/leads/
 data/mensagens/
 data/scout/
+data/relatorios/
+data/learning/
 data/nichos-cache.json
 data/autopilot-config.json
+data/dm-queue.json
+data/sender-config.json
 
-# Node modules
-node_modules/
-package-lock.json
+# ---- CRM (dados sensíveis de leads) ----
+# Commitar apenas a estrutura, nunca dados reais
+data/crm/leads-database.json
+data/crm/pipeline.json
 
-# Logs
+# ---- LOGS ----
 logs/
 *.log
 npm-debug.log*
 
-# Sistema operacional
+# ---- NODE ----
+node_modules/
+
+# ---- SISTEMA OPERACIONAL ----
 .DS_Store
 Thumbs.db
+._*
 
-# IDEs
+# ---- EDITORES ----
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
 
-# Temporários
+# ---- PLAYWRIGHT ----
+playwright-state/
+.auth/
+playwright-report/
+test-results/
+
+# ---- BUILD / TEMPORÁRIOS ----
+dist/
+build/
+.cache/
 tmp/
 temp/
 *.tmp
-
-# Playwright
-playwright-state/
-.auth/
-
-# Build
-dist/
-build/

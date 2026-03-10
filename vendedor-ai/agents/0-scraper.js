@@ -321,7 +321,9 @@ async function scrapeHashtag(hashtag, limit = 50) {
     await browser.close();
   }
 
-  const result = Array.from(usernames).slice(0, limit);
+  // Filtro: remove entradas que parecem emails ou domínios (ex: "hotmail.com")
+  const isValidUsername = u => u && !u.includes('.') && !u.includes('@') && u.length >= 2 && u.length <= 30;
+  const result = Array.from(usernames).filter(isValidUsername).slice(0, limit);
   console.log(`${C.green}[SCRAPER] Total coletado: ${result.length} de #${tag}${C.reset}`);
   return result;
 }
