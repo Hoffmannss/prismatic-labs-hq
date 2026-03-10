@@ -499,21 +499,106 @@ async function scrapeProfiles(usernames) {
   return profiles;
 }
 
+// ---- SCRAPER POR BUSCA (fallback quando hashtag é bloqueada) ----
+async function scrapeBySearch(query, limit = 20) {
+  const q = encodeURIComponent(query.replace('#',''));
+  console.log(`\n${C.cyan}[SCRAPER] Busca: "${query}" | Meta: ${limit} perfis${C.reset}`);
+
+  const { browser, context } = await launchBrowser(true);
+  const page = await context.newPage();
+  await page.route('**/*.{png,jpg,jpeg,gif,webp,mp4,mov}', r => r.abort());
+
+  const usernames = new Set();
+
+  try {
+    // Interceptar XHR do search do Instagram
+    page.on('response', async resp => {
+      const url = resp.url();
+      if (!url.includes('topsearch') && !url.includes('web/search')) return;
+      try {
+        const json = await resp.json().catch(() => null);
+        if (!json) return;
+        for (const item of (json.users || []))
+          if (item?.user?.username) usernames.add(item.user.username.toLowerCase());
+      } catch(_) {}
+    });
+
+    await page.goto(`https://www.instagram.com/explore/search/keyword/?q=${q}`, {
+      waitUntil: 'domcontentloaded', timeout: 30000
+    });
+
+    if (page.url().includes('login')) throw new Error('Sessão expirada');
+
+    await sleep(3000);
+    for (let i = 0; i < 3 && usernames.size < limit; i++) {
+      await page.evaluate(() => window.scrollBy(0, 1500));
+      await sleep(1500);
+    }
+
+    // Fallback: extrair hrefs de perfis visíveis na página
+    if (usernames.size < 3) {
+      const blocked = new Set(['explore','reels','stories','direct','accounts','p','tv','reel']);
+      const hrefs = await page.$$eval('a[href^="/"]', links =>
+        links.map(a => new URL(a.href).pathname.replace(/\//g,'').toLowerCase())
+      ).catch(() => []);
+      for (const u of hrefs) {
+        if (u && u.length >= 2 && u.length <= 30 && !u.includes('.') && !blocked.has(u))
+          usernames.add(u);
+        if (usernames.size >= limit) break;
+      }
+    }
+
+  } catch(e) {
+    console.error(`${C.red}[SCRAPER] Erro busca "${query}": ${e.message}${C.reset}`);
+  } finally {
+    await browser.close();
+  }
+
+  const blocked = new Set(['explore','reels','stories','direct','accounts','p','tv','reel']);
+  const isValid = u => u && !u.includes('.') && !u.includes('@') && u.length >= 2 && u.length <= 30 && !blocked.has(u);
+  const result = Array.from(usernames).filter(isValid).slice(0, limit);
+  console.log(`${C.green}[SCRAPER] Busca: ${result.length} perfis encontrados${C.reset}`);
+  return result;
+}
+
 // ---- SCRAPER POR NICHO ----
 async function scrapeNicho(nichoConfig, limit = 30) {
   const hashtags = nichoConfig.hashtags.slice(0, 4);
+  const seedAccounts = (nichoConfig.seed_accounts || []).slice(0, 3);
   console.log(`\n${C.magenta}${'='.repeat(60)}${C.reset}`);
   console.log(`${C.bright}  SCRAPER: ${nichoConfig.nome}${C.reset}`);
   console.log(`  Hashtags: ${hashtags.join(', ')} | Meta: ${limit} leads`);
+  if (seedAccounts.length) console.log(`  Seed accounts: ${seedAccounts.join(', ')}`);
   console.log(`${C.magenta}${'='.repeat(60)}${C.reset}\n`);
 
   const allUsernames = new Set();
+
+  // Rota 1: hashtag scraping (método original)
   for (const hashtag of hashtags) {
     if (allUsernames.size >= limit * 2) break;
     const list = await scrapeHashtag(hashtag, Math.ceil(limit / hashtags.length) + 10);
     list.forEach(u => allUsernames.add(u));
-    await sleepRandom(3000, 6000);
+    if (list.length > 0) await sleepRandom(3000, 6000);
   }
+
+  // Rota 2: busca por palavra-chave (fallback automático se hashtag bloqueada)
+  if (allUsernames.size === 0) {
+    console.log(`${C.yellow}[SCRAPER] Hashtags bloqueadas — ativando busca por palavra-chave...${C.reset}`);
+    const queries = [nichoConfig.nome, ...hashtags].slice(0, 3);
+    for (const q of queries) {
+      if (allUsernames.size >= limit * 2) break;
+      const list = await scrapeBySearch(q, Math.ceil(limit / queries.length) + 10);
+      list.forEach(u => allUsernames.add(u));
+      if (list.length > 0) await sleepRandom(2000, 4000);
+    }
+  }
+
+  // Rota 3: seed accounts como fonte de usernames (se configurado e ainda sem resultado)
+  if (allUsernames.size === 0 && seedAccounts.length > 0) {
+    console.log(`${C.yellow}[SCRAPER] Usando seed accounts como fonte...${C.reset}`);
+    seedAccounts.forEach(u => allUsernames.add(u.replace('@','').toLowerCase()));
+  }
+
   console.log(`${C.cyan}[SCRAPER] Total únicos: ${allUsernames.size}${C.reset}`);
 
   const list = Array.from(allUsernames).slice(0, Math.min(limit * 2, 60));
@@ -538,6 +623,7 @@ if (require.main === module) {
     console.log('  login --manual            Login manual (navegador)');
     console.log('  diag                      Diagnóstico completo');
     console.log('  hashtag <tag> [limite]    Scrape por hashtag');
+    console.log('  search <query> [limite]   Busca por palavra-chave (fallback)');
     console.log('  profile <user>            Scrape de perfil');
     console.log('  profiles <u1,u2,...>      Scrape múltiplos perfis');
     console.log('  test                      Teste rápido');
@@ -552,6 +638,10 @@ if (require.main === module) {
       else if (cmd === 'rotate-key') { const k = security.rotateKey(SESSION_DIR); console.log(`\nSESSION_ENCRYPTION_KEY=${k}\n`); }
       else if (cmd === 'hashtag')    {
         const r = await scrapeHashtag(arg1||'makecom', parseInt(arg2||'20'));
+        console.log('\nUsernames:'); r.forEach((u,i) => console.log(`  ${i+1}. @${u}`));
+      }
+      else if (cmd === 'search')     {
+        const r = await scrapeBySearch(arg1||'automacao', parseInt(arg2||'20'));
         console.log('\nUsernames:'); r.forEach((u,i) => console.log(`  ${i+1}. @${u}`));
       }
       else if (cmd === 'profile')    {
@@ -574,4 +664,4 @@ if (require.main === module) {
   })();
 }
 
-module.exports = { scrapeHashtag, scrapeProfile, scrapeProfiles, scrapeNicho };
+module.exports = { scrapeHashtag, scrapeBySearch, scrapeProfile, scrapeProfiles, scrapeNicho };
