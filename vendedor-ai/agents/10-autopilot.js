@@ -13,7 +13,7 @@ const fs   = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
 const { detectOrCreateNicho } = require('./13-nicho-ai');
-const { scrapeHashtag, scrapeProfiles } = require('./0-scraper');
+const { scrapeNicho } = require('./0-scraper');
 const { AutopilotDB } = require('../config/database');
 
 const C = {
@@ -65,47 +65,27 @@ async function processNicho(nichoDesc, qtd, maxAnalyze) {
   const { id: nichoId, config } = await detectOrCreateNicho(nichoDesc);
   const jaCRM = loadCRMUsernames();
 
-  // ---- FASE 1: SCRAPING DE HASHTAGS (sem Apify) ----
-  console.log(`\n${C.cyan}[1/4] Scraping de hashtags (scraper proprio)...${C.reset}`);
-  const hashtags = config.hashtags.slice(0, 4);
-  const allUsernames = new Set();
+  // ---- FASE 1+2: SCRAPING INTELIGENTE via scrapeNicho ----
+  // scrapeNicho já tenta: hashtag → smart seed (topsearch+score+followers) → seeds manuais
+  console.log(`\n${C.cyan}[1/4] Scraping inteligente (hashtag → smart seed → followers)...${C.reset}`);
+  const rawProfiles = await scrapeNicho(config, qtd * 2);
 
-  for (const hashtag of hashtags) {
-    if (allUsernames.size >= qtd * 3) break;
-    try {
-      const usernames = await scrapeHashtag(hashtag, Math.ceil(qtd / hashtags.length) + 15);
-      let novos = 0;
-      for (const u of usernames) {
-        if (!jaCRM.has(u)) { allUsernames.add(u); novos++; }
-      }
-      console.log(`  #${hashtag}: ${usernames.length} coletados | ${novos} novos`);
-      await sleep(3000);
-    } catch (e) {
-      console.error(`${C.red}  Erro em #${hashtag}: ${e.message}${C.reset}`);
+  // Deduplicação contra o CRM existente
+  const filtered = rawProfiles.filter(p => {
+    const u = (p.username || '').toLowerCase();
+    if (jaCRM.has(u)) {
+      console.log(`  ${C.dim}@${u} já no CRM — ignorado${C.reset}`);
+      return false;
     }
-  }
-
-  console.log(`  Total usernames novos: ${allUsernames.size}`);
-
-  if (allUsernames.size === 0) {
-    console.log(`${C.yellow}  Nenhum candidato novo. Pulando.${C.reset}`);
-    return { nichoId, leads: 0, analisados: 0 };
-  }
-
-  // ---- FASE 2: ENRIQUECIMENTO DE PERFIS ----
-  console.log(`\n${C.cyan}[2/4] Enriquecendo perfis...${C.reset}`);
-  const usernamesList = Array.from(allUsernames).slice(0, Math.min(qtd * 2, 60));
-  const profiles = await scrapeProfiles(usernamesList);
-
-  // Filtrar por keywords da bio do nicho
-  const keywords = (config.keywords_bio || []).map(k => k.toLowerCase());
-  const filtered = profiles.filter(p => {
-    if (!p.bio || keywords.length === 0) return true;
-    const bioLower = p.bio.toLowerCase();
-    return keywords.some(k => bioLower.includes(k));
+    return true;
   });
 
-  console.log(`  Filtrados por bio keywords: ${filtered.length}/${profiles.length}`);
+  console.log(`\n${C.cyan}[2/4] Deduplicação CRM: ${filtered.length}/${rawProfiles.length} novos${C.reset}`);
+
+  if (filtered.length === 0) {
+    console.log(`${C.yellow}  Nenhum candidato novo após deduplicação. Pulando.${C.reset}`);
+    return { nichoId, leads: 0, analisados: 0 };
+  }
 
   // Montar queue de leads
   const queue = filtered.slice(0, qtd).map(p => ({
