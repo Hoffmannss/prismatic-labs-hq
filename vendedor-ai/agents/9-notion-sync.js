@@ -17,7 +17,35 @@ const TOKEN       = process.env.NOTION_API_KEY || process.env.NOTION_TOKEN;
 const DATABASE_ID = process.env.NOTION_DATABASE_ID;
 const PARENT_ID   = process.env.NOTION_PARENT_PAGE_ID;
 const DB_FILE     = path.join(__dirname, '..', 'data', 'crm', 'leads-database.json');
+const CACHE_FILE  = path.join(__dirname, '..', 'data', 'crm', 'notion-sync-cache.json');
 const CMD         = process.argv[2] || 'sync';
+
+// Gera fingerprint dos campos que podem mudar — detecta se lead precisa de UPDATE
+function leadFingerprint(lead) {
+  const a  = lead.analise || {};
+  const ap = a.analise_posts || {};
+  let reviewScore = null;
+  try {
+    const mFile = path.join(__dirname, '..', 'data', 'mensagens', lead.username + '_mensagens.json');
+    if (fs.existsSync(mFile)) {
+      const m = JSON.parse(fs.readFileSync(mFile, 'utf8'));
+      reviewScore = m.revisao?.score || null;
+    }
+  } catch {}
+  return JSON.stringify({
+    score:        lead.score,
+    status:       lead.status,
+    prioridade:   lead.prioridade,
+    nicho:        lead.nicho || a.nicho,
+    problema:     a.problema_principal,
+    servico:      a.servico_ideal,
+    followups:    lead.followups_enviados || 0,
+    prox:         lead.proximo_followup || null,
+    ultima:       lead.data_ultima_interacao || null,
+    gancho:       ap.gancho_ideal || null,
+    reviewer:     reviewScore,
+  });
+}
 
 const C = {
   reset: '\x1b[0m', bright: '\x1b[1m', green: '\x1b[32m',
@@ -177,28 +205,50 @@ async function sync() {
   if (existing === null) process.exit(1);
   console.log(`${C.cyan}[NOTION] ${Object.keys(existing).length} paginas ja no Notion${C.reset}`);
 
-  let created = 0, updated = 0, errors = 0;
+  // Carregar cache de fingerprints
+  let cache = {};
+  try { if (fs.existsSync(CACHE_FILE)) cache = JSON.parse(fs.readFileSync(CACHE_FILE, 'utf8')); } catch {}
+
+  let created = 0, updated = 0, skipped = 0, errors = 0;
 
   for (const lead of leads) {
-    const props  = buildProperties(lead);
-    const pageId = existing[lead.username];
+    const pageId     = existing[lead.username];
+    const fingerprint = leadFingerprint(lead);
+
+    // Skip UPDATE se nada mudou desde o último sync
+    if (pageId && cache[lead.username] === fingerprint) {
+      skipped++;
+      console.log(`  ${C.cyan}[SKIP]   @${lead.username} — sem mudanças${C.reset}`);
+      continue;
+    }
+
+    const props = buildProperties(lead);
     try {
       if (pageId) {
         const res = await notionRequest('PATCH', '/pages/' + pageId, { properties: props });
-        if (res.status === 200) { updated++; console.log(`${C.green}  [UPDATE] @${lead.username} — ${lead.prioridade} | score ${lead.score}${C.reset}`); }
-        else { errors++; console.log(`${C.red}  [ERRO]   @${lead.username} — ${res.body.message || res.status}${C.reset}`); }
+        if (res.status === 200) {
+          updated++;
+          cache[lead.username] = fingerprint;
+          console.log(`${C.green}  [UPDATE] @${lead.username} — ${lead.prioridade} | score ${lead.score}${C.reset}`);
+        } else { errors++; console.log(`${C.red}  [ERRO]   @${lead.username} — ${res.body.message || res.status}${C.reset}`); }
       } else {
         const res = await notionRequest('POST', '/pages', { parent: { database_id: DATABASE_ID }, properties: props });
-        if (res.status === 200) { created++; console.log(`${C.cyan}  [CREATE] @${lead.username} — ${lead.prioridade} | score ${lead.score}${C.reset}`); }
-        else { errors++; console.log(`${C.red}  [ERRO]   @${lead.username} — ${res.body.message || res.status}${C.reset}`); }
+        if (res.status === 200) {
+          created++;
+          cache[lead.username] = fingerprint;
+          console.log(`${C.cyan}  [CREATE] @${lead.username} — ${lead.prioridade} | score ${lead.score}${C.reset}`);
+        } else { errors++; console.log(`${C.red}  [ERRO]   @${lead.username} — ${res.body.message || res.status}${C.reset}`); }
       }
     } catch(e) { errors++; console.log(`${C.red}  [ERRO]   @${lead.username} — ${e.message}${C.reset}`); }
     await sleep(300);
   }
 
+  // Persistir cache atualizado
+  try { fs.writeFileSync(CACHE_FILE, JSON.stringify(cache, null, 2)); } catch {}
+
   console.log(`\n${C.magenta}${'='.repeat(52)}${C.reset}`);
   console.log(`${C.bright}  SYNC CONCLUIDO${C.reset}`);
-  console.log(`  Criados: ${C.cyan}${created}${C.reset}  Atualizados: ${C.green}${updated}${C.reset}  Erros: ${C.red}${errors}${C.reset}`);
+  console.log(`  Criados: ${C.cyan}${created}${C.reset}  Atualizados: ${C.green}${updated}${C.reset}  Pulados: ${skipped}  Erros: ${C.red}${errors}${C.reset}`);
   console.log(`${C.magenta}${'='.repeat(52)}${C.reset}\n`);
 }
 

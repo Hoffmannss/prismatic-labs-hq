@@ -775,12 +775,30 @@ async function scrapeNicho(nichoConfig, limit = 30) {
   const list = Array.from(allUsernames).slice(0, Math.min(limit * 2, 100));
   const profiles = await scrapeProfiles(list);
 
+  // ── FILTRO 1: qualidade mínima (remove perfis fantasma) ──────────────────
+  // Rejeita conta com TODOS: bio vazia + followers < 100 + posts < 3
+  // Mantém qualquer conta com ao menos um sinal de atividade real
+  const qualityFiltered = profiles.filter(p => {
+    const hasBio      = p.bio && p.bio.trim().length >= 8;
+    const hasFollowers = (p.followers || 0) >= 100;
+    const hasPosts    = (p.posts    || 0) >= 3;
+    if (!hasBio && !hasFollowers && !hasPosts) {
+      console.log(`  ${C.yellow}⚠ @${p.username} — perfil fantasma, ignorado${C.reset}`);
+      return false;
+    }
+    return true;
+  });
+  if (qualityFiltered.length < profiles.length) {
+    console.log(`${C.yellow}[SCRAPER] Qualidade: ${profiles.length - qualityFiltered.length} perfis fantasma removidos${C.reset}`);
+  }
+
+  // ── FILTRO 2: relevância de nicho por bio ─────────────────────────────────
   const keywords = (nichoConfig.keywords_bio||[]).map(k => k.toLowerCase());
-  const filtered = profiles.filter(p => {
-    if (!p.bio) return true;
+  const filtered = qualityFiltered.filter(p => {
+    if (!p.bio) return true;  // sem bio passa para analyzer decidir
     return keywords.length === 0 || keywords.some(k => p.bio.toLowerCase().includes(k));
   });
-  console.log(`${C.green}[SCRAPER] Filtrados por bio: ${filtered.length}/${profiles.length}${C.reset}`);
+  console.log(`${C.green}[SCRAPER] Filtrados por nicho: ${filtered.length}/${qualityFiltered.length} (${profiles.length} total)${C.reset}`);
   return filtered.slice(0, limit);
 }
 

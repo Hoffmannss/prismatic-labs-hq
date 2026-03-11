@@ -51,11 +51,10 @@ function runAnalyze(username, bio, followers, posts, postsDesc, nichoId) {
   return r.status === 0;
 }
 
-function pickPostsDesc(config) {
-  return [
-    `nicho: ${config.nome}`,
-    `dor alvo: ${config.dor_principal}`
-  ].join(' | ');
+function pickPostsDesc(_config) {
+  // Sem posts reais disponíveis — retorna vazio para o analyzer avaliar
+  // apenas a bio + dados reais do perfil (evita score inflado por contexto falso)
+  return '';
 }
 
 async function processNicho(nichoDesc, qtd, maxAnalyze) {
