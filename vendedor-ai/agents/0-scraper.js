@@ -704,7 +704,13 @@ async function scrapeNicho(nichoConfig, limit = 30) {
     const { browser: bSearch, context: ctxSearch } = await launchBrowser(true);
     const seedCandidates = new Set();
     try {
-      const words = nichoConfig.nome.replace('#','').split(/\s+/).filter(w => w.length > 2);
+      // Limpa nome do nicho antes de fragmentar (remove (, ), /, \ e artigos curtos)
+      const stopWords = new Set(['de','do','da','dos','das','em','no','na','nos','nas','e','o','a']);
+      const words = nichoConfig.nome
+        .replace(/[()\/\\|]/g, ' ')   // remove parênteses, barras, pipes
+        .replace(/[^a-zA-ZÀ-ú0-9\s#]/g, '') // remove outros especiais
+        .split(/\s+/)
+        .filter(w => w.length > 2 && !stopWords.has(w.toLowerCase()));
       const queries = [...new Set([nichoConfig.nome, ...hashtags.slice(0,2), ...words])].slice(0, 6);
       for (const q of queries) {
         const results = await topsearchQuery(ctxSearch, q);
@@ -792,14 +798,29 @@ async function scrapeNicho(nichoConfig, limit = 30) {
     console.log(`${C.yellow}[SCRAPER] Qualidade: ${profiles.length - qualityFiltered.length} perfis fantasma removidos${C.reset}`);
   }
 
-  // ── FILTRO 2: relevância de nicho por bio ─────────────────────────────────
+  // ── FILTRO 2: relevância de nicho (bio + username + fullName) ────────────
+  // Checa os 3 campos para não perder accounts como @projetosdeautomacao
+  // Perfis sem bio passam para o analyzer decidir
   const keywords = (nichoConfig.keywords_bio||[]).map(k => k.toLowerCase());
   const filtered = qualityFiltered.filter(p => {
-    if (!p.bio) return true;  // sem bio passa para analyzer decidir
-    return keywords.length === 0 || keywords.some(k => p.bio.toLowerCase().includes(k));
+    if (keywords.length === 0) return true;
+    if (!p.bio && !p.fullName) return true;  // sem texto → passa para analyzer
+    const haystack = [
+      (p.bio      || '').toLowerCase(),
+      (p.username || '').toLowerCase(),
+      (p.fullName || '').toLowerCase(),
+    ].join(' ');
+    return keywords.some(k => haystack.includes(k));
   });
-  console.log(`${C.green}[SCRAPER] Filtrados por nicho: ${filtered.length}/${qualityFiltered.length} (${profiles.length} total)${C.reset}`);
-  return filtered.slice(0, limit);
+
+  // Fallback: se filtro removeu tudo (niche muito restrito), usa qualityFiltered diretamente
+  const finalFiltered = filtered.length > 0 ? filtered : qualityFiltered;
+  if (filtered.length === 0 && qualityFiltered.length > 0) {
+    console.log(`${C.yellow}[SCRAPER] Bio/nicho sem match — usando todos os ${qualityFiltered.length} leads (analyzer vai filtrar)${C.reset}`);
+  } else {
+    console.log(`${C.green}[SCRAPER] Filtrados por nicho: ${filtered.length}/${qualityFiltered.length} (${profiles.length} total)${C.reset}`);
+  }
+  return finalFiltered.slice(0, limit);
 }
 
 // ---- MAIN CLI ----

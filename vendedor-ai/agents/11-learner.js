@@ -13,7 +13,7 @@ const fs     = require('fs');
 const path   = require('path');
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
-const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
+const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
 
 const MENSAGENS_DIR = path.join(__dirname, '..', 'data', 'mensagens');
 const LEADS_DIR     = path.join(__dirname, '..', 'data', 'leads');
