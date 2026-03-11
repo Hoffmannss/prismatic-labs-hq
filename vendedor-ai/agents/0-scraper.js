@@ -693,10 +693,12 @@ async function scrapeNicho(nichoConfig, limit = 30) {
   }
 
   // ── ROTA 2: smart seed selection via topsearch + followers ───────────────
-  // Usa topsearch para encontrar candidatos a seed → enriquece perfis →
-  // pontua → escolhe os 2 melhores → scrapa seus seguidores como leads reais
-  if (allUsernames.size === 0) {
-    console.log(`${C.yellow}[SCRAPER] Hashtags bloqueadas — ativando pipeline Smart Seed + Followers...${C.reset}`);
+  // Ativa quando hashtag retornou menos da meta (bloqueada ou parcialmente bloqueada)
+  if (allUsernames.size < limit) {
+    const reason = allUsernames.size === 0
+      ? 'Hashtags bloqueadas'
+      : `Hashtags insuficientes (${allUsernames.size}/${limit} meta)`;
+    console.log(`${C.yellow}[SCRAPER] ${reason} — ativando Smart Seed + Followers...${C.reset}`);
 
     // 2a. Topsearch multi-query para candidatos a seed
     const { browser: bSearch, context: ctxSearch } = await launchBrowser(true);
@@ -752,7 +754,7 @@ async function scrapeNicho(nichoConfig, limit = 30) {
   }
 
   // ── ROTA 3: seed accounts manuais configurados no nicho ──────────────────
-  if (allUsernames.size === 0 && seedAccounts.length > 0) {
+  if (allUsernames.size < limit && seedAccounts.length > 0) {
     console.log(`${C.yellow}[SCRAPER] Usando seed accounts manuais do nicho...${C.reset}`);
     // Enriquece seeds manuais para pegar user_id
     const manualProfiles = await scrapeProfiles(seedAccounts.map(u => u.replace('@','')));
