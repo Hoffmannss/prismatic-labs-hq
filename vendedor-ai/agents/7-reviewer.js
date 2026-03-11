@@ -74,55 +74,75 @@ async function reviewMessage() {
     ? 'Lead Normalizer API — dev para dev, direto, parece colega que encontrou algo util'
     : 'Landing Page Premium — aspiracional, focado em resultado, parece conselho de colega';
 
-  const prompt = `Voce e um ESPECIALISTA em copywriting B2B para DM no Instagram, com foco em vendas de produtos tech/SaaS.
-
-Sua tarefa: avaliar a qualidade de uma mensagem de primeiro contato e, se necessario, reescrever uma versao melhorada.
+  const prompt = `Voce e um ESPECIALISTA em DM outreach no Instagram para produtos tech B2B.
+Avalie a MENSAGEM A REVISAR abaixo com base nos criterios EXATOS a seguir.
 
 CONTEXTO DO LEAD:
 - Nicho: ${a.nicho}
-- Tipo: ${a.tipo_negocio}
 - Problema principal: ${a.problema_principal}
 - Gancho disponivel (dos posts): ${ap.gancho_ideal || 'nenhum'}
-- Produto sendo vendido: ${produtoCtx}
-- Prioridade do lead: ${a.prioridade}
+- Produto: ${produtoCtx}
 
 MENSAGEM A REVISAR:
 "${msgOriginal}"
 
-CHECKLIST DE QUALIDADE:
-1. Contem @handle no corpo do texto?
-2. Abre com frase batida? ("Vi seu perfil", "Parabens pelo conteudo", "Notei que")
-3. Tem menos de 3 linhas sem estrutura completa (hook + valor + pergunta)?
-4. Menciona preco, valor ou plano na primeira mensagem?
-5. Tom de vendedor formal? ("Estou oferecendo", "Aproveite", "Oportunidade unica")
-6. E generica demais? (poderia ser enviada para QUALQUER pessoa sem mudanca)
-7. Nao termina com pergunta de resposta simples?
-8. Tem mais de 4 linhas de texto?
-9. Usa "tambem" sugerindo que voce tem o mesmo problema do lead?
-10. Tem erros graves de portugues?
-11. O gancho dos posts NAO foi usado (sendo que estava disponivel)?
-12. A mensagem soa automatizada, como se fosse um bot?
-${criteriosExtras}
+=== REGRAS DE OURO PARA DM NO INSTAGRAM ===
+MENSAGEM IDEAL: 3 partes em 3-5 linhas. Curta e direta e MELHOR que longa.
+- PARTE 1 (HOOK): pergunta ou afirmacao especifica sobre o problema do lead — NAO precisa mencionar post especifico, pode ser sobre o nicho/dor
+- PARTE 2 (VALOR): 1-2 linhas do que voce fez/faz e como resolve o problema — sem preco, sem plano
+- PARTE 3 (CTA): pergunta simples de sim/nao — "Vale testar?", "Quer dar uma olhada?", "Faz sentido?" — TODAS sao boas
 
-CRITERIOS:
-- Score >= 80: aprovada sem mudancas
-- Score 60-79: aprovada com sugestao opcional
-- Score < 60: REPROVADA, versao melhorada obrigatoria
+=== O QUE E "FRASE BATIDA" (penalizar fortemente) ===
+BATIDA = abertura generica que nao fala sobre o problema: "Vi seu perfil", "Parabens pelo conteudo", "Notei que voce e muito bom"
+NAO E BATIDA = pergunta especifica sobre dor do nicho: "Seus flows quebram com telefone fora do formato?" — isso e um BOM HOOK
+
+=== ERROS QUE REPROVAM (score < 50) ===
+- Contem @handle no texto
+- Menciona preco, valor, plano, free, gratis, desconto, trial
+- Tom de vendedor: "solucao", "beneficios", "investimento", "aproveite", "oportunidade unica"
+- Mais de 6 linhas de texto
+- Pergunta de fechamento com mais de 10 palavras ("Voce gostaria de conhecer como a API pode ajudar nos seus processos?")
+
+=== ERROS MENORES (penalizar -10 a -15 cada) ===
+- Abre com frase batida (generica, nao especifica ao problema)
+- Nao termina com pergunta simples
+- Soa como template (completamente generica)
+- Gancho dos posts estava disponivel e nao foi usado
+
+=== O QUE NAO E ERRO ===
+- Mensagem curta (3 linhas e IDEAL, nao penalizar)
+- "Vale testar?" como CTA (e perfeito)
+- Perguntar sobre o problema do nicho sem mencionar post especifico
+- Ausencia de bio do lead (nao e falha da mensagem)
+
+EXEMPLOS DE MENSAGENS BOM (score 80+):
+EXEMPLO 1: "Seus flows quebram quando o telefone chega fora do formato?\\n\\nFiz uma API que converte qualquer formato BR pra E.164 em menos de 50ms, pronta pro Make, n8n e Zapier.\\n\\nVale testar?"
+EXEMPLO 2: "Ja perdeu leads por causa de telefones em formato errado?\\n\\nMinha API resolve isso em 1 request — normaliza telefone, limpa email e parseia UTMs.\\n\\nQuer dar uma olhada?"
+
+EXEMPLOS DE MENSAGENS RUINS (score < 50):
+RUIM 1: "Voce esta tendo problemas com os flows quebrando? Eu encontrei uma solucao que pode ajudar! Criei uma API que converte qualquer formato BR para E.164 em menos de 50ms, pronta para uso em Make, n8n e Zapier. Voce gostaria de testar e ver como pode resolver esse problema?"
+(por que e ruim: usa "solucao", muito longa, pergunta longa no final)
+
+CRITERIOS DE SCORE:
+- Score >= 80: aprovada — NAO gerar versao melhorada
+- Score 60-79: adequada — versao melhorada opcional (so se for CLARAMENTE melhor)
+- Score < 60: reprovada — versao melhorada obrigatoria
+ATENCAO: Se a versao melhorada nao for demonstravelmente superior, mantenha null.
+${criteriosExtras}
 
 Retorne JSON:
 {
   "score": (0-100),
   "aprovada": true/false,
   "nivel": "excelente"/"boa"/"adequada"/"fraca"/"reprovada",
-  "problemas": ["..."],
+  "problemas": ["lista apenas erros REAIS dos criterios acima"],
   "pontos_positivos": ["..."],
-  "versao_melhorada": "texto ou null",
-  "justificativa_melhoria": "texto ou null",
+  "versao_melhorada": "texto melhorado OU null se nao for claramente melhor",
+  "justificativa_melhoria": "o que especificamente mudou e por que e melhor OU null",
   "resumo_revisor": "frase curta"
 }
 
-Se reescrever: [HOOK especifico] + [VALOR concreto] + [PERGUNTA simples], min 3 linhas, max 4, NUNCA @handle, tom colega.
-
+Se reescrever: max 5 linhas, HOOK + VALOR (sem preco) + CTA curto, NUNCA "solucao"/"investimento"/"beneficios", NUNCA @handle.
 RESPONDA APENAS O JSON.`;
 
   try {
