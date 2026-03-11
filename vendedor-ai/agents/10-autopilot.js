@@ -36,7 +36,7 @@ function loadCRMUsernames() {
   return new Set((dbData.leads || []).map(l => (l.username || '').toLowerCase()).filter(Boolean));
 }
 
-function runAnalyze(username, bio, followers, posts, postsDesc, nichoId) {
+function runAnalyze(username, bio, followers, posts, postsDesc, nichoId, imageUrls) {
   const script = path.join(__dirname, '5-orchestrator.js');
   const args = [
     script, 'analyze',
@@ -47,14 +47,29 @@ function runAnalyze(username, bio, followers, posts, postsDesc, nichoId) {
     postsDesc    || '',
     nichoId      || ''
   ];
-  const r = spawnSync('node', args, { stdio: 'inherit', cwd: __dirname, env: process.env });
+  // Passa URLs de imagens via env var (evita argumentos muito longos no CLI)
+  const env = { ...process.env };
+  if (imageUrls && imageUrls.length > 0) {
+    env.LEAD_IMAGE_URLS = imageUrls.join('|');
+  }
+  const r = spawnSync('node', args, { stdio: 'inherit', cwd: __dirname, env });
   return r.status === 0;
 }
 
-function pickPostsDesc(_config) {
-  // Sem posts reais disponíveis — retorna vazio para o analyzer avaliar
-  // apenas a bio + dados reais do perfil (evita score inflado por contexto falso)
-  return '';
+// Constrói descrição de posts a partir dos dados reais do perfil
+// Se recentPosts estiver disponível (do scrapeProfile), usa as captions reais.
+// Captions reais = melhor análise pelo LLM sem custo extra.
+function buildPostsDesc(profile) {
+  const posts = profile.recentPosts || [];
+  const withCaption = posts.filter(p => p.caption && p.caption.trim().length > 5);
+  if (withCaption.length === 0) return '';
+  return withCaption.slice(0, 6)
+    .map((p, i) => {
+      const likes = p.likes > 0 ? ` [${p.likes} likes]` : '';
+      const vid   = p.isVideo ? ' [vídeo]' : '';
+      return `Post ${i+1}${likes}${vid}: ${p.caption.slice(0, 300).replace(/\n/g, ' ')}`;
+    })
+    .join('\n');
 }
 
 async function processNicho(nichoDesc, qtd, maxAnalyze) {
@@ -86,14 +101,15 @@ async function processNicho(nichoDesc, qtd, maxAnalyze) {
     return { nichoId, leads: 0, analisados: 0 };
   }
 
-  // Montar queue de leads
+  // Montar queue de leads com captions reais dos posts (zero custo extra)
   const queue = filtered.slice(0, qtd).map(p => ({
-    username:  p.username,
-    bio:       p.bio,
-    followers: p.followers,
-    posts:     p.posts,
-    postsDesc: pickPostsDesc(config),
-    nicho:     nichoId
+    username:    p.username,
+    bio:         p.bio,
+    followers:   p.followers,
+    posts:       p.posts,
+    postsDesc:   buildPostsDesc(p),   // captions reais ou '' se não disponível
+    imageUrls:   (p.recentPosts || []).filter(rp => rp.imageUrl).map(rp => rp.imageUrl).slice(0, 4),
+    nicho:       nichoId
   }));
 
   // Salvar queue em arquivo
@@ -111,7 +127,7 @@ async function processNicho(nichoDesc, qtd, maxAnalyze) {
   for (let i = 0; i < toAnalyze.length; i++) {
     const l = toAnalyze[i];
     console.log(`\n  ${C.bright}[${i+1}/${toAnalyze.length}] @${l.username}${C.reset} | ${l.followers} followers`);
-    const ok = runAnalyze(l.username, l.bio, l.followers, l.posts, l.postsDesc, nichoId);
+    const ok = runAnalyze(l.username, l.bio, l.followers, l.posts, l.postsDesc, nichoId, l.imageUrls);
     if (ok) okCount++;
     await sleep(400);
   }

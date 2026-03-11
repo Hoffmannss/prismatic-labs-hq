@@ -58,6 +58,24 @@ function parseFollowers(text) {
   return parseInt(raw.replace(/\./g, '')) || 0;
 }
 
+// ---- EXTRATOR DE POSTS (do objeto user da API do Instagram) ----
+// Retorna até `limit` posts com caption + imageUrl.
+// Os dados já estão no payload da web_profile_info — zero requests extras.
+function extractPostsData(u, limit = 6) {
+  const edges = u?.edge_owner_to_timeline_media?.edges || [];
+  return edges.slice(0, limit).map(e => {
+    const node = e?.node || {};
+    const caption = node.edge_media_to_caption?.edges?.[0]?.node?.text || '';
+    return {
+      caption:   caption.slice(0, 500),          // máx 500 chars por post
+      imageUrl:  node.thumbnail_url || node.display_url || '',
+      likes:     node.edge_liked_by?.count || node.edge_media_preview_like?.count || 0,
+      timestamp: node.taken_at_timestamp || 0,
+      isVideo:   node.__typename === 'GraphVideo' || node.__typename === 'XDTGraphVideo',
+    };
+  }).filter(p => p.caption || p.imageUrl);
+}
+
 // ---- BROWSER ----
 async function launchBrowser(headless = true) {
   const browser = await chromium.launch({
@@ -361,7 +379,8 @@ async function scrapeProfile(username) {
           fullName:  u.full_name||'',
           isPrivate: u.is_private||false,
           isVerified:u.is_verified||false,
-          externalUrl:u.external_url||''
+          externalUrl:u.external_url||'',
+          recentPosts: extractPostsData(u),
         };
       }
     }
@@ -395,7 +414,8 @@ async function scrapeProfile(username) {
           fullName:  u.full_name||'',
           isPrivate: u.is_private||false,
           isVerified:u.is_verified||false,
-          externalUrl:u.external_url||''
+          externalUrl:u.external_url||'',
+          recentPosts: extractPostsData(u),
         };
       }
 
@@ -450,7 +470,8 @@ async function scrapeProfiles(usernames) {
           username, bio:u.biography||'', user_id:u.id||'',
           followers:u.edge_followed_by?.count||0,
           following:u.edge_follow?.count||0, posts:u.edge_owner_to_timeline_media?.count||0,
-          fullName:u.full_name||'', isPrivate:u.is_private||false, externalUrl:u.external_url||''
+          fullName:u.full_name||'', isPrivate:u.is_private||false, externalUrl:u.external_url||'',
+          recentPosts: extractPostsData(u),
         };
       } else if (resp.status() === 429) {
         // Rate limit: usar scraping visual inline
@@ -471,7 +492,8 @@ async function scrapeProfiles(usernames) {
             username, bio:u.biography||'', user_id:u.id||'',
             followers:u.edge_followed_by?.count||0,
             following:u.edge_follow?.count||0, posts:u.edge_owner_to_timeline_media?.count||0,
-            fullName:u.full_name||'', isPrivate:u.is_private||false, externalUrl:u.external_url||''
+            fullName:u.full_name||'', isPrivate:u.is_private||false, externalUrl:u.external_url||'',
+            recentPosts: extractPostsData(u),
           };
         }
         if (!profile) {

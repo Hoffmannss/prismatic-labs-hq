@@ -11,6 +11,7 @@ const path = require('path');
 
 const username     = process.argv[2] || process.env.LEAD_USERNAME;
 const analysisFile = path.join(__dirname, '..', 'data', 'leads', `${username}_analysis.json`);
+const visionFile   = path.join(__dirname, '..', 'data', 'leads', `${username}_vision.json`);
 
 const templates = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'config', 'copywriting-templates.json'), 'utf8'));
 const produtos  = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'data', 'produtos.json'), 'utf8')).produtos;
@@ -95,6 +96,18 @@ async function generateMessage() {
   const isAPI = a.servico_ideal === 'lead_normalizer_api';
   const ap    = a.analise_posts || {};
 
+  // ---- CARREGAR DADOS DE VISÃO (1b-vision.js) ----
+  let visionSintese = null;
+  try {
+    if (fs.existsSync(visionFile)) {
+      const vd = JSON.parse(fs.readFileSync(visionFile, 'utf8'));
+      if (vd.status === 'ok' && vd.sintese) {
+        visionSintese = vd.sintese;
+        console.log(`[COPYWRITER] 👁️  Vision carregada: ${vd.sintese.posts_analisados} posts | ferramentas: ${vd.sintese.ferramentas_confirmadas.join(', ') || 'nenhuma'}`);
+      }
+    }
+  } catch (_) {}
+
   // ---- CONTEXTO DO PRODUTO ----
   let contexto_produto;
   if (isAPI) {
@@ -107,9 +120,46 @@ async function generateMessage() {
     contexto_produto = `PRODUTO: Landing Page Premium Dark Mode + Neon\nO que faz: ${lp.descricao}\nUSPs: ${lp.usp.slice(0, 3).join(' | ')}\nPrecos: R$1.497 a R$5.997\nObjecoes:\n${objecoesStr}\nTom: aspiracional, focado em resultado`;
   }
 
-  // ---- CONTEXTO DE POSTS ----
+  // ---- CONTEXTO DE POSTS (análise de texto) ----
   const postsContext = ap.tem_posts_analisados
-    ? `\nINSIGHTS DOS POSTS:\n- Ferramentas: ${(ap.ferramentas_mencionadas || []).join(', ') || 'nenhuma'}\n- Dores: ${(ap.dores_identificadas || []).join(' | ') || 'nenhuma'}\n- Oportunidades: ${(ap.oportunidades || []).join(' | ') || 'nenhuma'}\n- GANCHO IDEAL: ${ap.gancho_ideal || 'nenhum'}\n\nREGRA: mensagem_1 DEVE abrir com o gancho ideal acima.`
+    ? `\nINSIGHTS DOS POSTS (análise de texto):\n- Ferramentas mencionadas: ${(ap.ferramentas_mencionadas || []).join(', ') || 'nenhuma'}\n- Dores: ${(ap.dores_identificadas || []).join(' | ') || 'nenhuma'}\n- Oportunidades: ${(ap.oportunidades || []).join(' | ') || 'nenhuma'}\n- Gancho textual: ${ap.gancho_ideal || 'nenhum'}`
+    : '';
+
+  // ---- CONTEXTO DE VISÃO (análise de imagens — mais confiável que texto) ----
+  let visionContext = '';
+  if (visionSintese) {
+    const ferrStr  = visionSintese.ferramentas_confirmadas.length > 0
+      ? visionSintese.ferramentas_confirmadas.join(', ')
+      : 'nenhuma identificada visualmente';
+    const doresStr = visionSintese.dores_identificadas.length > 0
+      ? visionSintese.dores_identificadas.join(' | ')
+      : 'nenhuma';
+    const ganchoVis = visionSintese.gancho_visual || null;
+
+    visionContext = `\nANÁLISE VISUAL DOS POSTS (imagens analisadas por Gemini — MAIS CONFIÁVEL que texto):
+- Ferramentas CONFIRMADAS nas imagens: ${ferrStr}
+- Dores visíveis nos screenshots: ${doresStr}
+- Nível técnico: ${visionSintese.nivel_tecnico}
+- Contexto do negócio (imagens): ${visionSintese.contexto_confirmado}
+${ganchoVis ? `- GANCHO VISUAL PRONTO: "${ganchoVis}"` : ''}
+
+REGRAS DE USO DA VISÃO:
+${ganchoVis
+  ? `1. mensagem_1 DEVE começar com o GANCHO VISUAL acima (pode adaptar levemente o tom, mas preserve a referência às ferramentas/dores reais).`
+  : `1. Use as ferramentas e dores confirmadas visualmente para personalizar as mensagens.`
+}
+2. Se ferramentas foram confirmadas nas imagens, mencione pelo menos 1 delas na mensagem de abertura.
+3. Não mencione "vi suas imagens" ou "analisei seus posts" — fale como se você conhecesse o trabalho dele naturalmente.`;
+  }
+
+  // Gancho final: visão tem prioridade sobre texto (é baseada em evidência visual real)
+  const ganchoFinal = visionSintese?.gancho_visual || ap.gancho_ideal || null;
+  const postsContextFull = [postsContext, visionContext].filter(Boolean).join('\n');
+  const hasGancho = !!ganchoFinal;
+  const postsContextWithRule = postsContextFull
+    ? postsContextFull + (hasGancho && !visionSintese?.gancho_visual
+        ? `\n\nREGRA: mensagem_1 DEVE abrir com o gancho textual acima.`
+        : '')
     : '';
 
   const estruturaIdeal = isAPI
@@ -127,7 +177,7 @@ async function generateMessage() {
     console.log('[COPYWRITER] 📝 Sem memoria previa — gerando sem aprendizado acumulado');
   }
 
-  const prompt = `Voce e o melhor copywriter do Brasil para vendas B2B via DM no Instagram.\n\n${contexto_produto}\n\nDADOS DO LEAD:\n- Nicho: ${a.nicho}\n- Tipo: ${a.tipo_negocio}\n- Problema: ${a.problema_principal}\n- Consciencia: ${a.nivel_consciencia}\n- Angulo: ${a.angulo_abordagem}\n- Objecoes: ${JSON.stringify(a.objecoes_previstas)}\n- Motivo produto: ${a.motivo_produto}\n- Prioridade: ${a.prioridade}\n${postsContext}\n\n${estruturaIdeal}\n${memoriaStr}\nREGRAS FINAIS:\n1. NUNCA coloque @handle no texto da mensagem\n2. NAO comece com \"Vi seu perfil\", \"Parabens\", \"Notei que\"\n3. Tom: colega util, nao vendedor\n4. Followups: 2-3 linhas naturais, sem @handle\n5. Use \\\\n para quebras de linha no JSON\n6. PROIBIDO em mensagem_1/2/3: free, gratis, plano, preco, R$, $, sem cartao, trial, desconto — preco so em followup se o lead perguntar\n7. NAO use linguagem de vendedor: \"solucao\", \"investimento\", \"beneficios\", \"diferenciais\" — escreva como colega de profissao\n\nRetorne SOMENTE o JSON (sem markdown, sem backticks, sem texto fora do JSON):\n{\n  \"mensagem_1\": {\"texto\": \"HOOK aqui.\\\\n\\\\nVALOR aqui.\\\\n\\\\nPERGUNTA?\", \"angulo\": \"...\", \"temperatura\": \"direta\"},\n  \"mensagem_2\": {\"texto\": \"HOOK aqui.\\\\n\\\\nVALOR aqui.\\\\n\\\\nPERGUNTA?\", \"angulo\": \"...\", \"temperatura\": \"suave\"},\n  \"mensagem_3\": {\"texto\": \"HOOK aqui.\\\\n\\\\nVALOR aqui.\\\\n\\\\nPERGUNTA?\", \"angulo\": \"...\", \"temperatura\": \"curiosidade\"},\n  \"mensagem_recomendada\": \"1\",\n  \"motivo_recomendacao\": \"...\",\n  \"followup_dia_3\": \"2-3 linhas naturais\",\n  \"followup_dia_7\": \"2-3 linhas com valor concreto\",\n  \"followup_dia_14\": \"2-3 linhas com oferta especifica\"\n}`;
+  const prompt = `Voce e o melhor copywriter do Brasil para vendas B2B via DM no Instagram.\n\n${contexto_produto}\n\nDADOS DO LEAD:\n- Nicho: ${a.nicho}\n- Tipo: ${a.tipo_negocio}\n- Problema: ${a.problema_principal}\n- Consciencia: ${a.nivel_consciencia}\n- Angulo: ${a.angulo_abordagem}\n- Objecoes: ${JSON.stringify(a.objecoes_previstas)}\n- Motivo produto: ${a.motivo_produto}\n- Prioridade: ${a.prioridade}\n${postsContextWithRule}\n\n${estruturaIdeal}\n${memoriaStr}\nREGRAS FINAIS:\n1. NUNCA coloque @handle no texto da mensagem\n2. NAO comece com \"Vi seu perfil\", \"Parabens\", \"Notei que\"\n3. Tom: colega util, nao vendedor\n4. Followups: 2-3 linhas naturais, sem @handle\n5. Use \\\\n para quebras de linha no JSON\n6. PROIBIDO em mensagem_1/2/3: free, gratis, plano, preco, R$, $, sem cartao, trial, desconto — preco so em followup se o lead perguntar\n7. NAO use linguagem de vendedor: \"solucao\", \"investimento\", \"beneficios\", \"diferenciais\" — escreva como colega de profissao\n\nRetorne SOMENTE o JSON (sem markdown, sem backticks, sem texto fora do JSON):\n{\n  \"mensagem_1\": {\"texto\": \"HOOK aqui.\\\\n\\\\nVALOR aqui.\\\\n\\\\nPERGUNTA?\", \"angulo\": \"...\", \"temperatura\": \"direta\"},\n  \"mensagem_2\": {\"texto\": \"HOOK aqui.\\\\n\\\\nVALOR aqui.\\\\n\\\\nPERGUNTA?\", \"angulo\": \"...\", \"temperatura\": \"suave\"},\n  \"mensagem_3\": {\"texto\": \"HOOK aqui.\\\\n\\\\nVALOR aqui.\\\\n\\\\nPERGUNTA?\", \"angulo\": \"...\", \"temperatura\": \"curiosidade\"},\n  \"mensagem_recomendada\": \"1\",\n  \"motivo_recomendacao\": \"...\",\n  \"followup_dia_3\": \"2-3 linhas naturais\",\n  \"followup_dia_7\": \"2-3 linhas com valor concreto\",\n  \"followup_dia_14\": \"2-3 linhas com oferta especifica\"\n}`;
 
   try {
     let rawResponse;
@@ -163,14 +213,17 @@ async function generateMessage() {
     if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true });
 
     const resultData = {
-      timestamp:         new Date().toISOString(),
+      timestamp:            new Date().toISOString(),
       username,
-      produto_detectado: a.servico_ideal,
-      analise_score:     a.score_potencial,
-      prioridade:        a.prioridade,
-      posts_analisados:  ap.tem_posts_analisados || false,
-      learning_versao:   memoria?.versao || null,
-      mensagens:         messages
+      produto_detectado:    a.servico_ideal,
+      analise_score:        a.score_potencial,
+      prioridade:           a.prioridade,
+      posts_analisados:     ap.tem_posts_analisados || false,
+      vision_analisada:     !!visionSintese,
+      vision_ferramentas:   visionSintese?.ferramentas_confirmadas || [],
+      vision_score_ajuste:  visionSintese?.score_ajuste ?? null,
+      learning_versao:      memoria?.versao || null,
+      mensagens:            messages
     };
 
     const outputFile = path.join(outputDir, `${username}_mensagens.json`);
@@ -178,11 +231,12 @@ async function generateMessage() {
 
     const recKey    = `mensagem_${messages.mensagem_recomendada}`;
     const recMsg    = messages[recKey];
-    const prodLabel = isAPI ? '🔵 Lead Normalizer API' : '🟡 Landing Page';
-    const postsLbl  = ap.tem_posts_analisados ? ' + posts ✓' : '';
+    const prodLabel   = isAPI ? '🔵 Lead Normalizer API' : '🟡 Landing Page';
+    const postsLbl    = ap.tem_posts_analisados ? ' + posts ✓' : '';
+    const visionLbl   = visionSintese ? ` + vision ✓ (${visionSintese.ferramentas_confirmadas.length} ferramentas)` : '';
 
     console.log(`\n[COPYWRITER] Mensagens geradas!`);
-    console.log(`[COPYWRITER] Produto: ${prodLabel}${postsLbl}`);
+    console.log(`[COPYWRITER] Produto: ${prodLabel}${postsLbl}${visionLbl}`);
     console.log(`[COPYWRITER] Recomendada: #${messages.mensagem_recomendada} - ${messages.motivo_recomendacao}`);
     console.log(`\n========== COPIE E COLE ESTA MENSAGEM ==========`);
     console.log(recMsg?.texto?.replace(/\\n/g, '\n'));
