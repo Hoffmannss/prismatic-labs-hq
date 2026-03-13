@@ -12,6 +12,9 @@ require('dotenv').config();
 const fs = require('fs');
 const path = require('path');
 const Groq = require('groq-sdk');
+const { loadNegocio, buildContexto } = require('../config/negocio-config');
+const negocio    = loadNegocio();
+const negocioCtx = buildContexto(negocio);
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 const SCOUT_FILE = path.join(__dirname, '6-scout.js');
@@ -129,26 +132,28 @@ RESPONDA APENAS JSON:
   // CRIAR NOVO NICHO COM IA
   console.log(`${C.cyan}[2/3] Gerando configuracao do nicho com IA...${C.reset}`);
 
+  const produtoRef = negocioCtx.produto && negocioCtx.resumo !== '(Negócio não configurado — use tom genérico de prospecção)'
+    ? `O produto/servico que sera ofertado: "${negocioCtx.produto}".\nContexto do negocio: ${negocioCtx.resumo}`
+    : `O produto/servico sera definido pelo usuario do sistema — gere configuracao generica de prospeccao.`;
+
   const promptCriacao = `Crie uma configuracao COMPLETA para este nicho de prospeccao no Instagram Brasil:
 
 NICHO: "${descricao}"
+${produtoRef}
 
 Gere uma configuracao detalhada considerando:
 1. Qual o nome descritivo do nicho
-2. Qual produto da Prismatic Labs se encaixa melhor:
-   - "Lead Normalizer API" (para quem trabalha com automacao, CRM, leads, dados)
-   - "Landing Page Premium" (para infoprodutores, e-commerce, criadores)
-3. Qual a DOR PRINCIPAL desse publico relacionada ao produto
-4. 8-12 hashtags relevantes no Instagram BR
-5. 8-12 palavras-chave que aparecem na bio desses perfis
-6. Descricao do perfil ideal (seguidores, tipo de conteudo)
-7. Como abordar esse publico (angulo de venda)
-8. 3 exemplos de onde buscar esses perfis no Instagram
+2. Qual a DOR PRINCIPAL desse publico que o produto/servico resolve
+3. 8-12 hashtags relevantes no Instagram BR (gere hashtags reais, curtas e usadas, NAO transforme a descricao inteira numa hashtag)
+4. 8-12 palavras-chave que aparecem na bio desses perfis
+5. Descricao do perfil ideal (seguidores, tipo de conteudo)
+6. Como abordar esse publico (angulo de venda)
+7. 3 exemplos de onde buscar esses perfis no Instagram
 
 RESPONDA APENAS JSON:
 {
   "nome": "Nome completo do nicho",
-  "produto": "Lead Normalizer API" OU "Landing Page Premium",
+  "produto": "${negocioCtx.produto || 'Produto/servico configurado'}",
   "hashtags": ["#tag1", "#tag2", ...],
   "keywords_bio": ["palavra1", "palavra2", ...],
   "perfil_ideal": "descricao detalhada",

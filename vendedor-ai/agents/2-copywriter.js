@@ -11,9 +11,12 @@ const path = require('path');
 
 const username     = process.argv[2] || process.env.LEAD_USERNAME;
 const analysisFile = path.join(__dirname, '..', 'data', 'leads', `${username}_analysis.json`);
+const visionFile   = path.join(__dirname, '..', 'data', 'leads', `${username}_vision.json`);
 
 const templates = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'config', 'copywriting-templates.json'), 'utf8'));
-const produtos  = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'data', 'produtos.json'), 'utf8')).produtos;
+const { loadNegocio, buildContexto } = require('../config/negocio-config');
+const negocio    = loadNegocio();
+const negocioCtx = buildContexto(negocio);
 
 // ---- AUTO-DETECT LLM PROVIDER ----
 let model, generateFunc, provider;
@@ -91,43 +94,83 @@ async function generateMessage() {
     else { console.error('[COPYWRITER] Analise nao encontrada. Execute o Modulo 1 primeiro.'); process.exit(1); }
   }
 
-  const a     = analysisData.analise;
-  const isAPI = a.servico_ideal === 'lead_normalizer_api';
-  const ap    = a.analise_posts || {};
+  const a  = analysisData.analise;
+  const ap = a.analise_posts || {};
 
-  // ---- CONTEXTO DO PRODUTO ----
-  let contexto_produto;
-  if (isAPI) {
-    const api = produtos.find(p => p.id === 'lead-normalizer-api');
-    const objecoesStr = api.objecoes.map(o => `\"${o.objecao}\" -> \"${o.resposta}\"`).join('\n');
-    contexto_produto = `PRODUTO: Lead Normalizer API\nURL: ${api.url_landing}\nO que faz: ${api.descricao}\nUSPs: ${api.usp.slice(0, 3).join(' | ')}\nObjecoes:\n${objecoesStr}\nTom: dev para dev, direto, parece mensagem de colega\nAVISO: NAO mencione precos, planos, free, gratis ou valores — isso vai para followup, nunca para primeiro contato`;
-  } else {
-    const lp = produtos.find(p => p.id === 'landing-page-premium');
-    const objecoesStr = lp.objecoes.map(o => `\"${o.objecao}\" -> \"${o.resposta}\"`).join('\n');
-    contexto_produto = `PRODUTO: Landing Page Premium Dark Mode + Neon\nO que faz: ${lp.descricao}\nUSPs: ${lp.usp.slice(0, 3).join(' | ')}\nPrecos: R$1.497 a R$5.997\nObjecoes:\n${objecoesStr}\nTom: aspiracional, focado em resultado`;
-  }
+  // ---- CARREGAR DADOS DE VISÃO (1b-vision.js) ----
+  let visionSintese = null;
+  try {
+    if (fs.existsSync(visionFile)) {
+      const vd = JSON.parse(fs.readFileSync(visionFile, 'utf8'));
+      if (vd.status === 'ok' && vd.sintese) {
+        visionSintese = vd.sintese;
+        console.log(`[COPYWRITER] 👁️  Vision carregada: ${vd.sintese.posts_analisados} posts | ferramentas: ${vd.sintese.ferramentas_confirmadas.join(', ') || 'nenhuma'}`);
+      }
+    }
+  } catch (_) {}
 
-  // ---- CONTEXTO DE POSTS ----
+  // ---- CONTEXTO DO PRODUTO (genérico via negocio-config) ----
+  const produtoNome = a.produto_sugerido || negocioCtx.produto || 'Produto/serviço configurado';
+  const precoInfo   = negocioCtx.preco ? `\nFaixa de preço: ${negocioCtx.preco}` : '';
+  const contexto_produto = negocioCtx.resumo && negocioCtx.resumo !== '(Negócio não configurado — use tom genérico de prospecção)'
+    ? `NEGÓCIO DO VENDEDOR:\n${negocioCtx.resumo}\nPRODUTO/SERVIÇO: ${produtoNome}${precoInfo}\nTom: colega útil, focado em resultado real para o lead\nAVISO: NAO mencione preços ou valores no primeiro contato — isso vai para followup`
+    : `PRODUTO/SERVIÇO: Solução de automação/tecnologia para empreendedores\nTom: consultor direto, focado em dor do lead\nAVISO: NAO mencione preços ou valores no primeiro contato`;
+
+  // ---- CONTEXTO DE POSTS (análise de texto) ----
   const postsContext = ap.tem_posts_analisados
-    ? `\nINSIGHTS DOS POSTS:\n- Ferramentas: ${(ap.ferramentas_mencionadas || []).join(', ') || 'nenhuma'}\n- Dores: ${(ap.dores_identificadas || []).join(' | ') || 'nenhuma'}\n- Oportunidades: ${(ap.oportunidades || []).join(' | ') || 'nenhuma'}\n- GANCHO IDEAL: ${ap.gancho_ideal || 'nenhum'}\n\nREGRA: mensagem_1 DEVE abrir com o gancho ideal acima.`
+    ? `\nINSIGHTS DOS POSTS (análise de texto):\n- Ferramentas mencionadas: ${(ap.ferramentas_mencionadas || []).join(', ') || 'nenhuma'}\n- Dores: ${(ap.dores_identificadas || []).join(' | ') || 'nenhuma'}\n- Oportunidades: ${(ap.oportunidades || []).join(' | ') || 'nenhuma'}\n- Gancho textual: ${ap.gancho_ideal || 'nenhum'}`
     : '';
 
-  const estruturaIdeal = isAPI
-    ? `ESTRUTURA OBRIGATORIA (3 partes, CADA mensagem deve ter as 3):\n[HOOK] 1 linha especifica ao problema do lead (ex: \"Seus flows quebram quando o telefone chega fora do formato?\")\n[VALOR] 1-2 linhas: o que a API resolve + prova concreta SEM mencionar preco (ex: \"Fiz uma API que converte qualquer formato BR pra E.164 em menos de 50ms, pronta pro Make, n8n e Zapier.\")\n[PERGUNTA] 1 linha simples (ex: \"Vale testar?\")\nMINIMO: 3 linhas. Mensagem de 1 linha = INVALIDO.\nPROIBIDO no texto da mensagem: free, gratis, plano, preco, $, R$, sem cartao, trial, desconto.`
-    : `ESTRUTURA OBRIGATORIA (3 partes, CADA mensagem deve ter as 3):\n[HOOK] 1 linha sobre conversao ou lancamento do lead\n[VALOR] 1-2 linhas: resultado concreto SEM mencionar preco (ex: \"Faco LP dark mode: clientes chegando a 22% vs media 6%\")\n[PERGUNTA] 1 linha simples\nMINIMO: 3 linhas. Mensagem de 1 linha = INVALIDO.\nPROIBIDO no texto da mensagem: preco, R$, $, plano, gratis, free, desconto, investimento.`;
+  // ---- CONTEXTO DE VISÃO (análise de imagens — mais confiável que texto) ----
+  let visionContext = '';
+  if (visionSintese) {
+    const ferrStr  = visionSintese.ferramentas_confirmadas.length > 0
+      ? visionSintese.ferramentas_confirmadas.join(', ')
+      : 'nenhuma identificada visualmente';
+    const doresStr = visionSintese.dores_identificadas.length > 0
+      ? visionSintese.dores_identificadas.join(' | ')
+      : 'nenhuma';
+    const ganchoVis = visionSintese.gancho_visual || null;
+
+    visionContext = `\nANÁLISE VISUAL DOS POSTS (imagens analisadas por Gemini — MAIS CONFIÁVEL que texto):
+- Ferramentas CONFIRMADAS nas imagens: ${ferrStr}
+- Dores visíveis nos screenshots: ${doresStr}
+- Nível técnico: ${visionSintese.nivel_tecnico}
+- Contexto do negócio (imagens): ${visionSintese.contexto_confirmado}
+${ganchoVis ? `- GANCHO VISUAL PRONTO: "${ganchoVis}"` : ''}
+
+REGRAS DE USO DA VISÃO:
+${ganchoVis
+  ? `1. mensagem_1 DEVE começar com o GANCHO VISUAL acima (pode adaptar levemente o tom, mas preserve a referência às ferramentas/dores reais).`
+  : `1. Use as ferramentas e dores confirmadas visualmente para personalizar as mensagens.`
+}
+2. Se ferramentas foram confirmadas nas imagens, mencione pelo menos 1 delas na mensagem de abertura.
+3. Não mencione "vi suas imagens" ou "analisei seus posts" — fale como se você conhecesse o trabalho dele naturalmente.`;
+  }
+
+  // Gancho final: visão tem prioridade sobre texto (é baseada em evidência visual real)
+  const ganchoFinal = visionSintese?.gancho_visual || ap.gancho_ideal || null;
+  const postsContextFull = [postsContext, visionContext].filter(Boolean).join('\n');
+  const hasGancho = !!ganchoFinal;
+  const postsContextWithRule = postsContextFull
+    ? postsContextFull + (hasGancho && !visionSintese?.gancho_visual
+        ? `\n\nREGRA: mensagem_1 DEVE abrir com o gancho textual acima.`
+        : '')
+    : '';
+
+  const estruturaIdeal = `ESTRUTURA OBRIGATORIA (3 partes, CADA mensagem deve ter as 3):\n[HOOK] 1 linha especifica ao problema identificado no perfil do lead\n[VALOR] 1-2 linhas: o que o produto/servico resolve + resultado concreto SEM mencionar preco\n[PERGUNTA] 1 linha simples e direta\nMINIMO: 3 linhas. Mensagem de 1 linha = INVALIDO.\nPROIBIDO no texto da mensagem: preco, R$, $, plano, gratis, free, desconto, investimento, solucao, beneficios.`;
 
   // ---- INJETAR APRENDIZADO ACUMULADO ----
   const memoria = loadMemory();
   let memoriaStr = '';
   if (memoria?.regras_copywriting?.length) {
-    const prodAngle = isAPI ? memoria.angulos_por_produto?.lead_normalizer_api : memoria.angulos_por_produto?.landing_page;
-    memoriaStr = `\nAPRENDIZADO ACUMULADO (v${memoria.versao} — ${memoria.total_amostras} amostras, score medio ${memoria.score_medio}/100):\n\nREGRAS APRENDIDAS — siga TODAS obrigatoriamente:\n${memoria.regras_copywriting.map((r, i) => `${i + 1}. ${r}`).join('\n')}\n\nERROS PARA NUNCA REPETIR:\n${(memoria.erros_recorrentes || []).map(e => `- ${e}`).join('\n') || '(nenhum ainda)'}\n${prodAngle ? `\nANGULO MAIS EFICAZ (${a.servico_ideal}): ${prodAngle.melhor_angulo}\nEVITAR: ${(prodAngle.evitar || []).join(' | ')}` : ''}\n`;
+    memoriaStr = `\nAPRENDIZADO ACUMULADO (v${memoria.versao} — ${memoria.total_amostras} amostras, score medio ${memoria.score_medio}/100):\n\nREGRAS APRENDIDAS — siga TODAS obrigatoriamente:\n${memoria.regras_copywriting.map((r, i) => `${i + 1}. ${r}`).join('\n')}\n\nERROS PARA NUNCA REPETIR:\n${(memoria.erros_recorrentes || []).map(e => `- ${e}`).join('\n') || '(nenhum ainda)'}\n`;
     console.log(`[COPYWRITER] 🧠 Memoria v${memoria.versao} carregada (${memoria.regras_copywriting.length} regras)`);
   } else {
     console.log('[COPYWRITER] 📝 Sem memoria previa — gerando sem aprendizado acumulado');
   }
 
-  const prompt = `Voce e o melhor copywriter do Brasil para vendas B2B via DM no Instagram.\n\n${contexto_produto}\n\nDADOS DO LEAD:\n- Nicho: ${a.nicho}\n- Tipo: ${a.tipo_negocio}\n- Problema: ${a.problema_principal}\n- Consciencia: ${a.nivel_consciencia}\n- Angulo: ${a.angulo_abordagem}\n- Objecoes: ${JSON.stringify(a.objecoes_previstas)}\n- Motivo produto: ${a.motivo_produto}\n- Prioridade: ${a.prioridade}\n${postsContext}\n\n${estruturaIdeal}\n${memoriaStr}\nREGRAS FINAIS:\n1. NUNCA coloque @handle no texto da mensagem\n2. NAO comece com \"Vi seu perfil\", \"Parabens\", \"Notei que\"\n3. Tom: colega util, nao vendedor\n4. Followups: 2-3 linhas naturais, sem @handle\n5. Use \\\\n para quebras de linha no JSON\n6. PROIBIDO em mensagem_1/2/3: free, gratis, plano, preco, R$, $, sem cartao, trial, desconto — preco so em followup se o lead perguntar\n7. NAO use linguagem de vendedor: \"solucao\", \"investimento\", \"beneficios\", \"diferenciais\" — escreva como colega de profissao\n\nRetorne SOMENTE o JSON (sem markdown, sem backticks, sem texto fora do JSON):\n{\n  \"mensagem_1\": {\"texto\": \"HOOK aqui.\\\\n\\\\nVALOR aqui.\\\\n\\\\nPERGUNTA?\", \"angulo\": \"...\", \"temperatura\": \"direta\"},\n  \"mensagem_2\": {\"texto\": \"HOOK aqui.\\\\n\\\\nVALOR aqui.\\\\n\\\\nPERGUNTA?\", \"angulo\": \"...\", \"temperatura\": \"suave\"},\n  \"mensagem_3\": {\"texto\": \"HOOK aqui.\\\\n\\\\nVALOR aqui.\\\\n\\\\nPERGUNTA?\", \"angulo\": \"...\", \"temperatura\": \"curiosidade\"},\n  \"mensagem_recomendada\": \"1\",\n  \"motivo_recomendacao\": \"...\",\n  \"followup_dia_3\": \"2-3 linhas naturais\",\n  \"followup_dia_7\": \"2-3 linhas com valor concreto\",\n  \"followup_dia_14\": \"2-3 linhas com oferta especifica\"\n}`;
+  const prompt = `Voce e o melhor copywriter do Brasil para vendas B2B via DM no Instagram.\n\n${contexto_produto}\n\nDADOS DO LEAD:\n- Nicho: ${a.nicho}\n- Tipo: ${a.tipo_negocio}\n- Problema: ${a.problema_principal}\n- Consciencia: ${a.nivel_consciencia}\n- Angulo: ${a.angulo_abordagem}\n- Objecoes: ${JSON.stringify(a.objecoes_previstas)}\n- Motivo fit: ${a.motivo_fit || a.motivo_produto || 'não especificado'}\n- Prioridade: ${a.prioridade}\n${postsContextWithRule}\n\n${estruturaIdeal}\n${memoriaStr}\nREGRAS FINAIS:\n1. NUNCA coloque @handle no texto da mensagem\n2. NAO comece com \"Vi seu perfil\", \"Parabens\", \"Notei que\"\n3. Tom: colega util, nao vendedor\n4. Followups: 2-3 linhas naturais, sem @handle\n5. Use \\\\n para quebras de linha no JSON\n6. PROIBIDO em mensagem_1/2/3: free, gratis, plano, preco, R$, $, sem cartao, trial, desconto — preco so em followup se o lead perguntar\n7. NAO use linguagem de vendedor: \"solucao\", \"investimento\", \"beneficios\", \"diferenciais\" — escreva como colega de profissao\n\nRetorne SOMENTE o JSON (sem markdown, sem backticks, sem texto fora do JSON):\n{\n  \"mensagem_1\": {\"texto\": \"HOOK aqui.\\\\n\\\\nVALOR aqui.\\\\n\\\\nPERGUNTA?\", \"angulo\": \"...\", \"temperatura\": \"direta\"},\n  \"mensagem_2\": {\"texto\": \"HOOK aqui.\\\\n\\\\nVALOR aqui.\\\\n\\\\nPERGUNTA?\", \"angulo\": \"...\", \"temperatura\": \"suave\"},\n  \"mensagem_3\": {\"texto\": \"HOOK aqui.\\\\n\\\\nVALOR aqui.\\\\n\\\\nPERGUNTA?\", \"angulo\": \"...\", \"temperatura\": \"curiosidade\"},\n  \"mensagem_recomendada\": \"1\",\n  \"motivo_recomendacao\": \"...\",\n  \"followup_dia_3\": \"2-3 linhas naturais\",\n  \"followup_dia_7\": \"2-3 linhas com valor concreto\",\n  \"followup_dia_14\": \"2-3 linhas com oferta especifica\"\n}`;
 
   try {
     let rawResponse;
@@ -163,26 +206,29 @@ async function generateMessage() {
     if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true });
 
     const resultData = {
-      timestamp:         new Date().toISOString(),
+      timestamp:            new Date().toISOString(),
       username,
-      produto_detectado: a.servico_ideal,
-      analise_score:     a.score_potencial,
-      prioridade:        a.prioridade,
-      posts_analisados:  ap.tem_posts_analisados || false,
-      learning_versao:   memoria?.versao || null,
-      mensagens:         messages
+      produto_detectado:    a.produto_sugerido || negocioCtx.produto || '(não configurado)',
+      analise_score:        a.score_potencial,
+      prioridade:           a.prioridade,
+      posts_analisados:     ap.tem_posts_analisados || false,
+      vision_analisada:     !!visionSintese,
+      vision_ferramentas:   visionSintese?.ferramentas_confirmadas || [],
+      vision_score_ajuste:  visionSintese?.score_ajuste ?? null,
+      learning_versao:      memoria?.versao || null,
+      mensagens:            messages
     };
 
     const outputFile = path.join(outputDir, `${username}_mensagens.json`);
     fs.writeFileSync(outputFile, JSON.stringify(resultData, null, 2));
 
-    const recKey    = `mensagem_${messages.mensagem_recomendada}`;
-    const recMsg    = messages[recKey];
-    const prodLabel = isAPI ? '🔵 Lead Normalizer API' : '🟡 Landing Page';
-    const postsLbl  = ap.tem_posts_analisados ? ' + posts ✓' : '';
+    const recKey   = `mensagem_${messages.mensagem_recomendada}`;
+    const recMsg   = messages[recKey];
+    const postsLbl = ap.tem_posts_analisados ? ' + posts ✓' : '';
+    const visionLbl = visionSintese ? ` + vision ✓ (${visionSintese.ferramentas_confirmadas.length} ferramentas)` : '';
 
     console.log(`\n[COPYWRITER] Mensagens geradas!`);
-    console.log(`[COPYWRITER] Produto: ${prodLabel}${postsLbl}`);
+    console.log(`[COPYWRITER] Produto: ${produtoNome}${postsLbl}${visionLbl}`);
     console.log(`[COPYWRITER] Recomendada: #${messages.mensagem_recomendada} - ${messages.motivo_recomendacao}`);
     console.log(`\n========== COPIE E COLE ESTA MENSAGEM ==========`);
     console.log(recMsg?.texto?.replace(/\\n/g, '\n'));

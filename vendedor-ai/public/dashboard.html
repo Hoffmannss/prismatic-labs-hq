@@ -1,1527 +1,1195 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vendedor AI — Prismatic Labs</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <style>
-    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vendedor AI — Prismatic Labs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════
+   VENDEDOR AI v3.0 — Premium Dark UI
+   Prismatic Labs · Design System
+═══════════════════════════════════════════ */
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root {
+  --bg-deep:    #05060f;
+  --bg-base:    #080a18;
+  --bg-surface: #0d1028;
+  --bg-el:      #121535;
+  --bg-hover:   #171c3e;
+  --b:          rgba(124,58,237,0.15);
+  --b-m:        rgba(124,58,237,0.3);
+  --b-l:        rgba(124,58,237,0.5);
+  --purple:     #7c3aed;
+  --purple-l:   #a78bfa;
+  --purple-xl:  #c4b5fd;
+  --cyan:       #00d4ff;
+  --cyan-d:     #0096b3;
+  --green:      #10b981;
+  --amber:      #f59e0b;
+  --red:        #ef4444;
+  --pink:       #ec4899;
+  --t:          #e2e8f8;
+  --t2:         #8892b0;
+  --t3:         #4a5568;
+  --sw:         248px;
+  --th:         58px;
+  --r:          12px;
+  --r-lg:       18px;
+}
+html,body{height:100%;font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg-deep);color:var(--t);overflow:hidden;font-size:14px;line-height:1.5}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--b-m);border-radius:99px}
+::-webkit-scrollbar-thumb:hover{background:var(--purple)}
 
-    :root {
-        --bg:        #07081a;
-        --bg-panel:  #0d1030;
-        --bg-card:   #111530;
-        --bg-hover:  #161c3e;
-        --border:    #1d2452;
-        --border-light: #252d5a;
-        --accent:    #667eea;
-        --accent2:   #764ba2;
-        --cyan:      #06d6a0;
-        --neon:      #00f0ff;
-        --text:      #e2e8f8;
-        --text2:     #6b7aaa;
-        --text3:     #3d4a7a;
-        --success:   #10b981;
-        --warning:   #f59e0b;
-        --danger:    #ef4444;
-        --hot:       #ff4757;
-        --warm:      #ff9f43;
-        --cold:      #4d9de0;
-        --sidebar-w: 240px;
-        --topbar-h:  60px;
-        --radius:    12px;
-        --radius-sm: 8px;
-        --shadow:    0 4px 24px rgba(0,0,0,0.3);
-        --glow:      0 0 24px rgba(102,126,234,0.15);
-    }
+/* ─── LAYOUT ─── */
+.app{display:flex;height:100vh;overflow:hidden}
 
-    /* ─── LAYOUT BASE ─── */
-    html, body {
-        height: 100%;
-        font-family: 'Inter', system-ui, -apple-system, sans-serif;
-        background: var(--bg);
-        color: var(--text);
-        overflow: hidden;
-    }
+/* ─── SIDEBAR ─── */
+.sidebar{width:var(--sw);min-width:var(--sw);background:var(--bg-surface);border-right:1px solid var(--b);display:flex;flex-direction:column;position:relative;z-index:100;overflow:hidden}
+.sidebar::after{content:'';position:absolute;top:0;right:0;bottom:0;width:1px;background:linear-gradient(to bottom,transparent,var(--purple) 30%,var(--cyan) 70%,transparent);opacity:.35;pointer-events:none}
+.sidebar-logo{padding:18px 18px 14px;border-bottom:1px solid var(--b)}
+.logo-mark{display:flex;align-items:center;gap:10px;text-decoration:none;cursor:pointer}
+.logo-icon{width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,var(--purple),var(--cyan));display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#fff;box-shadow:0 0 18px rgba(124,58,237,.45);flex-shrink:0}
+.logo-text{display:flex;flex-direction:column;line-height:1.1}
+.logo-name{font-size:13px;font-weight:700;color:var(--t);letter-spacing:.2px}
+.logo-sub{font-size:9px;font-weight:600;color:var(--t3);letter-spacing:1.2px;text-transform:uppercase}
+.sidebar-status{padding:8px 16px;background:rgba(16,185,129,.06);border-bottom:1px solid var(--b);display:flex;align-items:center;gap:6px;font-size:11px;color:var(--green);font-weight:500}
+.status-dot{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);animation:pulse-dot 2s infinite;flex-shrink:0}
+@keyframes pulse-dot{0%,100%{opacity:1}50%{opacity:.35}}
+.sidebar-nav{flex:1;overflow-y:auto;padding:6px 0}
+.nav-section-label{font-size:9px;font-weight:700;letter-spacing:1.3px;text-transform:uppercase;color:var(--t3);padding:14px 18px 4px}
+.nav-item{display:flex;align-items:center;gap:9px;padding:8px 14px;margin:1px 8px;border-radius:8px;cursor:pointer;transition:all .15s;color:var(--t2);font-size:12.5px;font-weight:500;text-decoration:none}
+.nav-item:hover{background:var(--bg-hover);color:var(--t)}
+.nav-item.active{background:rgba(124,58,237,.14);color:var(--purple-l);box-shadow:inset 2px 0 0 var(--purple)}
+.nav-item.active .nav-icon{color:var(--purple-l)}
+.nav-icon{width:15px;text-align:center;font-size:13px;opacity:.85;flex-shrink:0}
+.nav-badge{margin-left:auto;min-width:18px;height:18px;border-radius:9px;background:var(--purple);color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 5px}
+.nav-badge.amber{background:var(--amber)}
+.nav-badge.red{background:var(--red)}
+.sidebar-footer{padding:10px 14px;border-top:1px solid var(--b);display:flex;align-items:center;gap:8px}
+.footer-avatar{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--purple),var(--cyan));display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;flex-shrink:0}
+.footer-name{font-size:12px;font-weight:600;color:var(--t)}
+.footer-role{font-size:10px;color:var(--t3)}
 
-    .app {
-        display: flex;
-        height: 100vh;
-        overflow: hidden;
-    }
+/* ─── MAIN ─── */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
 
-    /* ─── SIDEBAR ─── */
-    .sidebar {
-        width: var(--sidebar-w);
-        flex-shrink: 0;
-        background: var(--bg-panel);
-        border-right: 1px solid var(--border);
-        display: flex;
-        flex-direction: column;
-        height: 100vh;
-        overflow: hidden;
-        z-index: 20;
-    }
+/* ─── TOPBAR ─── */
+.topbar{height:var(--th);min-height:var(--th);background:var(--bg-surface);border-bottom:1px solid var(--b);display:flex;align-items:center;padding:0 22px;gap:14px;flex-shrink:0}
+.topbar-title{font-size:15px;font-weight:700;color:var(--t);display:flex;align-items:center;gap:7px}
+.topbar-title span{font-size:10px;font-weight:500;color:var(--t3);background:var(--bg-el);padding:2px 8px;border-radius:99px;border:1px solid var(--b)}
+.topbar-spacer{flex:1}
+.topbar-pills{display:flex;align-items:center;gap:7px}
+.pill{display:flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;font-size:10px;font-weight:600;letter-spacing:.2px;background:var(--bg-el);border:1px solid var(--b);color:var(--t2)}
+.pill.green{background:rgba(16,185,129,.1);border-color:rgba(16,185,129,.3);color:var(--green)}
+.pill.amber{background:rgba(245,158,11,.1);border-color:rgba(245,158,11,.3);color:var(--amber)}
+.pill.red{background:rgba(239,68,68,.1);border-color:rgba(239,68,68,.3);color:var(--red)}
+.pill .dot{width:5px;height:5px;border-radius:50%;background:currentColor}
+.topbar-btn{width:30px;height:30px;border-radius:7px;border:1px solid var(--b);background:var(--bg-el);color:var(--t2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px;transition:.15s}
+.topbar-btn:hover{background:var(--bg-hover);color:var(--t);border-color:var(--b-m)}
+.topbar-cmd-btn{display:flex;align-items:center;gap:5px;padding:5px 11px;border-radius:7px;border:1px solid var(--b);background:var(--bg-el);color:var(--t3);cursor:pointer;font-size:11px;transition:.15s;font-family:inherit}
+.topbar-cmd-btn:hover{color:var(--t2);border-color:var(--b-m)}
+.topbar-cmd-btn kbd{background:var(--bg-hover);border:1px solid var(--b-m);padding:1px 4px;border-radius:3px;font-family:'JetBrains Mono',monospace;font-size:9px}
 
-    .sidebar-brand {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        padding: 20px 18px 16px;
-        border-bottom: 1px solid var(--border);
-        flex-shrink: 0;
-    }
-    .brand-logo {
-        width: 34px; height: 34px;
-        background: linear-gradient(135deg, var(--accent), var(--cyan));
-        border-radius: 10px;
-        display: flex; align-items: center; justify-content: center;
-        font-size: 16px; font-weight: 800; color: #fff;
-        flex-shrink: 0;
-    }
-    .brand-info {}
-    .brand-name {
-        font-size: 13px; font-weight: 700;
-        background: linear-gradient(135deg, var(--accent), var(--cyan));
-        -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-        line-height: 1.2;
-    }
-    .brand-sub { font-size: 10px; color: var(--text2); text-transform: uppercase; letter-spacing: 1px; }
+/* ─── CONTENT ─── */
+.content{flex:1;overflow-y:auto;overflow-x:hidden;background:var(--bg-base)}
+.section{display:none;padding:22px;min-height:calc(100vh - var(--th))}
+.section.active{display:block}
 
-    .sidebar-nav {
-        flex: 1;
-        padding: 12px 10px;
-        display: flex;
-        flex-direction: column;
-        gap: 2px;
-        overflow-y: auto;
-    }
+/* ─── PAGE HEADER ─── */
+.page-header{margin-bottom:22px}
+.page-header h1{font-size:21px;font-weight:800;color:var(--t);letter-spacing:-.4px}
+.page-header p{font-size:12px;color:var(--t2);margin-top:3px}
 
-    .nav-section-label {
-        font-size: 10px; color: var(--text3); text-transform: uppercase;
-        letter-spacing: 1.2px; padding: 12px 8px 6px; font-weight: 600;
-    }
+/* ─── GRIDS ─── */
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+.grid-5{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+@media(max-width:1400px){.grid-4{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:960px){.grid-3{grid-template-columns:1fr 1fr}.grid-2{grid-template-columns:1fr}}
 
-    .nav-item {
-        display: flex;
-        align-items: center;
-        gap: 11px;
-        padding: 9px 10px;
-        border-radius: var(--radius-sm);
-        cursor: pointer;
-        color: var(--text2);
-        font-size: 13px;
-        font-weight: 500;
-        transition: all 0.15s;
-        position: relative;
-        white-space: nowrap;
-        user-select: none;
-    }
-    .nav-item:hover { background: var(--bg-hover); color: var(--text); }
-    .nav-item.active {
-        background: rgba(102,126,234,0.12);
-        color: var(--accent);
-        font-weight: 600;
-    }
-    .nav-item.active .nav-icon svg { stroke: var(--accent); }
-    .nav-icon { width: 20px; height: 20px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
-    .nav-icon svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-    .nav-badge {
-        margin-left: auto;
-        background: var(--danger);
-        color: #fff;
-        font-size: 10px; font-weight: 700;
-        padding: 1px 6px; border-radius: 10px;
-        min-width: 18px; text-align: center;
-    }
+/* ─── CARD ─── */
+.card{background:var(--bg-surface);border:1px solid var(--b);border-radius:var(--r-lg);padding:18px;position:relative;overflow:hidden;transition:border-color .2s,box-shadow .2s}
+.card:hover{border-color:var(--b-m)}
 
-    .sidebar-footer {
-        padding: 12px 10px;
-        border-top: 1px solid var(--border);
-        flex-shrink: 0;
-    }
-    .version-tag { font-size: 11px; color: var(--text3); text-align: center; padding: 4px; }
+/* ─── KPI CARDS ─── */
+.kpi-card{padding:16px 18px 0}
+.kpi-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.9px;color:var(--t2);margin-bottom:7px}
+.kpi-value{font-size:28px;font-weight:800;color:var(--t);letter-spacing:-1px;line-height:1}
+.kpi-sub{font-size:11px;color:var(--t2);margin-top:4px;display:flex;align-items:center;gap:4px}
+.kpi-sub .up{color:var(--green)}
+.kpi-sub .dn{color:var(--red)}
+.kpi-bar{height:3px;border-radius:0 0 var(--r-lg) var(--r-lg);margin-top:16px;margin:-1px}
+.kpi-bar.purple{background:linear-gradient(to right,var(--purple),var(--cyan))}
+.kpi-bar.green{background:var(--green)}
+.kpi-bar.amber{background:var(--amber)}
+.kpi-bar.pink{background:linear-gradient(to right,var(--pink),var(--purple))}
 
-    /* ─── MAIN ─── */
-    .main {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        height: 100vh;
-        overflow: hidden;
-        min-width: 0;
-    }
+/* ─── SECTION DIVIDERS ─── */
+.section-row{display:flex;align-items:center;gap:10px;margin:20px 0 14px}
+.section-row h2{font-size:13px;font-weight:700;color:var(--t);white-space:nowrap}
+.section-row .line{flex:1;height:1px;background:var(--b)}
+.action-btn{font-size:11px;font-weight:600;color:var(--purple-l);cursor:pointer;background:rgba(124,58,237,.1);border:1px solid var(--b-m);padding:3px 10px;border-radius:6px;transition:.15s;white-space:nowrap}
+.action-btn:hover{background:rgba(124,58,237,.2)}
 
-    /* ─── TOPBAR ─── */
-    .topbar {
-        height: var(--topbar-h);
-        flex-shrink: 0;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 0 28px;
-        border-bottom: 1px solid var(--border);
-        background: var(--bg-panel);
-        gap: 16px;
-    }
-    .topbar-title {
-        font-size: 16px; font-weight: 700;
-        white-space: nowrap;
-    }
-    .topbar-pills { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+/* ─── PIPELINE ─── */
+.pipeline{display:flex;border-radius:var(--r);overflow:hidden;background:var(--bg-el);border:1px solid var(--b)}
+.pipeline-stage{flex:1;padding:12px 14px;cursor:pointer;transition:.2s;border-right:1px solid var(--b);position:relative;overflow:hidden}
+.pipeline-stage:last-child{border-right:none}
+.pipeline-stage:hover{background:var(--bg-hover)}
+.ps-dot{width:7px;height:7px;border-radius:50%;margin-bottom:7px}
+.ps-count{font-size:19px;font-weight:800;color:var(--t);line-height:1}
+.ps-label{font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:var(--t2);margin-top:2px}
+.ps-bar{position:absolute;bottom:0;left:0;height:2px;transition:.5s}
 
-    .pill {
-        display: inline-flex; align-items: center; gap: 6px;
-        padding: 5px 12px; border-radius: 20px;
-        font-size: 11px; font-weight: 600;
-        border: 1px solid transparent;
-        white-space: nowrap;
-    }
-    .pill-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
-    .pill-dot.blink { animation: blink 1.8s infinite; }
-    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.25} }
+/* ─── LIVE FEED ─── */
+.live-feed{display:flex;flex-direction:column;max-height:275px;overflow-y:auto}
+.feed-item{display:flex;align-items:flex-start;gap:9px;padding:8px 0;border-bottom:1px solid var(--b);font-size:12px}
+.feed-item:last-child{border-bottom:none}
+.feed-icon{width:24px;height:24px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;margin-top:1px}
+.feed-icon.purple{background:rgba(124,58,237,.15);color:var(--purple-l)}
+.feed-icon.cyan{background:rgba(0,212,255,.1);color:var(--cyan)}
+.feed-icon.green{background:rgba(16,185,129,.1);color:var(--green)}
+.feed-icon.amber{background:rgba(245,158,11,.1);color:var(--amber)}
+.feed-body{flex:1;min-width:0}
+.feed-msg{color:var(--t);line-height:1.4}
+.feed-msg strong{font-weight:600;color:var(--purple-xl)}
+.feed-time{font-size:10px;color:var(--t3);margin-top:1px}
 
-    .pill-idle    { background: rgba(107,122,170,.1); color: var(--text2);    border-color: rgba(107,122,170,.2); }
-    .pill-running { background: rgba(6,214,160,.1);   color: var(--cyan);     border-color: rgba(6,214,160,.2); }
-    .pill-paused  { background: rgba(245,158,11,.1);  color: var(--warning);  border-color: rgba(245,158,11,.2); }
-    .pill-error   { background: rgba(239,68,68,.1);   color: var(--danger);   border-color: rgba(239,68,68,.2); }
-    .pill-on      { background: rgba(102,126,234,.1); color: var(--accent);   border-color: rgba(102,126,234,.2); }
-    .pill-off     { background: rgba(107,122,170,.1); color: var(--text2);    border-color: rgba(107,122,170,.2); }
+/* ─── AGENT CARDS ─── */
+.agent-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
+.agent-card{background:var(--bg-surface);border:1px solid var(--b);border-radius:var(--r);padding:15px;cursor:pointer;transition:all .2s;position:relative;overflow:hidden}
+.agent-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(to right,var(--purple),var(--cyan));opacity:0;transition:.2s}
+.agent-card:hover{border-color:var(--b-m);transform:translateY(-1px);box-shadow:0 8px 28px rgba(0,0,0,.3)}
+.agent-card:hover::before{opacity:1}
+.ac-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:9px}
+.ac-num{font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--t3);font-family:'JetBrains Mono',monospace}
+.ac-status{font-size:10px;font-weight:600;padding:2px 7px;border-radius:99px;display:flex;align-items:center;gap:3px}
+.ac-status.online{background:rgba(16,185,129,.1);color:var(--green);border:1px solid rgba(16,185,129,.2)}
+.ac-status.idle{background:rgba(74,85,104,.2);color:var(--t3);border:1px solid var(--b)}
+.ac-status.running{background:rgba(124,58,237,.15);color:var(--purple-l);border:1px solid var(--b-m)}
+.ac-status.error{background:rgba(239,68,68,.1);color:var(--red);border:1px solid rgba(239,68,68,.2)}
+.ac-icon{font-size:20px;margin-bottom:5px}
+.ac-name{font-size:13px;font-weight:700;color:var(--t);margin-bottom:2px}
+.ac-desc{font-size:11px;color:var(--t2);line-height:1.4;margin-bottom:10px}
+.ac-stats{display:flex;gap:10px;margin-bottom:10px}
+.ac-stat{font-size:10px;color:var(--t3);display:flex;flex-direction:column;gap:1px}
+.ac-stat strong{font-size:13px;font-weight:700;color:var(--t2)}
+.ac-actions{display:flex;gap:5px}
+.ac-btn{flex:1;padding:6px;border-radius:6px;border:1px solid var(--b);background:var(--bg-el);color:var(--t2);cursor:pointer;font-size:11px;font-weight:600;transition:.15s;font-family:inherit;text-align:center}
+.ac-btn:hover{background:var(--bg-hover);color:var(--t);border-color:var(--b-m)}
+.ac-btn.primary{background:rgba(124,58,237,.15);color:var(--purple-l);border-color:var(--b-m)}
+.ac-btn.primary:hover{background:rgba(124,58,237,.25)}
 
-    /* ─── CONTENT AREA ─── */
-    .content {
-        flex: 1;
-        overflow-y: auto;
-        padding: 28px;
-        min-height: 0;
-    }
+/* ─── TABLE ─── */
+.table-wrap{background:var(--bg-surface);border:1px solid var(--b);border-radius:var(--r-lg);overflow:hidden}
+.table-toolbar{display:flex;align-items:center;gap:8px;padding:12px 14px;border-bottom:1px solid var(--b);flex-wrap:wrap}
+.search-input{display:flex;align-items:center;gap:6px;background:var(--bg-el);border:1px solid var(--b);border-radius:7px;padding:5px 10px;flex:1;min-width:160px;max-width:250px}
+.search-input input{background:none;border:none;outline:none;font-family:inherit;font-size:12px;color:var(--t);width:100%}
+.search-input input::placeholder{color:var(--t3)}
+.search-icon{color:var(--t3);font-size:11px}
+.filter-btn{padding:5px 11px;border-radius:7px;border:1px solid var(--b);background:var(--bg-el);color:var(--t2);font-size:11px;font-weight:600;cursor:pointer;transition:.15s;font-family:inherit;display:flex;align-items:center;gap:4px}
+.filter-btn:hover{background:var(--bg-hover);color:var(--t);border-color:var(--b-m)}
+.filter-btn.active{background:rgba(124,58,237,.15);color:var(--purple-l);border-color:var(--b-m)}
+.table-spacer{flex:1}
+.table-count{font-size:11px;color:var(--t3)}
+table{width:100%;border-collapse:collapse}
+thead th{padding:9px 12px;text-align:left;font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--t3);border-bottom:1px solid var(--b);white-space:nowrap;background:var(--bg-el)}
+tbody tr{transition:background .1s;cursor:pointer}
+tbody tr:hover{background:var(--bg-hover)}
+td{padding:10px 12px;font-size:12px;color:var(--t2);border-bottom:1px solid var(--b)}
+tbody tr:last-child td{border-bottom:none}
+.td-lead{display:flex;align-items:center;gap:8px}
+.lead-avatar{width:26px;height:26px;border-radius:7px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff;background:linear-gradient(135deg,var(--purple),var(--cyan))}
+.lead-name{font-weight:600;color:var(--t);font-size:12px}
+.lead-handle{font-size:10px;color:var(--t3)}
+.score-bar{display:flex;align-items:center;gap:6px}
+.score-num{font-size:12px;font-weight:700;min-width:26px;color:var(--t)}
+.score-track{flex:1;height:4px;background:var(--bg-el);border-radius:99px;overflow:hidden;min-width:48px}
+.score-fill{height:100%;border-radius:99px;transition:.5s}
+.score-fill.high{background:linear-gradient(to right,var(--green),#34d399)}
+.score-fill.med{background:linear-gradient(to right,var(--amber),#fbbf24)}
+.score-fill.low{background:linear-gradient(to right,var(--red),#f87171)}
+.badge{display:inline-flex;align-items:center;gap:2px;padding:2px 7px;border-radius:99px;font-size:10px;font-weight:600}
+.badge.new{background:rgba(124,58,237,.15);color:var(--purple-l)}
+.badge.contacted{background:rgba(0,212,255,.1);color:var(--cyan)}
+.badge.replied{background:rgba(16,185,129,.1);color:var(--green)}
+.badge.converted{background:rgba(16,185,129,.15);color:var(--green);border:1px solid rgba(16,185,129,.3)}
+.badge.ignored{background:rgba(74,85,104,.2);color:var(--t3)}
+.badge.landing{background:rgba(236,72,153,.1);color:var(--pink)}
+.badge.api{background:rgba(124,58,237,.1);color:var(--purple-l)}
+.td-actions{display:flex;gap:4px}
+.icon-btn{width:24px;height:24px;border-radius:5px;border:1px solid var(--b);background:var(--bg-el);color:var(--t3);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:11px;transition:.15s}
+.icon-btn:hover{background:var(--bg-hover);color:var(--t);border-color:var(--b-m)}
 
-    .section { display: none; animation: fadeIn .18s ease; }
-    .section.active { display: block; }
-    @keyframes fadeIn { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:none} }
+/* ─── DM QUEUE ─── */
+.dm-item{background:var(--bg-surface);border:1px solid var(--b);border-radius:var(--r);padding:13px 14px;display:flex;align-items:flex-start;gap:11px;transition:border-color .15s;margin-bottom:7px}
+.dm-item:hover{border-color:var(--b-m)}
+.dm-avatar{width:34px;height:34px;border-radius:9px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;background:linear-gradient(135deg,var(--purple),var(--pink))}
+.dm-body{flex:1;min-width:0}
+.dm-header{display:flex;align-items:center;gap:7px;margin-bottom:4px;flex-wrap:wrap}
+.dm-name{font-size:13px;font-weight:700;color:var(--t)}
+.dm-niche{font-size:10px;font-weight:600;color:var(--purple-xl);background:rgba(124,58,237,.1);padding:1px 6px;border-radius:99px}
+.dm-msg{font-size:12px;color:var(--t2);line-height:1.5;margin-bottom:7px}
+.dm-meta{display:flex;align-items:center;gap:10px;font-size:10px;color:var(--t3)}
+.dm-actions{display:flex;flex-direction:column;gap:5px;align-items:flex-end;flex-shrink:0}
+.send-btn{padding:6px 13px;border-radius:7px;background:linear-gradient(135deg,var(--purple),var(--cyan-d));color:#fff;font-size:11px;font-weight:700;cursor:pointer;border:none;font-family:inherit;transition:.15s;white-space:nowrap}
+.send-btn:hover{opacity:.9;transform:translateY(-1px);box-shadow:0 4px 14px rgba(124,58,237,.35)}
+.skip-btn{padding:5px 10px;border-radius:6px;border:1px solid var(--b);background:none;color:var(--t3);font-size:11px;cursor:pointer;font-family:inherit;transition:.15s}
+.skip-btn:hover{color:var(--red);border-color:rgba(239,68,68,.3)}
 
-    /* ─── CARDS ─── */
-    .card {
-        background: var(--bg-card);
-        border: 1px solid var(--border);
-        border-radius: var(--radius);
-        margin-bottom: 20px;
-    }
-    .card-header {
-        display: flex; align-items: center; justify-content: space-between;
-        padding: 18px 22px 0;
-    }
-    .card-body { padding: 18px 22px 22px; }
-    .card-title { font-size: 14px; font-weight: 700; }
-    .card-desc { font-size: 12px; color: var(--text2); margin-top: 3px; }
+/* ─── TERMINAL ─── */
+.terminal{background:var(--bg-deep);border:1px solid var(--b);border-radius:var(--r);overflow:hidden;font-family:'JetBrains Mono',monospace}
+.terminal-bar{background:var(--bg-surface);border-bottom:1px solid var(--b);padding:7px 12px;display:flex;align-items:center;gap:7px}
+.term-dots{display:flex;gap:5px}
+.term-dot{width:10px;height:10px;border-radius:50%}
+.term-dot.red{background:#ff5f57}
+.term-dot.amb{background:#febc2e}
+.term-dot.grn{background:#28c840}
+.term-title{flex:1;text-align:center;font-size:10px;color:var(--t3);font-family:inherit}
+.terminal-body{padding:10px 12px;height:310px;overflow-y:auto;font-size:11px;line-height:1.75}
+.log-line{display:flex;gap:8px}
+.log-time{color:var(--t3);flex-shrink:0;user-select:none}
+.log-module{font-weight:600;flex-shrink:0;min-width:82px}
+.log-module.scraper{color:#a78bfa}
+.log-module.analyzer{color:#67e8f9}
+.log-module.copy{color:#86efac}
+.log-module.sender{color:#fde68a}
+.log-module.dashboard{color:#f9a8d4}
+.log-module.autopilot{color:#c4b5fd}
+.log-module.system{color:var(--t2)}
+.log-msg{color:var(--t2);word-break:break-word}
+.log-msg.err{color:var(--red)}
+.log-msg.ok{color:var(--green)}
+.log-msg.warn{color:var(--amber)}
 
-    /* ─── MÉTRICAS ─── */
-    .metrics-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-        gap: 14px;
-        margin-bottom: 22px;
-    }
-    .metric-card {
-        background: var(--bg-card);
-        border: 1px solid var(--border);
-        border-radius: var(--radius);
-        padding: 18px 20px;
-        transition: border-color .2s, box-shadow .2s;
-    }
-    .metric-card:hover { border-color: var(--border-light); box-shadow: var(--glow); }
-    .metric-label { font-size: 11px; color: var(--text2); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; font-weight: 500; }
-    .metric-value { font-size: 30px; font-weight: 800; line-height: 1; color: var(--text); }
-    .metric-value.v-cyan    { color: var(--cyan); }
-    .metric-value.v-hot     { color: var(--hot); }
-    .metric-value.v-warm    { color: var(--warm); }
-    .metric-value.v-blue    { color: var(--cold); }
-    .metric-value.v-success { color: var(--success); }
+/* ─── ANALYTICS ─── */
+.chart-bar-wrap{display:flex;align-items:flex-end;gap:4px;height:96px;padding-top:6px}
+.chart-bar-col{display:flex;flex-direction:column;align-items:center;gap:4px;flex:1}
+.chart-bar{width:100%;border-radius:4px 4px 0 0;background:linear-gradient(to top,var(--purple),var(--cyan));transition:.5s cubic-bezier(.34,1.56,.64,1);min-height:2px}
+.chart-bar.dim{background:var(--bg-el)}
+.chart-label{font-size:9px;color:var(--t3);text-align:center}
 
-    /* ─── TABELA ─── */
-    .table-wrap { overflow-x: auto; }
-    table { width: 100%; border-collapse: collapse; }
-    th {
-        text-align: left; padding: 10px 16px;
-        font-size: 11px; color: var(--text2);
-        text-transform: uppercase; letter-spacing: .9px; font-weight: 600;
-        border-bottom: 1px solid var(--border);
-        white-space: nowrap;
-    }
-    td { padding: 13px 16px; font-size: 13px; border-bottom: 1px solid var(--border); vertical-align: middle; }
-    tr:last-child td { border-bottom: none; }
-    tbody tr:hover { background: var(--bg-hover); }
-    .td-user { display: flex; align-items: center; gap: 10px; }
-    .avatar {
-        width: 32px; height: 32px; border-radius: 50%;
-        background: linear-gradient(135deg, var(--accent), var(--accent2));
-        display: flex; align-items: center; justify-content: center;
-        font-size: 12px; font-weight: 700; color: #fff;
-        flex-shrink: 0;
-    }
-    .user-name { font-weight: 600; font-size: 13px; }
-    .user-sub  { font-size: 11px; color: var(--text2); margin-top: 1px; }
+/* ─── SETTINGS ─── */
+.settings-group{margin-bottom:18px}
+.settings-group-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.9px;color:var(--t3);margin-bottom:7px;padding-bottom:5px;border-bottom:1px solid var(--b)}
+.setting-row{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--b)}
+.setting-row:last-child{border-bottom:none}
+.setting-info h4{font-size:12px;font-weight:600;color:var(--t);margin-bottom:1px}
+.setting-info p{font-size:10px;color:var(--t3)}
+.toggle{width:34px;height:19px;border-radius:9px;background:var(--bg-el);border:1px solid var(--b);cursor:pointer;position:relative;transition:.2s;flex-shrink:0}
+.toggle.on{background:var(--purple);border-color:var(--purple)}
+.toggle::after{content:'';position:absolute;width:13px;height:13px;border-radius:50%;background:#fff;top:2px;left:2px;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+.toggle.on::after{left:17px}
+.setting-val{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--cyan);background:var(--bg-el);padding:3px 8px;border-radius:5px;border:1px solid var(--b)}
 
-    /* ─── BADGES ─── */
-    .badge {
-        display: inline-flex; align-items: center;
-        padding: 3px 9px; border-radius: 6px;
-        font-size: 11px; font-weight: 600;
-        text-transform: uppercase; letter-spacing: .4px;
-    }
-    .badge-hot      { background: rgba(255,71,87,.15);   color: var(--hot); }
-    .badge-warm     { background: rgba(255,159,67,.15);  color: var(--warm); }
-    .badge-cold     { background: rgba(77,157,224,.15);  color: var(--cold); }
-    .badge-pending  { background: rgba(245,158,11,.12);  color: var(--warning); }
-    .badge-sending  { background: rgba(0,240,255,.12);   color: var(--neon); }
-    .badge-sent     { background: rgba(16,185,129,.12);  color: var(--success); }
-    .badge-failed   { background: rgba(239,68,68,.12);   color: var(--danger); }
-    .badge-novo     { background: rgba(107,122,170,.12); color: var(--text2); }
-    .badge-converteu{ background: rgba(16,185,129,.15);  color: var(--success); }
-    .badge-negociando{ background: rgba(102,126,234,.15);color: var(--accent); }
-    .badge-respondeu{ background: rgba(6,214,160,.12);   color: var(--cyan); }
-    .badge-recusou  { background: rgba(239,68,68,.12);   color: var(--danger); }
-    .badge-ignorou  { background: rgba(107,122,170,.12); color: var(--text2); }
-    .badge-enviada  { background: rgba(16,185,129,.12);  color: var(--success); }
+/* ─── COMMAND PALETTE ─── */
+.cmd-overlay{position:fixed;inset:0;background:rgba(5,6,15,.82);backdrop-filter:blur(5px);z-index:1000;display:none;align-items:flex-start;justify-content:center;padding-top:72px}
+.cmd-overlay.open{display:flex}
+.cmd-palette{width:540px;max-width:calc(100vw - 32px);background:var(--bg-surface);border:1px solid var(--b-m);border-radius:var(--r-lg);overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,.65),0 0 0 1px rgba(124,58,237,.08)}
+.cmd-input-row{display:flex;align-items:center;gap:10px;padding:13px 15px;border-bottom:1px solid var(--b)}
+.cmd-icon{color:var(--t3);font-size:13px}
+.cmd-input{flex:1;background:none;border:none;outline:none;font-family:inherit;font-size:14px;color:var(--t)}
+.cmd-input::placeholder{color:var(--t3)}
+.cmd-esc{font-size:10px;color:var(--t3);background:var(--bg-el);padding:2px 6px;border-radius:4px;border:1px solid var(--b);font-family:'JetBrains Mono',monospace}
+.cmd-list{padding:6px;max-height:260px;overflow-y:auto}
+.cmd-group-label{font-size:9px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--t3);padding:8px 10px 4px}
+.cmd-item{display:flex;align-items:center;gap:9px;padding:7px 10px;border-radius:7px;cursor:pointer;transition:.1s;color:var(--t2);font-size:13px}
+.cmd-item:hover{background:rgba(124,58,237,.12);color:var(--t)}
+.cmd-item-icon{width:27px;height:27px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:13px;background:var(--bg-el);border:1px solid var(--b);flex-shrink:0}
+.cmd-item-name{flex:1}
+.cmd-item-key{font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--t3)}
+.cmd-footer{padding:7px 13px;border-top:1px solid var(--b);display:flex;gap:10px;font-size:10px;color:var(--t3)}
+.cmd-footer kbd{background:var(--bg-el);border:1px solid var(--b);padding:1px 5px;border-radius:3px;font-family:'JetBrains Mono',monospace}
 
-    /* ─── BOTÕES ─── */
-    .btn {
-        display: inline-flex; align-items: center; gap: 6px;
-        padding: 8px 16px; border: none; border-radius: var(--radius-sm);
-        font-size: 13px; font-weight: 600; cursor: pointer;
-        transition: all .15s; font-family: inherit; white-space: nowrap;
-    }
-    .btn svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-    .btn-primary { background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #fff; }
-    .btn-primary:hover { opacity: .9; transform: translateY(-1px); box-shadow: 0 6px 18px rgba(102,126,234,.3); }
-    .btn-success { background: var(--success); color: #fff; }
-    .btn-success:hover { opacity: .9; transform: translateY(-1px); }
-    .btn-danger  { background: var(--danger); color: #fff; }
-    .btn-danger:hover { opacity: .9; }
-    .btn-ghost   { background: transparent; color: var(--text2); border: 1px solid var(--border); }
-    .btn-ghost:hover { border-color: var(--border-light); color: var(--text); }
-    .btn-sm { padding: 5px 11px; font-size: 12px; }
-    .btn-xs { padding: 3px 8px; font-size: 11px; }
+/* ─── TOAST ─── */
+.toast-container{position:fixed;bottom:18px;right:18px;display:flex;flex-direction:column;gap:7px;z-index:2000}
+.toast{padding:9px 13px;border-radius:10px;background:var(--bg-surface);border:1px solid var(--b);box-shadow:0 8px 24px rgba(0,0,0,.45);display:flex;align-items:center;gap:8px;font-size:12px;animation:slide-in .2s ease;min-width:210px}
+.toast.success{border-color:rgba(16,185,129,.4)}
+.toast.error{border-color:rgba(239,68,68,.4)}
+.toast.info{border-color:var(--b-m)}
+.toast-icon{font-size:13px}
+.toast-msg{flex:1;color:var(--t)}
+@keyframes slide-in{from{transform:translateX(18px);opacity:0}to{transform:none;opacity:1}}
 
-    /* ─── FORMULÁRIOS ─── */
-    .form-grid { display: grid; gap: 14px; margin-bottom: 16px; }
-    .form-grid-2 { grid-template-columns: 1fr 1fr; }
-    .form-grid-3 { grid-template-columns: 1fr 1fr 1fr; }
-    .form-group { display: flex; flex-direction: column; gap: 6px; }
-    .form-label {
-        font-size: 12px; color: var(--text2); font-weight: 500;
-    }
-    .form-input, .form-select, .form-textarea {
-        width: 100%; padding: 9px 13px;
-        background: var(--bg); border: 1px solid var(--border);
-        border-radius: var(--radius-sm); color: var(--text);
-        font-size: 13px; font-family: inherit;
-        transition: border-color .2s;
-    }
-    .form-input:focus, .form-select:focus, .form-textarea:focus {
-        outline: none; border-color: var(--accent);
-    }
-    .form-textarea { resize: vertical; min-height: 88px; line-height: 1.5; }
-    .form-hint { font-size: 11px; color: var(--text3); }
-
-    /* ─── TOGGLE ─── */
-    .toggle-wrap { display: flex; align-items: center; gap: 9px; }
-    .toggle-label { font-size: 13px; color: var(--text2); font-weight: 500; }
-    .toggle { position: relative; width: 42px; height: 22px; cursor: pointer; flex-shrink: 0; }
-    .toggle input { display: none; }
-    .toggle-track {
-        width: 100%; height: 100%; border-radius: 11px;
-        background: var(--border-light); transition: background .2s;
-    }
-    .toggle input:checked + .toggle-track { background: var(--success); }
-    .toggle-thumb {
-        position: absolute; top: 3px; left: 3px;
-        width: 16px; height: 16px; border-radius: 50%;
-        background: #fff; transition: transform .2s;
-        box-shadow: 0 1px 4px rgba(0,0,0,.3);
-    }
-    .toggle input:checked ~ .toggle-thumb { transform: translateX(20px); }
-
-    /* ─── SENDER BAR ─── */
-    .sender-bar {
-        display: flex; align-items: center; gap: 0;
-        background: var(--bg-card); border: 1px solid var(--border);
-        border-radius: var(--radius); margin-bottom: 20px;
-        overflow: hidden;
-    }
-    .sender-stat {
-        flex: 1; padding: 16px 20px; border-right: 1px solid var(--border);
-        text-align: center;
-    }
-    .sender-stat:last-of-type { border-right: 1px solid var(--border); }
-    .sender-stat-label { font-size: 10px; color: var(--text2); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; font-weight: 500; }
-    .sender-stat-value { font-size: 22px; font-weight: 800; color: var(--cyan); }
-    .sender-stat-value.v-warn { color: var(--warning); }
-    .sender-controls { padding: 16px 20px; display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
-
-    /* ─── FILA DE DMs ─── */
-    .queue-list { display: flex; flex-direction: column; }
-    .queue-item {
-        display: flex; align-items: center; gap: 14px;
-        padding: 13px 0; border-bottom: 1px solid var(--border);
-    }
-    .queue-item:last-child { border-bottom: none; }
-    .queue-username { font-weight: 600; font-size: 13px; min-width: 120px; }
-    .queue-msg { flex: 1; font-size: 12px; color: var(--text2); overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.4; }
-    .queue-meta { font-size: 11px; color: var(--text3); min-width: 80px; text-align: right; }
-    .queue-actions { display: flex; gap: 6px; flex-shrink: 0; }
-
-    /* ─── ESTADO VAZIO ─── */
-    .empty-state {
-        display: flex; flex-direction: column; align-items: center;
-        padding: 56px 24px; color: var(--text2); text-align: center; gap: 12px;
-    }
-    .empty-state svg { width: 40px; height: 40px; stroke: var(--text3); fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; margin-bottom: 4px; }
-    .empty-state h3 { font-size: 15px; font-weight: 600; color: var(--text2); }
-    .empty-state p  { font-size: 13px; color: var(--text3); max-width: 280px; line-height: 1.5; }
-
-    /* ─── MODAL ─── */
-    .overlay {
-        position: fixed; inset: 0;
-        background: rgba(0,0,0,.6); backdrop-filter: blur(4px);
-        display: none; align-items: center; justify-content: center; z-index: 100;
-    }
-    .overlay.open { display: flex; }
-    .modal {
-        background: var(--bg-card); border: 1px solid var(--border);
-        border-radius: 16px; width: 560px; max-height: 85vh;
-        overflow-y: auto; padding: 28px; box-shadow: var(--shadow);
-    }
-    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 22px; }
-    .modal-title { font-size: 16px; font-weight: 700; }
-    .modal-close { background: none; border: none; color: var(--text2); font-size: 22px; cursor: pointer; line-height: 1; padding: 2px 6px; border-radius: 4px; }
-    .modal-close:hover { background: var(--bg-hover); color: var(--text); }
-    .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 20px; }
-    .detail-item { display: flex; flex-direction: column; gap: 5px; }
-    .detail-item-label { font-size: 11px; color: var(--text2); text-transform: uppercase; letter-spacing: .8px; font-weight: 500; }
-    .msg-preview {
-        background: var(--bg); border: 1px solid var(--border);
-        border-radius: var(--radius-sm); padding: 14px; margin-top: 6px;
-        font-size: 13px; line-height: 1.65; white-space: pre-wrap; color: var(--text);
-    }
-
-    /* ─── SEPARADOR ─── */
-    .divider { height: 1px; background: var(--border); margin: 20px 0; }
-
-    /* ─── TOAST ─── */
-    .toast-container {
-        position: fixed; bottom: 24px; right: 24px;
-        display: flex; flex-direction: column; gap: 10px;
-        z-index: 999; pointer-events: none;
-    }
-    .toast {
-        display: flex; align-items: center; gap: 10px;
-        padding: 12px 18px; border-radius: var(--radius-sm);
-        font-size: 13px; font-weight: 500;
-        box-shadow: 0 8px 24px rgba(0,0,0,.4);
-        pointer-events: auto;
-        animation: slideUp .25s ease;
-        min-width: 240px; max-width: 360px;
-    }
-    @keyframes slideUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:none} }
-    .toast-success { background: #0f2a1e; border: 1px solid rgba(16,185,129,.3); color: var(--success); }
-    .toast-error   { background: #2a0f0f; border: 1px solid rgba(239,68,68,.3);  color: var(--danger); }
-    .toast-info    { background: #141c3a; border: 1px solid rgba(102,126,234,.3);color: var(--accent); }
-    .toast-icon    { font-size: 16px; flex-shrink: 0; }
-
-    /* ─── LOADING SKELETON ─── */
-    .skeleton { border-radius: 6px; background: var(--bg-hover); animation: shimmer 1.4s infinite; }
-    @keyframes shimmer { 0%,100%{opacity:.4} 50%{opacity:.8} }
-
-    /* ─── SCROLLBAR ─── */
-    ::-webkit-scrollbar { width: 5px; height: 5px; }
-    ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: var(--border-light); border-radius: 3px; }
-    ::-webkit-scrollbar-thumb:hover { background: var(--text3); }
-
-    /* ─── MISC ─── */
-    .flex-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-    .ml-auto { margin-left: auto; }
-    .text-muted { color: var(--text2); }
-    .text-sm { font-size: 12px; }
-    .mt-4 { margin-top: 16px; }
-    .mb-0 { margin-bottom: 0 !important; }
-    .info-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
-    .info-row:last-child { border-bottom: none; }
-    </style>
+/* ─── MISC ─── */
+.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:44px;color:var(--t3)}
+.empty-state-icon{font-size:34px;margin-bottom:10px;opacity:.35}
+.empty-state h3{font-size:13px;font-weight:600;color:var(--t2);margin-bottom:3px}
+.empty-state p{font-size:11px;text-align:center;max-width:260px;line-height:1.5}
+.spinner{width:13px;height:13px;border:2px solid var(--b-m);border-top-color:var(--purple-l);border-radius:50%;animation:spin .7s linear infinite;display:inline-block}
+@keyframes spin{to{transform:rotate(360deg)}}
+.overview-grid{display:grid;grid-template-columns:1fr 300px;gap:14px;margin-bottom:14px}
+@media(max-width:1180px){.overview-grid{grid-template-columns:1fr}}
+</style>
 </head>
 <body>
-<div class="app">
 
-    <!-- ═══════════════════ SIDEBAR ═══════════════════ -->
-    <nav class="sidebar">
-        <div class="sidebar-brand">
-            <div class="brand-logo">P</div>
-            <div class="brand-info">
-                <div class="brand-name">Prismatic Labs</div>
-                <div class="brand-sub">Vendedor AI v2.0</div>
-            </div>
-        </div>
-
-        <div class="sidebar-nav">
-            <span class="nav-section-label">Principal</span>
-
-            <div class="nav-item active" data-section="leads">
-                <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
-                <span>Leads</span>
-            </div>
-
-            <div class="nav-item" data-section="queue">
-                <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.35 2 2 0 0 1 3.6 1h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 8.7a16 16 0 0 0 6.39 6.39l.94-.94a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg></span>
-                <span>Fila de DMs</span>
-                <span class="nav-badge" id="queueBadge" style="display:none">0</span>
-            </div>
-
-            <div class="nav-item" data-section="autopilot">
-                <span class="nav-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07M8.46 8.46a5 5 0 0 0 0 7.07"/></svg></span>
-                <span>Autopilot</span>
-            </div>
-
-            <span class="nav-section-label">Dados</span>
-
-            <div class="nav-item" data-section="tracker">
-                <span class="nav-icon"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></span>
-                <span>Registrar Resultado</span>
-            </div>
-
-            <div class="nav-item" data-section="stats">
-                <span class="nav-icon"><svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span>
-                <span>Análise</span>
-            </div>
-
-            <span class="nav-section-label">Ajuda</span>
-
-            <div class="nav-item" data-section="guide">
-                <span class="nav-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>
-                <span>Como Usar</span>
-            </div>
-        </div>
-
-        <div class="sidebar-footer">
-            <div class="version-tag">Prismatic Labs © 2026</div>
-        </div>
-    </nav>
-
-    <!-- ═══════════════════ MAIN ═══════════════════ -->
-    <div class="main">
-
-        <!-- TOPBAR -->
-        <header class="topbar">
-            <div class="topbar-title" id="pageTitle">Leads Pipeline</div>
-            <div class="topbar-pills">
-                <div class="pill pill-idle" id="senderPill">
-                    <span class="pill-dot"></span>
-                    <span id="senderPillText">Disparador: aguardando</span>
-                </div>
-                <div class="pill pill-off" id="autopilotPill">
-                    <span class="pill-dot"></span>
-                    <span id="autopilotPillText">Autopilot: desativado</span>
-                </div>
-            </div>
-        </header>
-
-        <!-- CONTENT -->
-        <div class="content">
-
-            <!-- ══════════ LEADS ══════════ -->
-            <div id="section-leads" class="section active">
-                <div class="metrics-grid" id="leadsMetrics">
-                    <!-- preenchido por JS -->
-                </div>
-                <div class="card">
-                    <div class="card-header">
-                        <div>
-                            <div class="card-title">Todos os Leads</div>
-                            <div class="card-desc">Leads gerados pelo Autopilot e analisados pela IA</div>
-                        </div>
-                        <div class="flex-row">
-                            <select id="filterPriority" class="form-select" style="width:auto;padding:6px 10px;font-size:12px">
-                                <option value="all">Todas as prioridades</option>
-                                <option value="hot">🔥 Hot</option>
-                                <option value="warm">⚡ Warm</option>
-                                <option value="cold">❄️ Cold</option>
-                            </select>
-                            <button class="btn btn-sm btn-ghost" onclick="loadLeads()">
-                                <svg viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.95"/></svg>
-                                Atualizar
-                            </button>
-                        </div>
-                    </div>
-                    <div class="card-body" style="padding-top:12px">
-                        <div class="table-wrap" id="leadsTableWrap"></div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- ══════════ FILA DE DMs ══════════ -->
-            <div id="section-queue" class="section">
-                <!-- Status bar do disparador -->
-                <div class="sender-bar">
-                    <div class="sender-stat">
-                        <div class="sender-stat-label">Enviadas Hoje</div>
-                        <div class="sender-stat-value" id="statSentToday">0/15</div>
-                    </div>
-                    <div class="sender-stat">
-                        <div class="sender-stat-label">Aguardando</div>
-                        <div class="sender-stat-value" id="statPending">0</div>
-                    </div>
-                    <div class="sender-stat">
-                        <div class="sender-stat-label">Status</div>
-                        <div class="sender-stat-value" id="statSenderStatus" style="font-size:15px;padding-top:4px">aguardando</div>
-                    </div>
-                    <div class="sender-controls">
-                        <div class="toggle-wrap">
-                            <label class="toggle" title="Ativar disparador">
-                                <input type="checkbox" id="senderToggle" onchange="toggleSender(this.checked)">
-                                <div class="toggle-track"></div>
-                                <div class="toggle-thumb"></div>
-                            </label>
-                            <span class="toggle-label">Ativar</span>
-                        </div>
-                        <button class="btn btn-sm btn-primary" onclick="startSender()">Disparar Lote</button>
-                    </div>
-                </div>
-
-                <div class="card mb-0">
-                    <div class="card-header">
-                        <div>
-                            <div class="card-title">Fila de Envio</div>
-                            <div class="card-desc">DMs aguardando disparo automático</div>
-                        </div>
-                        <button class="btn btn-sm btn-ghost" onclick="loadQueue()">
-                            <svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.95"/></svg>
-                            Atualizar
-                        </button>
-                    </div>
-                    <div class="card-body" style="padding-top:10px">
-                        <div id="queueList"></div>
-                    </div>
-                </div>
-
-                <div class="card">
-                    <div class="card-header"><div class="card-title">Adicionar DM Manual</div></div>
-                    <div class="card-body">
-                        <div class="form-grid form-grid-2">
-                            <div class="form-group">
-                                <label class="form-label">Username (sem @)</label>
-                                <input class="form-input" type="text" id="q-user" placeholder="ex: joao.silva">
-                            </div>
-                            <div class="form-group" style="grid-column:1/-1">
-                                <label class="form-label">Mensagem</label>
-                                <textarea class="form-textarea" id="q-msg" placeholder="Texto da DM..."></textarea>
-                            </div>
-                        </div>
-                        <button class="btn btn-primary" onclick="addToQueue()">Adicionar à Fila</button>
-                    </div>
-                </div>
-
-                <div class="card">
-                    <div class="card-header">
-                        <div>
-                            <div class="card-title">Configurações do Disparador</div>
-                            <div class="card-desc">Ajuste o comportamento do envio automático</div>
-                        </div>
-                    </div>
-                    <div class="card-body">
-                        <div class="form-grid form-grid-3">
-                            <div class="form-group">
-                                <label class="form-label">Máx. DMs por dia</label>
-                                <input class="form-input" type="number" id="cfg-maxDay" value="15">
-                                <span class="form-hint">Recomendado: até 15</span>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Intervalo mín. (seg)</label>
-                                <input class="form-input" type="number" id="cfg-delayMin" value="180">
-                                <span class="form-hint">Entre envios</span>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Intervalo máx. (seg)</label>
-                                <input class="form-input" type="number" id="cfg-delayMax" value="480">
-                                <span class="form-hint">Variação humana</span>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Digitação mín. (ms/char)</label>
-                                <input class="form-input" type="number" id="cfg-typeMin" value="50">
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Digitação máx. (ms/char)</label>
-                                <input class="form-input" type="number" id="cfg-typeMax" value="150">
-                            </div>
-                        </div>
-                        <button class="btn btn-ghost" onclick="saveSenderConfig()">Salvar Configurações</button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- ══════════ AUTOPILOT ══════════ -->
-            <div id="section-autopilot" class="section">
-                <div class="card">
-                    <div class="card-header">
-                        <div>
-                            <div class="card-title">Pipeline Autopilot</div>
-                            <div class="card-desc">Prospecção automatizada: scraping → análise → copywriting</div>
-                        </div>
-                    </div>
-                    <div class="card-body">
-                        <div class="form-grid form-grid-3">
-                            <div class="form-group" style="grid-column:1/-1">
-                                <label class="form-label">Nicho / Hashtag alvo</label>
-                                <input class="form-input" type="text" id="ap-nicho" placeholder="ex: automacao n8n, marketing digital" value="automacao n8n">
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Leads a prospectar</label>
-                                <input class="form-input" type="number" id="ap-qtd" value="20">
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Máx. para analisar</label>
-                                <input class="form-input" type="number" id="ap-max" value="8">
-                                <span class="form-hint">Controla custo de IA</span>
-                            </div>
-                        </div>
-                        <div class="flex-row">
-                            <button class="btn btn-primary" onclick="runAutopilot()">
-                                <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-                                Iniciar Pipeline
-                            </button>
-                            <div class="toggle-wrap">
-                                <label class="toggle">
-                                    <input type="checkbox" id="ap-toggle" onchange="toggleAutopilot(this.checked)">
-                                    <div class="toggle-track"></div>
-                                    <div class="toggle-thumb"></div>
-                                </label>
-                                <span class="toggle-label">Agendamento automático (08h diário)</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- ══════════ TRACKER ══════════ -->
-            <div id="section-tracker" class="section">
-                <div class="card">
-                    <div class="card-header">
-                        <div>
-                            <div class="card-title">Registrar Resultado</div>
-                            <div class="card-desc">Atualize o status de um lead após interação manual</div>
-                        </div>
-                    </div>
-                    <div class="card-body">
-                        <div class="form-grid form-grid-2">
-                            <div class="form-group">
-                                <label class="form-label">Username (sem @)</label>
-                                <input class="form-input" type="text" id="trk-user" placeholder="ex: joao.silva">
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Resultado</label>
-                                <select class="form-select" id="trk-action">
-                                    <option value="sent">DM Enviada</option>
-                                    <option value="respondeu">Respondeu</option>
-                                    <option value="ignorou">Ignorou</option>
-                                    <option value="negociando">Em Negociação</option>
-                                    <option value="converteu">Converteu ✓</option>
-                                    <option value="recusou">Recusou</option>
-                                </select>
-                            </div>
-                            <div class="form-group" style="grid-column:1/-1">
-                                <label class="form-label">Observação (opcional)</label>
-                                <input class="form-input" type="text" id="trk-extra" placeholder="Nota ou valor da venda (ex: R$ 500)">
-                            </div>
-                        </div>
-                        <button class="btn btn-success" onclick="submitTracker()">Registrar</button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- ══════════ ANÁLISE ══════════ -->
-            <div id="section-stats" class="section">
-                <div class="metrics-grid" id="statsMetrics"></div>
-                <div class="card">
-                    <div class="card-header">
-                        <div>
-                            <div class="card-title">Sistema de Aprendizado</div>
-                            <div class="card-desc">Dados do modelo de scoring e copywriting adaptativo</div>
-                        </div>
-                    </div>
-                    <div class="card-body" id="learningData">
-                        <p class="text-muted text-sm">Carregando...</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- ══════════ GUIA: COMO USAR ══════════ -->
-            <div id="section-guide" class="section">
-
-                <!-- Intro -->
-                <div class="card" style="background: linear-gradient(135deg, rgba(99,102,241,.12) 0%, rgba(6,214,160,.08) 100%); border-color: rgba(99,102,241,.25);">
-                    <div class="card-body" style="padding: 28px 32px;">
-                        <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px;">
-                            <div style="width:48px;height:48px;background:rgba(99,102,241,.2);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                                <svg viewBox="0 0 24 24" style="width:24px;height:24px;stroke:var(--accent);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-                            </div>
-                            <div>
-                                <div style="font-size:20px;font-weight:700;color:var(--text);">Bem-vindo ao Vendedor AI</div>
-                                <div style="color:var(--text2);margin-top:2px;">Sistema automatizado de prospecção no Instagram — do zero ao contrato</div>
-                            </div>
-                        </div>
-                        <p style="color:var(--text2);line-height:1.7;margin:0;">Este sistema encontra perfis do Instagram no seu nicho, analisa quem tem mais chance de virar cliente, cria uma mensagem personalizada para cada um e gerencia todo o processo de envio e acompanhamento. Você não precisa entender de tecnologia para usar — basta seguir os passos abaixo.</p>
-                    </div>
-                </div>
-
-                <!-- Fluxo visual -->
-                <div class="card">
-                    <div class="card-header">
-                        <div>
-                            <div class="card-title">Fluxo Completo em 5 Passos</div>
-                            <div class="card-desc">Como o sistema funciona do início ao fim</div>
-                        </div>
-                    </div>
-                    <div class="card-body">
-                        <div style="display:flex;flex-direction:column;gap:0;">
-
-                            <!-- Passo 1 -->
-                            <div style="display:flex;gap:20px;padding:20px 0;border-bottom:1px solid var(--border);">
-                                <div style="display:flex;flex-direction:column;align-items:center;gap:0;flex-shrink:0;">
-                                    <div style="width:40px;height:40px;background:rgba(99,102,241,.15);border:2px solid var(--accent);border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--accent);font-size:16px;">1</div>
-                                    <div style="width:2px;flex:1;background:var(--border);margin-top:8px;min-height:24px;"></div>
-                                </div>
-                                <div style="padding-bottom:20px;flex:1;">
-                                    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
-                                        <span style="font-weight:600;color:var(--text);font-size:15px;">Prospectar Leads com o Autopilot</span>
-                                        <span style="background:rgba(99,102,241,.1);color:var(--accent);padding:2px 10px;border-radius:20px;font-size:11px;font-weight:600;">AUTOMÁTICO</span>
-                                    </div>
-                                    <p style="color:var(--text2);line-height:1.7;margin:0 0 12px;">O Autopilot vasculha o Instagram em busca de perfis relacionados ao seu nicho. Ele usa hashtags para encontrar contas, visita cada perfil e coleta informações como número de seguidores, bio, posts recentes e engajamento.</p>
-                                    <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px 16px;">
-                                        <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px;">Como fazer:</div>
-                                        <ol style="margin:0;padding-left:18px;color:var(--text2);font-size:13px;line-height:1.8;">
-                                            <li>Clique em <strong style="color:var(--text);">Autopilot</strong> no menu lateral</li>
-                                            <li>Digite o nicho no campo <strong style="color:var(--text);">Nicho / Hashtag alvo</strong> — ex: <em>"marketing digital"</em>, <em>"loja de roupas"</em>, <em>"coach de emagrecimento"</em></li>
-                                            <li>Defina quantos leads quer prospectar (recomendado: <strong style="color:var(--text);">20–50 por rodada</strong>)</li>
-                                            <li>Clique em <strong style="color:var(--text);">Iniciar Pipeline</strong> e aguarde — pode levar alguns minutos</li>
-                                        </ol>
-                                    </div>
-                                    <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;">
-                                        <span style="background:rgba(6,214,160,.1);color:var(--cyan);padding:3px 10px;border-radius:20px;font-size:12px;">✓ Não precisa abrir o Instagram</span>
-                                        <span style="background:rgba(6,214,160,.1);color:var(--cyan);padding:3px 10px;border-radius:20px;font-size:12px;">✓ Roda sozinho em segundo plano</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Passo 2 -->
-                            <div style="display:flex;gap:20px;padding:20px 0;border-bottom:1px solid var(--border);">
-                                <div style="display:flex;flex-direction:column;align-items:center;gap:0;flex-shrink:0;">
-                                    <div style="width:40px;height:40px;background:rgba(245,158,11,.12);border:2px solid var(--warning);border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--warning);font-size:16px;">2</div>
-                                    <div style="width:2px;flex:1;background:var(--border);margin-top:8px;min-height:24px;"></div>
-                                </div>
-                                <div style="padding-bottom:20px;flex:1;">
-                                    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
-                                        <span style="font-weight:600;color:var(--text);font-size:15px;">Revisar os Leads Encontrados</span>
-                                        <span style="background:rgba(245,158,11,.1);color:var(--warning);padding:2px 10px;border-radius:20px;font-size:11px;font-weight:600;">MANUAL</span>
-                                    </div>
-                                    <p style="color:var(--text2);line-height:1.7;margin:0 0 12px;">Após a prospecção, cada lead recebe uma <strong style="color:var(--text);">pontuação de 0 a 100</strong> indicando o potencial de conversão. O sistema também já cria uma mensagem personalizada para cada um.</p>
-                                    <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px 16px;">
-                                        <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px;">Como fazer:</div>
-                                        <ol style="margin:0;padding-left:18px;color:var(--text2);font-size:13px;line-height:1.8;">
-                                            <li>Clique em <strong style="color:var(--text);">Leads Pipeline</strong> no menu lateral</li>
-                                            <li>Veja a lista de leads com suas pontuações — foque nos com score <strong style="color:var(--text);">acima de 60</strong></li>
-                                            <li>Clique no nome de um lead para ver os detalhes e a mensagem personalizada</li>
-                                            <li>Se quiser enviar DM para esse lead, clique em <strong style="color:var(--text);">Agendar DM</strong> dentro do modal</li>
-                                        </ol>
-                                    </div>
-                                    <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;">
-                                        <span style="background:rgba(6,214,160,.1);color:var(--cyan);padding:3px 10px;border-radius:20px;font-size:12px;">✓ Score alto = maior chance de resposta</span>
-                                        <span style="background:rgba(6,214,160,.1);color:var(--cyan);padding:3px 10px;border-radius:20px;font-size:12px;">✓ Mensagem já pronta, só revisar</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Passo 3 -->
-                            <div style="display:flex;gap:20px;padding:20px 0;border-bottom:1px solid var(--border);">
-                                <div style="display:flex;flex-direction:column;align-items:center;gap:0;flex-shrink:0;">
-                                    <div style="width:40px;height:40px;background:rgba(6,214,160,.1);border:2px solid var(--cyan);border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--cyan);font-size:16px;">3</div>
-                                    <div style="width:2px;flex:1;background:var(--border);margin-top:8px;min-height:24px;"></div>
-                                </div>
-                                <div style="padding-bottom:20px;flex:1;">
-                                    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
-                                        <span style="font-weight:600;color:var(--text);font-size:15px;">Enviar DMs pela Fila</span>
-                                        <span style="background:rgba(99,102,241,.1);color:var(--accent);padding:2px 10px;border-radius:20px;font-size:11px;font-weight:600;">AUTOMÁTICO</span>
-                                    </div>
-                                    <p style="color:var(--text2);line-height:1.7;margin:0 0 12px;">O sistema envia as mensagens de forma humanizada — com pausas aleatórias entre os envios, simulando o comportamento de uma pessoa real. Isso reduz o risco de bloqueio pelo Instagram.</p>
-                                    <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px 16px;">
-                                        <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px;">Como fazer:</div>
-                                        <ol style="margin:0;padding-left:18px;color:var(--text2);font-size:13px;line-height:1.8;">
-                                            <li>Clique em <strong style="color:var(--text);">Fila de DMs</strong> no menu lateral</li>
-                                            <li>Ative o toggle <strong style="color:var(--text);">Disparador</strong> (aparece no topo da seção)</li>
-                                            <li>Veja os leads que estão na fila aguardando envio</li>
-                                            <li>Clique em <strong style="color:var(--text);">Disparar Lote</strong> para iniciar os envios</li>
-                                            <li>O sistema envia e mostra o status de cada mensagem em tempo real</li>
-                                        </ol>
-                                    </div>
-                                    <div style="margin-top:10px;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);border-radius:8px;padding:10px 14px;">
-                                        <div style="font-size:12px;color:var(--warning);font-weight:600;margin-bottom:4px;">⚠ Limite recomendado</div>
-                                        <div style="font-size:12px;color:var(--text2);line-height:1.6;">Envie no máximo <strong style="color:var(--text);">20–30 DMs por dia</strong> para manter a conta segura. O sistema respeita esse limite automaticamente.</div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Passo 4 -->
-                            <div style="display:flex;gap:20px;padding:20px 0;border-bottom:1px solid var(--border);">
-                                <div style="display:flex;flex-direction:column;align-items:center;gap:0;flex-shrink:0;">
-                                    <div style="width:40px;height:40px;background:rgba(99,102,241,.1);border:2px solid rgba(99,102,241,.5);border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--accent);font-size:16px;">4</div>
-                                    <div style="width:2px;flex:1;background:var(--border);margin-top:8px;min-height:24px;"></div>
-                                </div>
-                                <div style="padding-bottom:20px;flex:1;">
-                                    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
-                                        <span style="font-weight:600;color:var(--text);font-size:15px;">Registrar o Resultado de Cada Conversa</span>
-                                        <span style="background:rgba(245,158,11,.1);color:var(--warning);padding:2px 10px;border-radius:20px;font-size:11px;font-weight:600;">MANUAL</span>
-                                    </div>
-                                    <p style="color:var(--text2);line-height:1.7;margin:0 0 12px;">Quando um lead responder (ou não) no Instagram, você registra aqui o que aconteceu. Isso alimenta o sistema de aprendizado — com o tempo, o Vendedor AI passa a priorizar perfis mais parecidos com quem converteu.</p>
-                                    <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px 16px;">
-                                        <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px;">Como fazer:</div>
-                                        <ol style="margin:0;padding-left:18px;color:var(--text2);font-size:13px;line-height:1.8;">
-                                            <li>Clique em <strong style="color:var(--text);">Registrar Resultado</strong> no menu lateral</li>
-                                            <li>Digite o <strong style="color:var(--text);">@ do lead</strong> no campo de username</li>
-                                            <li>Selecione o resultado: <em>Respondeu</em>, <em>Em Negociação</em>, <em>Converteu</em>, <em>Ignorou</em> ou <em>Recusou</em></li>
-                                            <li>Se converteu, preencha o <strong style="color:var(--text);">valor do contrato</strong> para acompanhar a receita</li>
-                                            <li>Clique em <strong style="color:var(--text);">Registrar</strong></li>
-                                        </ol>
-                                    </div>
-                                    <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;">
-                                        <span style="background:rgba(6,214,160,.1);color:var(--cyan);padding:3px 10px;border-radius:20px;font-size:12px;">✓ O sistema aprende com cada resultado</span>
-                                        <span style="background:rgba(6,214,160,.1);color:var(--cyan);padding:3px 10px;border-radius:20px;font-size:12px;">✓ Score fica mais preciso com o tempo</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Passo 5 -->
-                            <div style="display:flex;gap:20px;padding:20px 0;">
-                                <div style="flex-shrink:0;">
-                                    <div style="width:40px;height:40px;background:rgba(6,214,160,.15);border:2px solid var(--cyan);border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--cyan);font-size:16px;">5</div>
-                                </div>
-                                <div style="flex:1;">
-                                    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
-                                        <span style="font-weight:600;color:var(--text);font-size:15px;">Acompanhar os Resultados na Análise</span>
-                                        <span style="background:rgba(99,102,241,.1);color:var(--accent);padding:2px 10px;border-radius:20px;font-size:11px;font-weight:600;">DASHBOARD</span>
-                                    </div>
-                                    <p style="color:var(--text2);line-height:1.7;margin:0 0 12px;">A aba Análise consolida tudo: quantas DMs foram enviadas, quantas respostas, conversões e receita total gerada. Use para decidir quando escalar — mais leads, nova hashtag ou ajuste na mensagem.</p>
-                                    <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px 16px;">
-                                        <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px;">O que cada métrica significa:</div>
-                                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-                                            <div style="font-size:13px;color:var(--text2);"><strong style="color:var(--text);">Total de Leads</strong> — perfis coletados pelo Autopilot</div>
-                                            <div style="font-size:13px;color:var(--text2);"><strong style="color:var(--text);">DMs Enviadas</strong> — mensagens entregues no Instagram</div>
-                                            <div style="font-size:13px;color:var(--text2);"><strong style="color:var(--text);">Responderam</strong> — leads que reagiram à mensagem</div>
-                                            <div style="font-size:13px;color:var(--text2);"><strong style="color:var(--text);">Em Negociação</strong> — conversa avançando para venda</div>
-                                            <div style="font-size:13px;color:var(--text2);"><strong style="color:var(--text);">Convertidos</strong> — viraram clientes pagantes</div>
-                                            <div style="font-size:13px;color:var(--text2);"><strong style="color:var(--text);">Receita Total</strong> — soma de todos os contratos fechados</div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                        </div>
-                    </div>
-                </div>
-
-                <!-- FAQ -->
-                <div class="card">
-                    <div class="card-header">
-                        <div>
-                            <div class="card-title">Perguntas Frequentes</div>
-                            <div class="card-desc">Dúvidas comuns de quem está começando</div>
-                        </div>
-                    </div>
-                    <div class="card-body" style="display:flex;flex-direction:column;gap:0;">
-
-                        <details style="border-bottom:1px solid var(--border);padding:14px 0;" open>
-                            <summary style="font-weight:600;color:var(--text);cursor:pointer;font-size:14px;list-style:none;display:flex;align-items:center;gap:10px;">
-                                <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:var(--accent);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0;"><polyline points="9 18 15 12 9 6"/></svg>
-                                O sistema envia as DMs automaticamente ou preciso fazer isso manualmente?
-                            </summary>
-                            <p style="margin:10px 0 0 26px;color:var(--text2);font-size:13px;line-height:1.7;">O envio é semi-automático. Você decide quais leads entram na fila e clica em "Disparar Lote" — o sistema cuida do envio com pausas humanizadas. Você pode também ativar o toggle do Disparador e deixar ele rodar sozinho conforme novos leads chegam à fila.</p>
-                        </details>
-
-                        <details style="border-bottom:1px solid var(--border);padding:14px 0;">
-                            <summary style="font-weight:600;color:var(--text);cursor:pointer;font-size:14px;list-style:none;display:flex;align-items:center;gap:10px;">
-                                <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:var(--accent);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0;"><polyline points="9 18 15 12 9 6"/></svg>
-                                Minha conta do Instagram pode ser bloqueada?
-                            </summary>
-                            <p style="margin:10px 0 0 26px;color:var(--text2);font-size:13px;line-height:1.7;">O sistema foi projetado para minimizar esse risco: envia com delays aleatórios entre mensagens, respeita limites diários (20–30 DMs/dia) e detecta desafios de segurança do Instagram automaticamente. Ainda assim, qualquer automação carrega algum risco — recomendamos usar uma conta de negócios estabelecida e não ultrapassar os limites sugeridos.</p>
-                        </details>
-
-                        <details style="border-bottom:1px solid var(--border);padding:14px 0;">
-                            <summary style="font-weight:600;color:var(--text);cursor:pointer;font-size:14px;list-style:none;display:flex;align-items:center;gap:10px;">
-                                <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:var(--accent);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0;"><polyline points="9 18 15 12 9 6"/></svg>
-                                Posso usar para qualquer nicho?
-                            </summary>
-                            <p style="margin:10px 0 0 26px;color:var(--text2);font-size:13px;line-height:1.7;">Sim. O sistema funciona com qualquer hashtag ou palavra-chave do Instagram. Quanto mais específico for o nicho, melhor a qualidade dos leads. Exemplos: <em>"coach financeiro"</em>, <em>"pet shop sp"</em>, <em>"esteticista bh"</em>, <em>"infoproduto"</em>.</p>
-                        </details>
-
-                        <details style="border-bottom:1px solid var(--border);padding:14px 0;">
-                            <summary style="font-weight:600;color:var(--text);cursor:pointer;font-size:14px;list-style:none;display:flex;align-items:center;gap:10px;">
-                                <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:var(--accent);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0;"><polyline points="9 18 15 12 9 6"/></svg>
-                                As mensagens são todas iguais ou personalizadas?
-                            </summary>
-                            <p style="margin:10px 0 0 26px;color:var(--text2);font-size:13px;line-height:1.7;">Cada mensagem é criada individualmente pela IA com base no perfil do lead: bio, número de seguidores, tipo de conteúdo e nicho. Duas mensagens nunca são idênticas. Você pode revisar e editar antes de enviar clicando no lead e usando o botão "Copiar Mensagem".</p>
-                        </details>
-
-                        <details style="padding:14px 0;">
-                            <summary style="font-weight:600;color:var(--text);cursor:pointer;font-size:14px;list-style:none;display:flex;align-items:center;gap:10px;">
-                                <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:var(--accent);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0;"><polyline points="9 18 15 12 9 6"/></svg>
-                                Com que frequência devo rodar o Autopilot?
-                            </summary>
-                            <p style="margin:10px 0 0 26px;color:var(--text2);font-size:13px;line-height:1.7;">Recomendamos rodar uma vez por dia ou a cada dois dias, prospectando 20–50 leads por rodada. Você pode ativar o <strong style="color:var(--text);">Agendamento automático (08h diário)</strong> no próprio Autopilot para não precisar lembrar.</p>
-                        </details>
-
-                    </div>
-                </div>
-
-                <!-- Suporte -->
-                <div class="card" style="border-color:rgba(99,102,241,.2);">
-                    <div class="card-body" style="padding:20px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;">
-                        <div>
-                            <div style="font-weight:600;color:var(--text);margin-bottom:4px;">Precisa de ajuda?</div>
-                            <div style="color:var(--text2);font-size:13px;">Entre em contato com o suporte da Prismatic Labs para dúvidas técnicas ou operacionais.</div>
-                        </div>
-                        <a href="mailto:suporte@prismaticlabs.com.br" style="background:var(--accent);color:#fff;padding:10px 20px;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;white-space:nowrap;flex-shrink:0;">Falar com Suporte</a>
-                    </div>
-                </div>
-
-            </div><!-- /section-guide -->
-
-        </div><!-- /content -->
-    </div><!-- /main -->
-</div><!-- /app -->
-
-<!-- ═══════════════════ MODAL LEAD ═══════════════════ -->
-<div class="overlay" id="leadModal">
-    <div class="modal">
-        <div class="modal-header">
-            <span class="modal-title" id="modalTitle">Detalhes do Lead</span>
-            <button class="modal-close" onclick="closeModal()">×</button>
-        </div>
-        <div id="modalBody"></div>
+<!-- ── COMMAND PALETTE ── -->
+<div class="cmd-overlay" id="cmdOverlay">
+  <div class="cmd-palette">
+    <div class="cmd-input-row">
+      <span class="cmd-icon">⌕</span>
+      <input class="cmd-input" placeholder="Buscar ação, agente ou seção..." id="cmdInput" autocomplete="off">
+      <span class="cmd-esc">ESC</span>
     </div>
+    <div class="cmd-list">
+      <div class="cmd-group-label">Navegação</div>
+      <div class="cmd-item" onclick="navigate('overview');closePalette()"><div class="cmd-item-icon">⊞</div><span class="cmd-item-name">Command Center</span><span class="cmd-item-key">G O</span></div>
+      <div class="cmd-item" onclick="navigate('agents');closePalette()"><div class="cmd-item-icon">⬡</div><span class="cmd-item-name">Agentes</span><span class="cmd-item-key">G A</span></div>
+      <div class="cmd-item" onclick="navigate('crm');closePalette()"><div class="cmd-item-icon">◈</div><span class="cmd-item-name">CRM — Leads</span><span class="cmd-item-key">G C</span></div>
+      <div class="cmd-item" onclick="navigate('dmqueue');closePalette()"><div class="cmd-item-icon">◎</div><span class="cmd-item-name">Fila de DMs</span><span class="cmd-item-key">G D</span></div>
+      <div class="cmd-item" onclick="navigate('analytics');closePalette()"><div class="cmd-item-icon">◈</div><span class="cmd-item-name">Analytics</span><span class="cmd-item-key">G N</span></div>
+      <div class="cmd-item" onclick="navigate('logs');closePalette()"><div class="cmd-item-icon">≡</div><span class="cmd-item-name">Logs</span><span class="cmd-item-key">G L</span></div>
+      <div class="cmd-group-label">Ações Rápidas</div>
+      <div class="cmd-item" onclick="runAgent('autopilot');closePalette()"><div class="cmd-item-icon">⚡</div><span class="cmd-item-name">Iniciar Autopilot</span><span class="cmd-item-key">⌘ P</span></div>
+      <div class="cmd-item" onclick="runAgent('scraper');closePalette()"><div class="cmd-item-icon">🔍</div><span class="cmd-item-name">Rodar Scraper</span></div>
+      <div class="cmd-item" onclick="runAgent('copywriter');closePalette()"><div class="cmd-item-icon">✍️</div><span class="cmd-item-name">Gerar DMs (Copywriter)</span></div>
+      <div class="cmd-item" onclick="refreshData();closePalette()"><div class="cmd-item-icon">↻</div><span class="cmd-item-name">Atualizar Dados</span><span class="cmd-item-key">⌘ R</span></div>
+    </div>
+    <div class="cmd-footer">
+      <span><kbd>↑↓</kbd> navegar</span>
+      <span><kbd>↵</kbd> selecionar</span>
+      <span><kbd>ESC</kbd> fechar</span>
+    </div>
+  </div>
 </div>
 
-<!-- TOAST CONTAINER -->
-<div class="toast-container" id="toastContainer"></div>
+<!-- TOASTS -->
+<div class="toast-container" id="toasts"></div>
+
+<!-- ── APP ── -->
+<div class="app">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-mark" onclick="navigate('overview')">
+        <div class="logo-icon">P</div>
+        <div class="logo-text">
+          <span class="logo-name">Vendedor AI</span>
+          <span class="logo-sub">Prismatic Labs</span>
+        </div>
+      </div>
+    </div>
+    <div class="sidebar-status">
+      <div class="status-dot"></div>
+      <span id="systemStatus">Sistema operacional</span>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Principal</div>
+      <div class="nav-item active" onclick="navigate('overview')" id="nav-overview">
+        <span class="nav-icon">⊞</span><span>Command Center</span>
+      </div>
+      <div class="nav-item" onclick="navigate('agents')" id="nav-agents">
+        <span class="nav-icon">⬡</span><span>Agentes</span>
+        <span class="nav-badge" id="badge-running">0</span>
+      </div>
+      <div class="nav-item" onclick="navigate('crm')" id="nav-crm">
+        <span class="nav-icon">◈</span><span>CRM — Leads</span>
+        <span class="nav-badge amber" id="badge-leads">0</span>
+      </div>
+      <div class="nav-item" onclick="navigate('dmqueue')" id="nav-dmqueue">
+        <span class="nav-icon">◎</span><span>Fila de DMs</span>
+        <span class="nav-badge red" id="badge-dm">0</span>
+      </div>
+      <div class="nav-section-label">Monitor</div>
+      <div class="nav-item" onclick="navigate('analytics')" id="nav-analytics">
+        <span class="nav-icon">▦</span><span>Analytics</span>
+      </div>
+      <div class="nav-item" onclick="navigate('logs')" id="nav-logs">
+        <span class="nav-icon">≡</span><span>Logs</span>
+      </div>
+      <div class="nav-section-label">Sistema</div>
+      <div class="nav-item" onclick="navigate('settings')" id="nav-settings">
+        <span class="nav-icon">⚙</span><span>Configurações</span>
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="footer-avatar">PL</div>
+      <div>
+        <div class="footer-name">Prismatic Labs</div>
+        <div class="footer-role">v3.0 · Admin</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main">
+
+    <!-- TOPBAR -->
+    <header class="topbar">
+      <div class="topbar-title" id="topbarTitle">Command Center <span>Overview</span></div>
+      <div class="topbar-spacer"></div>
+      <div class="topbar-pills">
+        <div class="pill green" id="pill-pm2"><span class="dot"></span>PM2 Online</div>
+        <div class="pill" id="pill-scraper"><span class="dot"></span>Scraper</div>
+        <div class="pill" id="pill-autopilot"><span class="dot"></span>Autopilot</div>
+      </div>
+      <button class="topbar-cmd-btn" onclick="openPalette()">⌕ Buscar <kbd>⌘K</kbd></button>
+      <button class="topbar-btn" onclick="refreshData()" title="Atualizar">↻</button>
+    </header>
+
+    <!-- CONTENT AREA -->
+    <div class="content">
+
+      <!-- ══ OVERVIEW ══ -->
+      <section class="section active" id="section-overview">
+        <div class="page-header">
+          <h1>Command Center</h1>
+          <p>Visão geral em tempo real — <span id="lastUpdate" style="color:var(--purple-l)">carregando...</span></p>
+        </div>
+
+        <div class="grid-4" style="margin-bottom:14px">
+          <div class="card kpi-card" style="padding-bottom:0">
+            <div class="kpi-label">Leads Hoje</div>
+            <div class="kpi-value" id="kpi-leads-today">—</div>
+            <div class="kpi-sub"><span class="up" id="kpi-leads-delta">↑ 0</span>&nbsp;vs. ontem</div>
+            <div class="kpi-bar purple"></div>
+          </div>
+          <div class="card kpi-card" style="padding-bottom:0">
+            <div class="kpi-label">DMs na Fila</div>
+            <div class="kpi-value" id="kpi-dm-queue">—</div>
+            <div class="kpi-sub">prontas para enviar</div>
+            <div class="kpi-bar amber"></div>
+          </div>
+          <div class="card kpi-card" style="padding-bottom:0">
+            <div class="kpi-label">Taxa de Resposta</div>
+            <div class="kpi-value" id="kpi-response-rate">—</div>
+            <div class="kpi-sub">últimos 7 dias</div>
+            <div class="kpi-bar green"></div>
+          </div>
+          <div class="card kpi-card" style="padding-bottom:0">
+            <div class="kpi-label">Total no CRM</div>
+            <div class="kpi-value" id="kpi-total-leads">—</div>
+            <div class="kpi-sub">leads registrados</div>
+            <div class="kpi-bar pink"></div>
+          </div>
+        </div>
+
+        <div class="overview-grid">
+          <div>
+            <div class="section-row"><h2>Pipeline de Prospecção</h2><div class="line"></div></div>
+            <div class="pipeline">
+              <div class="pipeline-stage">
+                <div class="ps-dot" style="background:#a78bfa"></div>
+                <div class="ps-count" id="ps-scraped">—</div>
+                <div class="ps-label">Coletados</div>
+                <div class="ps-bar" style="background:var(--purple-l);width:100%"></div>
+              </div>
+              <div class="pipeline-stage">
+                <div class="ps-dot" style="background:#67e8f9"></div>
+                <div class="ps-count" id="ps-analyzed">—</div>
+                <div class="ps-label">Analisados</div>
+                <div class="ps-bar" style="background:var(--cyan);width:80%"></div>
+              </div>
+              <div class="pipeline-stage">
+                <div class="ps-dot" style="background:#86efac"></div>
+                <div class="ps-count" id="ps-ready">—</div>
+                <div class="ps-label">DM Pronta</div>
+                <div class="ps-bar" style="background:var(--green);width:60%"></div>
+              </div>
+              <div class="pipeline-stage">
+                <div class="ps-dot" style="background:#fde68a"></div>
+                <div class="ps-count" id="ps-sent">—</div>
+                <div class="ps-label">Enviados</div>
+                <div class="ps-bar" style="background:var(--amber);width:40%"></div>
+              </div>
+              <div class="pipeline-stage">
+                <div class="ps-dot" style="background:#6ee7b7"></div>
+                <div class="ps-count" id="ps-replied">—</div>
+                <div class="ps-label">Respondidos</div>
+                <div class="ps-bar" style="background:var(--green);width:20%"></div>
+              </div>
+            </div>
+
+            <div class="section-row" style="margin-top:18px">
+              <h2>Controles Rápidos</h2>
+              <div class="line"></div>
+              <div class="action-btn" onclick="navigate('agents')">Ver todos →</div>
+            </div>
+            <div class="grid-5">
+              <div class="card" style="padding:11px;text-align:center;cursor:pointer" onclick="runAgent('scraper')">
+                <div style="font-size:19px;margin-bottom:5px">🔍</div>
+                <div style="font-size:11px;font-weight:700;color:var(--t);margin-bottom:1px">Scraper</div>
+                <div style="font-size:9px;color:var(--t3)">0-scraper</div>
+              </div>
+              <div class="card" style="padding:11px;text-align:center;cursor:pointer" onclick="runAgent('analyzer')">
+                <div style="font-size:19px;margin-bottom:5px">🧠</div>
+                <div style="font-size:11px;font-weight:700;color:var(--t);margin-bottom:1px">Analyzer</div>
+                <div style="font-size:9px;color:var(--t3)">1-analyzer</div>
+              </div>
+              <div class="card" style="padding:11px;text-align:center;cursor:pointer" onclick="runAgent('copywriter')">
+                <div style="font-size:19px;margin-bottom:5px">✍️</div>
+                <div style="font-size:11px;font-weight:700;color:var(--t);margin-bottom:1px">Copywriter</div>
+                <div style="font-size:9px;color:var(--t3)">2-copywriter</div>
+              </div>
+              <div class="card" style="padding:11px;text-align:center;cursor:pointer" onclick="runAgent('notion')">
+                <div style="font-size:19px;margin-bottom:5px">🔄</div>
+                <div style="font-size:11px;font-weight:700;color:var(--t);margin-bottom:1px">Notion Sync</div>
+                <div style="font-size:9px;color:var(--t3)">9-notion</div>
+              </div>
+              <div class="card" style="padding:11px;text-align:center;cursor:pointer;background:rgba(124,58,237,.08);border-color:var(--b-m)" onclick="runAgent('autopilot')">
+                <div style="font-size:19px;margin-bottom:5px">⚡</div>
+                <div style="font-size:11px;font-weight:700;color:var(--purple-xl);margin-bottom:1px">Autopilot</div>
+                <div style="font-size:9px;color:var(--purple-l)">10-autopilot</div>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <div class="section-row"><h2>Atividade Recente</h2><div class="line"></div></div>
+            <div class="card" style="padding:13px">
+              <div class="live-feed" id="liveFeed">
+                <div style="text-align:center;padding:22px;color:var(--t3);font-size:12px">
+                  <div class="spinner" style="margin:0 auto 8px"></div>
+                  Aguardando dados...
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ══ AGENTS ══ -->
+      <section class="section" id="section-agents">
+        <div class="page-header">
+          <h1>Agentes</h1>
+          <p>Gerenciamento e monitoramento dos módulos do Vendedor AI</p>
+        </div>
+        <div class="agent-grid" id="agentGrid"></div>
+      </section>
+
+      <!-- ══ CRM ══ -->
+      <section class="section" id="section-crm">
+        <div class="page-header">
+          <h1>CRM — Leads</h1>
+          <p>Base de leads coletados, analisados e pontuados pelo pipeline</p>
+        </div>
+        <div class="table-wrap">
+          <div class="table-toolbar">
+            <div class="search-input">
+              <span class="search-icon">⌕</span>
+              <input type="text" placeholder="Buscar @handle, nicho, nome..." id="crmSearch" oninput="filterLeads()">
+            </div>
+            <button class="filter-btn active" onclick="setFilter('all',this)">Todos</button>
+            <button class="filter-btn" onclick="setFilter('new',this)">Novos</button>
+            <button class="filter-btn" onclick="setFilter('high',this)">Score Alto</button>
+            <button class="filter-btn" onclick="setFilter('contacted',this)">Contatados</button>
+            <div class="table-spacer"></div>
+            <div class="table-count" id="crmCount">0 leads</div>
+          </div>
+          <div style="overflow-x:auto">
+            <table>
+              <thead>
+                <tr>
+                  <th>Lead</th>
+                  <th>Nicho</th>
+                  <th>Score</th>
+                  <th>Produto</th>
+                  <th>Status</th>
+                  <th>Adicionado</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="leadsTable">
+                <tr><td colspan="7"><div class="empty-state"><div class="empty-state-icon">👥</div><h3>Nenhum lead</h3><p>Execute o Autopilot para coletar leads</p></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ══ DM QUEUE ══ -->
+      <section class="section" id="section-dmqueue">
+        <div class="page-header">
+          <h1>Fila de DMs</h1>
+          <p>Mensagens personalizadas prontas para envio — revise antes de disparar</p>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+          <div style="font-size:12px;color:var(--t2)">
+            <span id="dmQueueCount" style="font-weight:700;color:var(--t)">0</span> DMs na fila ·
+            <span style="color:var(--amber)">máx 20 / dia (anti-ban)</span>
+          </div>
+          <div style="display:flex;gap:7px">
+            <button class="filter-btn" onclick="sendAllDMs()">⚡ Enviar Fila Completa</button>
+            <button class="filter-btn" onclick="clearDMQueue()">✕ Limpar Fila</button>
+          </div>
+        </div>
+        <div id="dmQueueList">
+          <div class="empty-state">
+            <div class="empty-state-icon">💬</div>
+            <h3>Fila vazia</h3>
+            <p>Execute o Copywriter para gerar DMs personalizadas</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ══ ANALYTICS ══ -->
+      <section class="section" id="section-analytics">
+        <div class="page-header">
+          <h1>Analytics</h1>
+          <p>Performance da prospecção e distribuição de leads</p>
+        </div>
+        <div class="grid-3" style="margin-bottom:14px">
+          <div class="card">
+            <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--t2);margin-bottom:10px">Leads por Dia</div>
+            <div class="chart-bar-wrap" id="chart-daily"></div>
+            <div style="display:flex;justify-content:space-between;margin-top:4px" id="chart-daily-labels"></div>
+          </div>
+          <div class="card">
+            <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--t2);margin-bottom:10px">Distribuição de Score</div>
+            <div class="chart-bar-wrap" id="chart-score"></div>
+            <div style="display:flex;justify-content:space-between;margin-top:4px" id="chart-score-labels"></div>
+          </div>
+          <div class="card">
+            <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--t2);margin-bottom:14px">Breakdown por Status</div>
+            <div id="status-breakdown" style="display:flex;flex-direction:column;gap:8px"></div>
+          </div>
+        </div>
+        <div class="card">
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--t2);margin-bottom:14px">Top Nichos por Volume</div>
+          <div id="niche-bars" style="display:flex;flex-direction:column;gap:9px"></div>
+        </div>
+      </section>
+
+      <!-- ══ LOGS ══ -->
+      <section class="section" id="section-logs">
+        <div class="page-header">
+          <h1>Logs do Sistema</h1>
+          <p>Output em tempo real de todos os agentes e processos</p>
+        </div>
+        <div style="display:flex;gap:7px;margin-bottom:10px;flex-wrap:wrap">
+          <button class="filter-btn active" onclick="setLogFilter('all',this)">Todos</button>
+          <button class="filter-btn" onclick="setLogFilter('scraper',this)">0-scraper</button>
+          <button class="filter-btn" onclick="setLogFilter('analyzer',this)">1-analyzer</button>
+          <button class="filter-btn" onclick="setLogFilter('copy',this)">2-copywriter</button>
+          <button class="filter-btn" onclick="setLogFilter('autopilot',this)">10-autopilot</button>
+          <button class="filter-btn" onclick="setLogFilter('err',this)" style="color:var(--red)">⚠ Errors</button>
+          <div style="flex:1"></div>
+          <button class="filter-btn" onclick="clearLogs()">✕ Limpar</button>
+        </div>
+        <div class="terminal">
+          <div class="terminal-bar">
+            <div class="term-dots">
+              <div class="term-dot red"></div>
+              <div class="term-dot amb"></div>
+              <div class="term-dot grn"></div>
+            </div>
+            <div class="term-title">vendedor-ai — pm2 logs</div>
+          </div>
+          <div class="terminal-body" id="logTerminal">
+            <div class="log-line">
+              <span class="log-time" id="initTime">--:--:--</span>
+              <span class="log-module dashboard">DASHBOARD</span>
+              <span class="log-msg ok">✓ Vendedor AI v3.0 iniciado — Prismatic Labs</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ══ SETTINGS ══ -->
+      <section class="section" id="section-settings">
+        <div class="page-header">
+          <h1>Configurações</h1>
+          <p>Parâmetros operacionais e status de integrações</p>
+        </div>
+        <div class="grid-2">
+          <div class="card">
+            <div class="settings-group">
+              <div class="settings-group-title">Automação</div>
+              <div class="setting-row">
+                <div class="setting-info"><h4>Autopilot</h4><p>Pipeline completo automático</p></div>
+                <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+              </div>
+              <div class="setting-row">
+                <div class="setting-info"><h4>Limite diário de DMs</h4><p>Máximo por dia (anti-ban)</p></div>
+                <span class="setting-val">20 / dia</span>
+              </div>
+              <div class="setting-row">
+                <div class="setting-info"><h4>Delay entre DMs</h4><p>Intervalo aleatório</p></div>
+                <span class="setting-val">3–8 min</span>
+              </div>
+              <div class="setting-row">
+                <div class="setting-info"><h4>Rotação de copy</h4><p>Variar mensagem a cada N envios</p></div>
+                <span class="setting-val">3 msgs</span>
+              </div>
+            </div>
+            <div class="settings-group">
+              <div class="settings-group-title">Agendamento</div>
+              <div class="setting-row">
+                <div class="setting-info"><h4>Scraping automático</h4><p>Coletar leads diariamente às 8h</p></div>
+                <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+              </div>
+              <div class="setting-row">
+                <div class="setting-info"><h4>Sync Notion</h4><p>Sincronizar CRM a cada 15 min</p></div>
+                <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="settings-group">
+              <div class="settings-group-title">APIs &amp; Integrações</div>
+              <div class="setting-row">
+                <div class="setting-info"><h4>Groq API</h4><p>Llama 3.3-70B · Analyzer</p></div>
+                <span class="setting-val" id="groq-status">—</span>
+              </div>
+              <div class="setting-row">
+                <div class="setting-info"><h4>Gemini API</h4><p>1.5 Flash · Copywriter</p></div>
+                <span class="setting-val" id="gemini-status">—</span>
+              </div>
+              <div class="setting-row">
+                <div class="setting-info"><h4>Notion API</h4><p>Sync bidirecional CRM</p></div>
+                <span class="setting-val" id="notion-status">—</span>
+              </div>
+              <div class="setting-row">
+                <div class="setting-info"><h4>Instagram Session</h4><p>Playwright · Scraping</p></div>
+                <span class="setting-val" id="ig-status">—</span>
+              </div>
+            </div>
+            <div class="settings-group">
+              <div class="settings-group-title">Sistema</div>
+              <div class="setting-row">
+                <div class="setting-info"><h4>Versão</h4><p>Vendedor AI</p></div>
+                <span class="setting-val">v3.0</span>
+              </div>
+              <div class="setting-row">
+                <div class="setting-info"><h4>PM2 Status</h4><p>Process manager</p></div>
+                <span class="setting-val" id="pm2-status" style="color:var(--green)">online</span>
+              </div>
+              <div class="setting-row">
+                <div class="setting-info"><h4>Polling</h4><p>Atualização automática</p></div>
+                <span class="setting-val">30s</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </div><!-- /content -->
+  </div><!-- /main -->
+</div><!-- /app -->
 
 <script>
-// ══════════════════════════════════════════════
-//  TOAST NOTIFICATIONS
-// ══════════════════════════════════════════════
-function toast(msg, type = 'success', duration = 4000) {
-    const icons = { success: '✓', error: '✕', info: 'ℹ' };
-    const el = document.createElement('div');
-    el.className = `toast toast-${type}`;
-    el.innerHTML = `<span class="toast-icon">${icons[type]||'ℹ'}</span><span>${msg}</span>`;
-    const container = document.getElementById('toastContainer');
-    container.appendChild(el);
-    setTimeout(() => { el.style.opacity='0'; el.style.transition='opacity .3s'; setTimeout(()=>el.remove(), 300); }, duration);
-}
+// ═══════════════════════════════════════════
+// VENDEDOR AI — Dashboard v3.0
+// Prismatic Labs · Frontend Engine
+// ═══════════════════════════════════════════
 
-// ══════════════════════════════════════════════
-//  STATE
-// ══════════════════════════════════════════════
-let leadsData = [];
-let queueData = [];
-let senderConfig = {};
-
-// ══════════════════════════════════════════════
-//  NAVEGAÇÃO
-// ══════════════════════════════════════════════
-const pageTitles = {
-    leads:    'Leads Pipeline',
-    queue:    'Fila de DMs',
-    autopilot:'Autopilot',
-    tracker:  'Registrar Resultado',
-    stats:    'Análise',
-    guide:    'Como Usar'
+const state = {
+  leads: [],
+  stats: {},
+  dmQueue: [],
+  logs: [],
+  filterStatus: 'all',
+  logFilter: 'all',
+  agentsData: [
+    { id: '0-scraper',    name: 'Scraper',     icon: '🔍', desc: 'Coleta perfis Instagram via hashtags usando Playwright.',  status: 'idle', lastRun: 'Nunca', runsToday: 0, leadsFound: 0, key: 'scraper' },
+    { id: '1-analyzer',   name: 'Analyzer',    icon: '🧠', desc: 'Analisa perfis e atribui score 0-100 via Groq Llama.',    status: 'idle', lastRun: 'Nunca', runsToday: 0, leadsFound: 0, key: 'analyzer' },
+    { id: '2-copywriter', name: 'Copywriter',  icon: '✍️', desc: 'Gera DMs personalizadas via Gemini 1.5 Flash.',           status: 'idle', lastRun: 'Nunca', runsToday: 0, leadsFound: 0, key: 'copywriter' },
+    { id: '9-notion-sync',name: 'Notion Sync', icon: '🔄', desc: 'Sincronização bidirecional entre CRM local e Notion.',   status: 'idle', lastRun: 'Nunca', runsToday: 0, leadsFound: 0, key: 'notion' },
+    { id: '10-autopilot', name: 'Autopilot',   icon: '⚡', desc: 'Orquestra o pipeline completo de prospecção.',            status: 'idle', lastRun: 'Nunca', runsToday: 0, leadsFound: 0, key: 'autopilot' },
+    { id: '14-scheduler', name: 'Scheduler',   icon: '⏰', desc: 'Agendamento automático de tarefas recorrentes.',          status: 'idle', lastRun: 'Nunca', runsToday: 0, leadsFound: 0, key: 'scheduler' },
+  ]
 };
 
-document.querySelectorAll('.nav-item[data-section]').forEach(item => {
-    item.addEventListener('click', () => {
-        const s = item.dataset.section;
-        document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
-        item.classList.add('active');
-        document.querySelectorAll('.section').forEach(x => x.classList.remove('active'));
-        document.getElementById(`section-${s}`).classList.add('active');
-        document.getElementById('pageTitle').textContent = pageTitles[s] || s;
-        if (s === 'stats')  loadStats();
-        if (s === 'queue')  loadQueue();
-        if (s === 'leads')  loadLeads();
+// ── Navigation ──
+const SECTION_TITLES = {
+  overview:  ['Command Center', 'Overview'],
+  agents:    ['Agentes', 'Gerenciamento'],
+  crm:       ['CRM — Leads', 'Prospecção'],
+  dmqueue:   ['Fila de DMs', 'Envio'],
+  analytics: ['Analytics', 'Métricas'],
+  logs:      ['Logs', 'Monitor'],
+  settings:  ['Configurações', 'Sistema'],
+};
+
+function navigate(section) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.getElementById('section-' + section).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const nav = document.getElementById('nav-' + section);
+  if (nav) nav.classList.add('active');
+  const t = SECTION_TITLES[section] || [section, ''];
+  document.getElementById('topbarTitle').innerHTML = `${t[0]} <span>${t[1]}</span>`;
+  if (section === 'analytics') renderAnalytics();
+}
+
+// ── Command Palette ──
+function openPalette() {
+  document.getElementById('cmdOverlay').classList.add('open');
+  setTimeout(() => document.getElementById('cmdInput').focus(), 50);
+}
+function closePalette() {
+  document.getElementById('cmdOverlay').classList.remove('open');
+  document.getElementById('cmdInput').value = '';
+}
+document.getElementById('cmdOverlay').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closePalette();
+});
+
+// ── Toast ──
+function toast(msg, type = 'info') {
+  const icons = { info: 'ℹ', success: '✓', error: '✕' };
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.innerHTML = `<span class="toast-icon">${icons[type] || 'ℹ'}</span><span class="toast-msg">${msg}</span>`;
+  document.getElementById('toasts').prepend(el);
+  setTimeout(() => el.remove(), 3800);
+}
+
+// ── Logging ──
+function addLog(module, msg, type = '') {
+  const time = new Date().toTimeString().slice(0, 8);
+  state.logs.unshift({ time, module, msg, type });
+  if (state.logs.length > 300) state.logs.pop();
+  if (document.getElementById('section-logs').classList.contains('active')) renderLogs();
+}
+function renderLogs() {
+  const filter = state.logFilter;
+  const lines = state.logs
+    .filter(l => filter === 'all' || l.module.toLowerCase().includes(filter) || (filter === 'err' && l.type === 'err'))
+    .slice(0, 120)
+    .map(l => `<div class="log-line"><span class="log-time">${l.time}</span><span class="log-module ${l.module.toLowerCase()}">${l.module}</span><span class="log-msg ${l.type}">${l.msg}</span></div>`)
+    .join('');
+  const term = document.getElementById('logTerminal');
+  const init = term.querySelector('#initTime') ? `<div class="log-line"><span class="log-time" id="initTime">${document.getElementById('initTime') ? document.getElementById('initTime').textContent : '--:--:--'}</span><span class="log-module dashboard">DASHBOARD</span><span class="log-msg ok">✓ Vendedor AI v3.0 iniciado — Prismatic Labs</span></div>` : '';
+  term.innerHTML = lines || init;
+}
+function clearLogs() { state.logs = []; renderLogs(); toast('Logs limpos', 'info'); }
+function setLogFilter(f, btn) {
+  state.logFilter = f;
+  document.querySelectorAll('#section-logs .filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderLogs();
+}
+
+// ── Agent Runner ──
+function runAgent(key) {
+  const agent = state.agentsData.find(a => a.key === key || a.id.includes(key));
+  const label = agent ? agent.id : key;
+  toast(`Iniciando ${label}...`, 'info');
+  if (agent) { agent.status = 'running'; renderAgents(); }
+  addLog(key.toUpperCase(), `▶ Iniciado via dashboard`, 'ok');
+  fetch(`/api/run/${key}`, { method: 'POST' })
+    .then(r => r.json())
+    .then(d => {
+      toast(`${label}: ${d.message || 'OK'}`, 'success');
+      addLog(key.toUpperCase(), d.message || '✓ Concluído', 'ok');
+      if (agent) { agent.status = 'idle'; agent.lastRun = new Date().toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'}); renderAgents(); }
+      fetchData();
+    })
+    .catch(() => {
+      toast(`${label}: endpoint não disponível — use o terminal`, 'error');
+      addLog(key.toUpperCase(), '✗ /api/run/' + key + ' não disponível', 'err');
+      if (agent) { agent.status = 'idle'; renderAgents(); }
     });
-});
-
-// ══════════════════════════════════════════════
-//  API HELPERS
-// ══════════════════════════════════════════════
-async function api(url, opts = {}) {
-    try {
-        const r = await fetch(url, { headers: {'Content-Type':'application/json'}, ...opts });
-        return await r.json();
-    } catch(e) {
-        console.error('API error:', url, e);
-        return { ok: false, error: 'Erro de conexão com o servidor' };
-    }
-}
-const post = (url, body) => api(url, { method:'POST', body: JSON.stringify(body) });
-
-// ══════════════════════════════════════════════
-//  LEADS
-// ══════════════════════════════════════════════
-async function loadLeads() {
-    const data = await api('/api/leads');
-    leadsData = data.leads || [];
-    renderMetrics(leadsData);
-    renderLeadsTable(leadsData);
 }
 
-function renderMetrics(leads) {
-    const total    = leads.length;
-    const hot      = leads.filter(l => l.prioridade === 'hot').length;
-    const warm     = leads.filter(l => l.prioridade === 'warm').length;
-    const enviadas = leads.filter(l => l.dm_enviada || l.outcome === 'sent').length;
-    const convert  = leads.filter(l => l.outcome === 'converteu').length;
-
-    document.getElementById('leadsMetrics').innerHTML = `
-        <div class="metric-card">
-            <div class="metric-label">Total de Leads</div>
-            <div class="metric-value v-cyan">${total}</div>
-        </div>
-        <div class="metric-card">
-            <div class="metric-label">🔥 Hot</div>
-            <div class="metric-value v-hot">${hot}</div>
-        </div>
-        <div class="metric-card">
-            <div class="metric-label">⚡ Warm</div>
-            <div class="metric-value v-warm">${warm}</div>
-        </div>
-        <div class="metric-card">
-            <div class="metric-label">DMs Enviadas</div>
-            <div class="metric-value">${enviadas}</div>
-        </div>
-        <div class="metric-card">
-            <div class="metric-label">Convertidos</div>
-            <div class="metric-value v-success">${convert}</div>
-        </div>
-    `;
+// ── Agents Grid ──
+function renderAgents() {
+  const statusLabels = { online: 'Online', idle: 'Idle', running: 'Running', error: 'Error' };
+  const running = state.agentsData.filter(a => a.status === 'running').length;
+  document.getElementById('badge-running').textContent = running;
+  document.getElementById('agentGrid').innerHTML = state.agentsData.map(a => `
+    <div class="agent-card">
+      <div class="ac-header">
+        <span class="ac-num">${a.id}</span>
+        <span class="ac-status ${a.status}">${a.status === 'running' ? '<span class="spinner" style="width:8px;height:8px;border-width:1.5px;margin-right:2px"></span>' : ''}${statusLabels[a.status] || a.status}</span>
+      </div>
+      <div class="ac-icon">${a.icon}</div>
+      <div class="ac-name">${a.name}</div>
+      <div class="ac-desc">${a.desc}</div>
+      <div class="ac-stats">
+        <div class="ac-stat"><strong>${a.runsToday}</strong>runs hoje</div>
+        <div class="ac-stat"><strong>${a.leadsFound}</strong>leads</div>
+        <div class="ac-stat" style="flex:1"><strong style="font-size:10px;color:var(--t3)">${a.lastRun}</strong>último run</div>
+      </div>
+      <div class="ac-actions">
+        <button class="ac-btn" onclick="navigate('logs')">Logs</button>
+        <button class="ac-btn primary" onclick="runAgent('${a.key}')">▶ Rodar</button>
+      </div>
+    </div>
+  `).join('');
 }
 
-function renderLeadsTable(leads) {
-    const filter   = document.getElementById('filterPriority').value;
-    const filtered = filter === 'all' ? leads : leads.filter(l => l.prioridade === filter);
-
-    if (!filtered.length) {
-        document.getElementById('leadsTableWrap').innerHTML = `
-            <div class="empty-state">
-                <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                <h3>Nenhum lead encontrado</h3>
-                <p>Inicie o Autopilot para começar a prospectar leads no Instagram.</p>
-            </div>`;
-        return;
-    }
-
-    const outcomeClass = (o) => {
-        const map = { sent:'enviada', enviada:'enviada', converteu:'converteu', negociando:'negociando', respondeu:'respondeu', recusou:'recusou', ignorou:'ignorou' };
-        return map[o] || 'novo';
-    };
-
-    document.getElementById('leadsTableWrap').innerHTML = `
-        <table>
-            <thead>
-                <tr>
-                    <th>Lead</th>
-                    <th>Prioridade</th>
-                    <th>Score</th>
-                    <th>Resultado</th>
-                    <th>Ações</th>
-                </tr>
-            </thead>
-            <tbody>
-                ${filtered.map(l => `
-                <tr>
-                    <td>
-                        <div class="td-user">
-                            <div class="avatar">${(l.username||'?')[0].toUpperCase()}</div>
-                            <div>
-                                <div class="user-name">@${l.username}</div>
-                                <div class="user-sub">${l.nicho||'—'}</div>
-                            </div>
-                        </div>
-                    </td>
-                    <td><span class="badge badge-${l.prioridade||'cold'}">${l.prioridade||'cold'}</span></td>
-                    <td><strong style="font-size:15px">${l.score||0}</strong><span class="text-muted text-sm">/100</span></td>
-                    <td>
-                        ${l.outcome
-                            ? `<span class="badge badge-${outcomeClass(l.outcome)}">${l.outcome}</span>`
-                            : `<span class="text-muted text-sm">—</span>`}
-                    </td>
-                    <td>
-                        <div class="flex-row">
-                            <button class="btn btn-xs btn-ghost" onclick="viewLead('${l.username}')">Detalhes</button>
-                            ${l.mensagem_final
-                                ? `<button class="btn btn-xs btn-primary" onclick="enqueueLead('${l.username}')">Agendar DM</button>`
-                                : ''}
-                        </div>
-                    </td>
-                </tr>`).join('')}
-            </tbody>
-        </table>`;
+// ── CRM ──
+function setFilter(f, btn) {
+  state.filterStatus = f;
+  document.querySelectorAll('.table-toolbar .filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderLeads();
+}
+function filterLeads() { renderLeads(); }
+function renderLeads() {
+  const query = (document.getElementById('crmSearch').value || '').toLowerCase();
+  const filter = state.filterStatus;
+  let leads = state.leads.filter(l => {
+    const matchQ = !query || JSON.stringify(l).toLowerCase().includes(query);
+    const matchF = filter === 'all'
+      || (filter === 'new' && (!l.status || l.status === 'new'))
+      || (filter === 'high' && (l.score || 0) >= 70)
+      || (filter === 'contacted' && (l.status === 'contacted' || l.status === 'replied'));
+    return matchQ && matchF;
+  });
+  document.getElementById('crmCount').textContent = `${leads.length} leads`;
+  if (!leads.length) {
+    document.getElementById('leadsTable').innerHTML = `<tr><td colspan="7"><div class="empty-state"><div class="empty-state-icon">👥</div><h3>Nenhum lead</h3><p>Ajuste os filtros ou execute o Autopilot</p></div></td></tr>`;
+    return;
+  }
+  document.getElementById('leadsTable').innerHTML = leads.slice(0, 150).map(l => {
+    const score = l.score || 0;
+    const sc = score >= 70 ? 'high' : score >= 40 ? 'med' : 'low';
+    const initials = (l.username || 'L').slice(0, 2).toUpperCase();
+    const prod = l.suggested_product ? `<span class="badge ${l.suggested_product.toLowerCase().includes('landing') ? 'landing' : 'api'}">${l.suggested_product.slice(0,14)}</span>` : '—';
+    const st = l.status || 'new';
+    const date = l.scraped_at ? new Date(l.scraped_at).toLocaleDateString('pt-BR') : '—';
+    return `<tr>
+      <td><div class="td-lead"><div class="lead-avatar">${initials}</div><div><div class="lead-name">${l.full_name || l.username || '—'}</div><div class="lead-handle">@${l.username || '—'}${l.followers_count ? ' · ' + l.followers_count.toLocaleString('pt-BR') + ' seg' : ''}</div></div></div></td>
+      <td style="color:var(--t)">${l.niche || '—'}</td>
+      <td><div class="score-bar"><span class="score-num">${score}</span><div class="score-track"><div class="score-fill ${sc}" style="width:${score}%"></div></div></div></td>
+      <td>${prod}</td>
+      <td><span class="badge ${st}">${st}</span></td>
+      <td style="color:var(--t3);font-size:11px">${date}</td>
+      <td><div class="td-actions">
+        <button class="icon-btn" title="Ver DM" onclick="event.stopPropagation();previewDM('${l.username}')">💬</button>
+        <button class="icon-btn" title="Instagram" onclick="event.stopPropagation();window.open('https://instagram.com/${l.username}','_blank')">↗</button>
+      </div></td>
+    </tr>`;
+  }).join('');
+}
+function previewDM(username) {
+  const lead = state.leads.find(l => l.username === username);
+  if (!lead || !lead.dm_message) { toast('Nenhuma DM gerada para @' + username, 'info'); return; }
+  toast(`DM: ${lead.dm_message.slice(0, 80)}...`, 'info');
 }
 
-document.getElementById('filterPriority').addEventListener('change', () => renderLeadsTable(leadsData));
-
-function viewLead(username) {
-    const l = leadsData.find(x => x.username === username);
-    if (!l) return;
-    document.getElementById('modalTitle').textContent = `@${l.username}`;
-    const msgEscaped = (l.mensagem_final || '').replace(/\\/g, '\\\\').replace(/`/g, '\\`');
-    document.getElementById('modalBody').innerHTML = `
-        <div class="detail-grid">
-            <div class="detail-item">
-                <span class="detail-item-label">Prioridade</span>
-                <span class="badge badge-${l.prioridade||'cold'}" style="width:fit-content">${l.prioridade||'cold'}</span>
-            </div>
-            <div class="detail-item">
-                <span class="detail-item-label">Score</span>
-                <strong style="font-size:22px">${l.score||0}<span class="text-muted" style="font-size:14px;font-weight:400">/100</span></strong>
-            </div>
-            <div class="detail-item">
-                <span class="detail-item-label">Nicho</span>
-                <span>${l.nicho||'—'}</span>
-            </div>
-            <div class="detail-item">
-                <span class="detail-item-label">Status</span>
-                <span>${l.status||'novo'}</span>
-            </div>
+// ── DM Queue ──
+function renderDMQueue() {
+  const q = state.dmQueue;
+  document.getElementById('dmQueueCount').textContent = q.length;
+  document.getElementById('badge-dm').textContent = q.length;
+  if (!q.length) {
+    document.getElementById('dmQueueList').innerHTML = `<div class="empty-state"><div class="empty-state-icon">💬</div><h3>Fila vazia</h3><p>Execute o Copywriter para gerar DMs</p></div>`;
+    return;
+  }
+  document.getElementById('dmQueueList').innerHTML = q.map((dm, i) => {
+    const initials = (dm.username || 'L').slice(0, 2).toUpperCase();
+    return `<div class="dm-item" id="dmitem-${i}">
+      <div class="dm-avatar">${initials}</div>
+      <div class="dm-body">
+        <div class="dm-header">
+          <span class="dm-name">@${dm.username || '—'}</span>
+          <span class="dm-niche">${dm.niche || 'Geral'}</span>
+          <span class="badge" style="background:rgba(0,212,255,.1);color:var(--cyan)">score ${dm.score || 0}</span>
         </div>
+        <div class="dm-msg">${dm.dm_message || dm.message || '—'}</div>
+        <div class="dm-meta">
+          <span>📍 ${dm.suggested_product || dm.product || '—'}</span>
+          <span>${(dm.dm_message || '').length} chars</span>
+        </div>
+      </div>
+      <div class="dm-actions">
+        <button class="send-btn" onclick="sendDM(${i})">⚡ Enviar</button>
+        <button class="skip-btn" onclick="skipDM(${i})">Pular</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+function sendDM(idx) {
+  const dm = state.dmQueue[idx];
+  toast(`Enviando DM para @${dm.username}...`, 'info');
+  addLog('SENDER', `▶ Enviando para @${dm.username}`);
+  fetch('/api/send-dm', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(dm) })
+    .then(r => r.json())
+    .then(() => { toast(`✓ DM enviada: @${dm.username}`, 'success'); addLog('SENDER', `✓ DM enviada @${dm.username}`, 'ok'); skipDM(idx); })
+    .catch(() => { toast('Endpoint /api/send-dm não disponível', 'error'); addLog('SENDER', '✗ Endpoint não disponível', 'err'); });
+}
+function skipDM(idx) { state.dmQueue.splice(idx, 1); renderDMQueue(); }
+function sendAllDMs() { toast('Envio em lote: disponível via 0-sender.js', 'info'); }
+function clearDMQueue() { state.dmQueue = []; renderDMQueue(); toast('Fila limpa', 'info'); }
 
-        ${l.mensagem_final ? `
-        <div style="margin-bottom:18px">
-            <span class="detail-item-label">Mensagem gerada pela IA</span>
-            <div class="msg-preview">${l.mensagem_final}</div>
-        </div>` : ''}
+// ── Analytics ──
+function renderAnalytics() {
+  const days = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+  const today = new Date().getDay();
+  const labels = [...Array(7)].map((_, i) => days[(today - 6 + i + 7) % 7]);
+  const counts = (() => {
+    if (!state.leads.length) return [2,5,3,8,4,7,3];
+    const byDay = {};
+    state.leads.forEach(l => {
+      if (!l.scraped_at) return;
+      const d = new Date(l.scraped_at).getDay();
+      byDay[d] = (byDay[d] || 0) + 1;
+    });
+    return labels.map((_, i) => byDay[(today - 6 + i + 7) % 7] || 0);
+  })();
+  const maxC = Math.max(...counts, 1);
+  document.getElementById('chart-daily').innerHTML = counts.map((c, i) =>
+    `<div class="chart-bar-col"><div class="chart-bar" style="height:${Math.round(c/maxC*90)+2}px;opacity:${0.35 + (i/6)*0.65}"></div></div>`
+  ).join('');
+  document.getElementById('chart-daily-labels').innerHTML = labels.map(d => `<span class="chart-label">${d}</span>`).join('');
 
-        ${l.followups?.length ? `
-        <div style="margin-bottom:18px">
-            <span class="detail-item-label">Follow-ups</span>
-            ${l.followups.map(f => `
-            <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-top:8px">
-                <span class="text-muted text-sm">Dia ${f.dia}:</span>
-                <p style="font-size:13px;margin-top:4px;line-height:1.5">${f.texto}</p>
-            </div>`).join('')}
-        </div>` : ''}
+  const buckets = [0,0,0,0,0];
+  state.leads.forEach(l => { const b = Math.min(4, Math.floor((l.score||0)/20)); buckets[b]++; });
+  const maxB = Math.max(...buckets, 1);
+  const bColors = ['var(--red)','var(--amber)','#facc15','var(--green)','var(--cyan)'];
+  document.getElementById('chart-score').innerHTML = buckets.map((c,i) =>
+    `<div class="chart-bar-col"><div class="chart-bar" style="height:${Math.round(c/maxB*90)+2}px;background:${bColors[i]}"></div></div>`
+  ).join('');
+  document.getElementById('chart-score-labels').innerHTML = ['0-20','20-40','40-60','60-80','80+'].map(d => `<span class="chart-label">${d}</span>`).join('');
 
-        <div class="divider"></div>
-        <div class="flex-row">
-            ${l.mensagem_final ? `
-            <button class="btn btn-primary" onclick="enqueueLead('${l.username}');closeModal()">Agendar DM</button>
-            <button class="btn btn-ghost" onclick="copyToClipboard(\`${msgEscaped}\`)">Copiar Mensagem</button>` : ''}
-        </div>`;
-    document.getElementById('leadModal').classList.add('open');
+  const statuses = {};
+  state.leads.forEach(l => { const s = l.status || 'new'; statuses[s] = (statuses[s]||0)+1; });
+  const tot = state.leads.length || 1;
+  const sCols = { new:'var(--purple-l)', contacted:'var(--cyan)', replied:'var(--green)', converted:'var(--green)', ignored:'var(--t3)' };
+  document.getElementById('status-breakdown').innerHTML = Object.entries(statuses).sort((a,b)=>b[1]-a[1]).map(([s,c]) =>
+    `<div><div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px"><span style="color:var(--t2)">${s}</span><span style="font-weight:700;color:var(--t)">${c} <span style="color:var(--t3)">(${Math.round(c/tot*100)}%)</span></span></div><div style="height:4px;background:var(--bg-el);border-radius:99px"><div style="height:100%;width:${Math.round(c/tot*100)}%;background:${sCols[s]||'var(--purple)'};border-radius:99px"></div></div></div>`
+  ).join('') || '<div style="color:var(--t3);font-size:12px">Sem dados</div>';
+
+  const niches = {};
+  state.leads.forEach(l => { if (l.niche) niches[l.niche] = (niches[l.niche]||0)+1; });
+  const sorted = Object.entries(niches).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  const maxN = sorted[0]?.[1] || 1;
+  document.getElementById('niche-bars').innerHTML = sorted.length ? sorted.map(([n,c]) =>
+    `<div><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="color:var(--t)">${n}</span><span style="font-weight:700;color:var(--purple-xl)">${c}</span></div><div style="height:5px;background:var(--bg-el);border-radius:99px"><div style="height:100%;width:${Math.round(c/maxN*100)}%;background:linear-gradient(to right,var(--purple),var(--cyan));border-radius:99px"></div></div></div>`
+  ).join('') : '<div style="color:var(--t3);font-size:12px">Nenhum dado disponível</div>';
 }
 
-function closeModal() { document.getElementById('leadModal').classList.remove('open'); }
-document.getElementById('leadModal').addEventListener('click', e => {
-    if (e.target === e.currentTarget) closeModal();
-});
+// ── KPI + Pipeline ──
+function updateKPIs(leads) {
+  const today = new Date().toDateString();
+  const todayL = leads.filter(l => l.scraped_at && new Date(l.scraped_at).toDateString() === today).length;
+  const dmReady = leads.filter(l => l.dm_message && l.status !== 'contacted' && l.status !== 'replied' && l.status !== 'converted' && l.status !== 'ignored').length;
+  const replied  = leads.filter(l => l.status === 'replied' || l.status === 'converted').length;
+  const contacted = leads.filter(l => ['contacted','replied','converted'].includes(l.status)).length;
+  const respRate = contacted > 0 ? Math.round(replied / contacted * 100) : 0;
 
+  document.getElementById('kpi-leads-today').textContent  = todayL;
+  document.getElementById('kpi-dm-queue').textContent     = dmReady;
+  document.getElementById('kpi-response-rate').textContent = respRate + '%';
+  document.getElementById('kpi-total-leads').textContent  = leads.length;
+
+  document.getElementById('ps-scraped').textContent  = leads.length;
+  document.getElementById('ps-analyzed').textContent = leads.filter(l => l.score !== undefined && l.score !== null).length;
+  document.getElementById('ps-ready').textContent    = leads.filter(l => l.dm_message).length;
+  document.getElementById('ps-sent').textContent     = contacted;
+  document.getElementById('ps-replied').textContent  = replied;
+
+  document.getElementById('badge-leads').textContent = leads.length;
+  document.getElementById('badge-dm').textContent    = dmReady;
+
+  state.dmQueue = leads
+    .filter(l => l.dm_message && !['contacted','replied','converted','ignored'].includes(l.status))
+    .slice(0, 20);
+}
+
+// ── Live Feed ──
+function updateLiveFeed(leads) {
+  const recent = [...leads]
+    .filter(l => l.scraped_at)
+    .sort((a,b) => new Date(b.scraped_at) - new Date(a.scraped_at))
+    .slice(0, 10);
+  if (!recent.length) return;
+  const iconMap   = { replied:'green', contacted:'cyan', dm_message:'purple' };
+  const emojiMap  = { green:'💬', cyan:'📨', purple:'✍️', amber:'🔍' };
+  const msgFn = (l, icon) => ({
+    green:  `<strong>@${l.username}</strong> respondeu à DM`,
+    cyan:   `DM enviada para <strong>@${l.username}</strong>`,
+    purple: `DM gerada para <strong>@${l.username}</strong> · score ${l.score || 0}`,
+    amber:  `<strong>@${l.username}</strong> coletado · ${l.niche || 'sem nicho'}`,
+  }[icon]);
+  document.getElementById('liveFeed').innerHTML = recent.map(l => {
+    const icon = l.status === 'replied' || l.status === 'converted' ? 'green'
+      : l.status === 'contacted' ? 'cyan'
+      : l.dm_message ? 'purple' : 'amber';
+    const time = new Date(l.scraped_at).toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'});
+    return `<div class="feed-item"><div class="feed-icon ${icon}">${emojiMap[icon]}</div><div class="feed-body"><div class="feed-msg">${msgFn(l,icon)}</div><div class="feed-time">${time}</div></div></div>`;
+  }).join('');
+}
+
+// ── Data Fetch ──
+async function fetchData() {
+  document.getElementById('lastUpdate').textContent = 'atualizando...';
+  try {
+    const [leadsRes, statsRes] = await Promise.allSettled([
+      fetch('/api/leads').then(r => r.ok ? r.json() : Promise.reject()),
+      fetch('/api/stats').then(r => r.ok ? r.json() : Promise.reject()),
+    ]);
+    if (leadsRes.status === 'fulfilled' && Array.isArray(leadsRes.value)) state.leads = leadsRes.value;
+    if (statsRes.status === 'fulfilled') state.stats = statsRes.value;
+    updateKPIs(state.leads);
+    updateLiveFeed(state.leads);
+    renderLeads();
+    renderDMQueue();
+    const now = new Date().toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+    document.getElementById('lastUpdate').textContent = `atualizado às ${now}`;
+    addLog('DASHBOARD', `✓ ${state.leads.length} leads carregados`, 'ok');
+  } catch (e) {
+    document.getElementById('lastUpdate').textContent = 'erro ao carregar';
+    addLog('DASHBOARD', `✗ Erro: ${e.message || 'API indisponível'}`, 'err');
+  }
+}
+
+async function checkAPIStatus() {
+  const setVal = (id, ok, labels) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = ok ? labels[0] : labels[1];
+    el.style.color = ok ? 'var(--green)' : 'var(--red)';
+  };
+  try {
+    const r = await fetch('/api/status');
+    const d = await r.json();
+    setVal('groq-status',   d.groq,      ['✓ OK', '✗ Erro']);
+    setVal('gemini-status', d.gemini,    ['✓ OK', '✗ Erro']);
+    setVal('notion-status', d.notion,    ['✓ OK', '✗ Erro']);
+    setVal('ig-status',     d.instagram, ['✓ Ativa', '⚠ Expirada']);
+    if (d.instagram) { document.getElementById('ig-status').style.color = 'var(--green)'; }
+    else { document.getElementById('ig-status').style.color = 'var(--amber)'; }
+  } catch {
+    ['groq-status','gemini-status','notion-status','ig-status'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) { el.textContent = 'N/A'; el.style.color = 'var(--t3)'; }
+    });
+  }
+}
+
+function refreshData() {
+  toast('Atualizando dados...', 'info');
+  fetchData();
+}
+
+// ── Keyboard Shortcuts ──
+let gMode = false;
 document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') closeModal();
+  if ((e.metaKey || e.ctrlKey) && e.key === 'k') { e.preventDefault(); openPalette(); return; }
+  if (e.key === 'Escape') { closePalette(); return; }
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+  if (gMode) {
+    const map = { o:'overview', a:'agents', c:'crm', d:'dmqueue', n:'analytics', l:'logs', s:'settings' };
+    if (map[e.key]) navigate(map[e.key]);
+    gMode = false;
+    return;
+  }
+  if (e.key === 'g') { gMode = true; setTimeout(() => { gMode = false; }, 1500); }
 });
 
-function copyToClipboard(text) {
-    navigator.clipboard.writeText(text)
-        .then(() => toast('Mensagem copiada!', 'success'))
-        .catch(() => toast('Erro ao copiar', 'error'));
+// ── Init ──
+function init() {
+  document.getElementById('initTime').textContent = new Date().toTimeString().slice(0, 8);
+  renderAgents();
+  fetchData();
+  checkAPIStatus();
+  setInterval(fetchData, 30000);
+  setInterval(checkAPIStatus, 60000);
 }
 
-async function enqueueLead(username) {
-    const data = await post('/api/dm-queue/enqueue-lead', { username });
-    if (data.ok) {
-        toast(`DM para @${username} agendada com sucesso`, 'success');
-        loadQueue();
-    } else {
-        toast('Erro: ' + (data.error || 'Desconhecido'), 'error');
-    }
-}
-
-// ══════════════════════════════════════════════
-//  DM QUEUE
-// ══════════════════════════════════════════════
-async function loadQueue() {
-    const data = await api('/api/dm-queue');
-    queueData    = data.queue  || [];
-    senderConfig = data.sender || {};
-
-    // Sender bar
-    const todayCount = senderConfig.today_count || 0;
-    const maxPerDay  = senderConfig.max_per_day  || 15;
-    const pending    = data.stats?.pending || 0;
-
-    document.getElementById('statSentToday').textContent    = `${todayCount}/${maxPerDay}`;
-    document.getElementById('statPending').textContent      = pending;
-    document.getElementById('statSenderStatus').textContent = senderConfig.status || 'aguardando';
-    document.getElementById('senderToggle').checked         = senderConfig.enabled || false;
-
-    // Config fields
-    document.getElementById('cfg-maxDay').value   = senderConfig.max_per_day             || 15;
-    document.getElementById('cfg-delayMin').value = senderConfig.delay_between_min_sec   || 180;
-    document.getElementById('cfg-delayMax').value = senderConfig.delay_between_max_sec   || 480;
-    document.getElementById('cfg-typeMin').value  = senderConfig.typing_speed_min_ms     || 50;
-    document.getElementById('cfg-typeMax').value  = senderConfig.typing_speed_max_ms     || 150;
-
-    // Badge na sidebar
-    const badge = document.getElementById('queueBadge');
-    badge.textContent    = pending;
-    badge.style.display  = pending > 0 ? 'inline-block' : 'none';
-
-    // Topbar pill
-    updateSenderPill(senderConfig);
-    renderQueueList(queueData);
-}
-
-function renderQueueList(items) {
-    if (!items.length) {
-        document.getElementById('queueList').innerHTML = `
-            <div class="empty-state" style="padding:36px 20px">
-                <svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.35 2 2 0 0 1 3.6 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.7a16 16 0 0 0 6.39 6.39l.94-.94a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
-                <h3>Fila vazia</h3>
-                <p>Agende DMs pelos leads ou adicione manualmente abaixo.</p>
-            </div>`;
-        return;
-    }
-
-    const fmtDate = (d) => {
-        if (!d) return '';
-        const dt = new Date(d);
-        return dt.toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' });
-    };
-
-    document.getElementById('queueList').innerHTML = `<div class="queue-list">` +
-        items.map(i => `
-        <div class="queue-item">
-            <div class="avatar" style="min-width:32px">${(i.username||'?')[0].toUpperCase()}</div>
-            <div class="queue-username">@${i.username}</div>
-            <span class="badge badge-${i.status}">${statusLabel(i.status)}</span>
-            <div class="queue-msg">${i.message}</div>
-            <div class="queue-meta">${fmtDate(i.created_at)}</div>
-            <div class="queue-actions">
-                ${i.status === 'pending' ? `<button class="btn btn-xs btn-danger" onclick="removeFromQueue('${i.id}')">Remover</button>` : ''}
-                ${i.status === 'failed'  ? `<button class="btn btn-xs btn-ghost"  onclick="retryQueue('${i.id}')">Tentar novamente</button>` : ''}
-            </div>
-        </div>`).join('') + `</div>`;
-}
-
-const statusLabel = (s) => ({ pending:'aguardando', sending:'enviando', sent:'enviada', failed:'falhou' }[s] || s);
-
-function updateSenderPill(cfg) {
-    const pill     = document.getElementById('senderPill');
-    const pillText = document.getElementById('senderPillText');
-    const st       = cfg.status || 'idle';
-    const enabled  = cfg.enabled;
-
-    const classMap = {
-        idle:    'pill-idle',
-        running: 'pill-running',
-        paused:  'pill-paused',
-        error:   'pill-error',
-    };
-    const labelMap = {
-        idle:    'Disparador: aguardando',
-        running: 'Disparador: enviando',
-        paused:  'Disparador: pausado',
-        error:   'Disparador: erro',
-    };
-
-    pill.className = `pill ${classMap[st] || 'pill-idle'}`;
-    pillText.textContent = !enabled ? 'Disparador: desativado' : (labelMap[st] || `Disparador: ${st}`);
-
-    const dot = pill.querySelector('.pill-dot');
-    dot.classList.toggle('blink', st === 'running');
-}
-
-async function toggleSender(enabled) {
-    await post('/api/sender/config', { enabled });
-    toast(enabled ? 'Disparador ativado' : 'Disparador desativado', 'info');
-    loadQueue();
-}
-
-async function startSender() {
-    // Verifica se sender está ativo antes de disparar
-    const cfg = await fetch('/api/sender/config').then(r => r.json()).catch(() => null);
-    if (cfg && !cfg.enabled) {
-        return toast('Ative o Disparador primeiro (toggle acima da fila)', 'info', 6000);
-    }
-    const data = await post('/api/sender/start', {});
-    if (data.ok) toast('Lote de envio iniciado', 'success');
-    else toast('Erro: ' + (data.error || 'Desconhecido'), 'error');
-    setTimeout(loadQueue, 2000);
-}
-
-async function addToQueue() {
-    const username = document.getElementById('q-user').value.trim().replace('@','');
-    const message  = document.getElementById('q-msg').value.trim();
-    if (!username) return toast('Informe o username', 'error');
-    if (!message)  return toast('Informe a mensagem', 'error');
-    const data = await post('/api/dm-queue', { username, message });
-    if (data.ok) {
-        toast(`@${username} adicionado à fila`, 'success');
-        document.getElementById('q-user').value = '';
-        document.getElementById('q-msg').value  = '';
-        loadQueue();
-    } else {
-        toast(data.error || 'Erro ao adicionar', 'error');
-    }
-}
-
-async function removeFromQueue(id) {
-    await fetch(`/api/dm-queue/${id}`, { method: 'DELETE' });
-    toast('Removido da fila', 'info');
-    loadQueue();
-}
-
-async function retryQueue(id) {
-    await fetch(`/api/dm-queue/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'pending', retries: 0, error: null })
-    });
-    toast('Reagendado para reenvio', 'success');
-    loadQueue();
-}
-
-async function saveSenderConfig() {
-    const cfg = {
-        max_per_day:              Number(document.getElementById('cfg-maxDay').value),
-        delay_between_min_sec:    Number(document.getElementById('cfg-delayMin').value),
-        delay_between_max_sec:    Number(document.getElementById('cfg-delayMax').value),
-        typing_speed_min_ms:      Number(document.getElementById('cfg-typeMin').value),
-        typing_speed_max_ms:      Number(document.getElementById('cfg-typeMax').value),
-    };
-    await post('/api/sender/config', cfg);
-    toast('Configurações salvas', 'success');
-}
-
-// ══════════════════════════════════════════════
-//  AUTOPILOT
-// ══════════════════════════════════════════════
-async function runAutopilot() {
-    const nicho = document.getElementById('ap-nicho').value.trim();
-    const qtd   = document.getElementById('ap-qtd').value;
-    const max   = document.getElementById('ap-max').value;
-    if (!nicho) return toast('Informe um nicho ou hashtag', 'error');
-    const data  = await post('/api/autopilot', { nicho, qtd: +qtd, maxAnalyze: +max });
-    toast(data.message || 'Pipeline iniciado', data.ok === false ? 'error' : 'success');
-}
-
-async function toggleAutopilot(active) {
-    await post('/api/autopilot/toggle', { active });
-    updateAutopilotPill(active);
-    toast(active ? 'Agendamento diário ativado' : 'Agendamento diário desativado', 'info');
-}
-
-function updateAutopilotPill(active) {
-    const pill = document.getElementById('autopilotPill');
-    const text = document.getElementById('autopilotPillText');
-    pill.className = `pill ${active ? 'pill-on' : 'pill-off'}`;
-    text.textContent = `Autopilot: ${active ? 'ativo' : 'desativado'}`;
-    const dot = pill.querySelector('.pill-dot');
-    dot.classList.toggle('blink', active);
-}
-
-// ══════════════════════════════════════════════
-//  TRACKER
-// ══════════════════════════════════════════════
-async function submitTracker() {
-    const username = document.getElementById('trk-user').value.trim().replace('@','');
-    const action   = document.getElementById('trk-action').value;
-    const extra    = document.getElementById('trk-extra').value.trim();
-    if (!username) return toast('Informe o username', 'error');
-    const data = await post('/api/tracker', { username, action, extra: extra || undefined });
-    if (data.ok) {
-        toast('Resultado registrado com sucesso', 'success');
-        document.getElementById('trk-user').value  = '';
-        document.getElementById('trk-extra').value = '';
-    } else {
-        toast(data.error || 'Erro ao registrar', 'error');
-    }
-}
-
-// ══════════════════════════════════════════════
-//  ANÁLISE
-// ══════════════════════════════════════════════
-async function loadStats() {
-    const data = await api('/api/stats');
-    const b    = data.byOutcome || {};
-
-    document.getElementById('statsMetrics').innerHTML = `
-        <div class="metric-card">
-            <div class="metric-label">Total de Leads</div>
-            <div class="metric-value v-cyan">${data.total || 0}</div>
-        </div>
-        <div class="metric-card">
-            <div class="metric-label">DMs Enviadas</div>
-            <div class="metric-value">${b.sent || 0}</div>
-        </div>
-        <div class="metric-card">
-            <div class="metric-label">Responderam</div>
-            <div class="metric-value v-success">${b.respondeu || 0}</div>
-        </div>
-        <div class="metric-card">
-            <div class="metric-label">Em Negociação</div>
-            <div class="metric-value" style="color:var(--accent)">${b.negociando || 0}</div>
-        </div>
-        <div class="metric-card">
-            <div class="metric-label">Convertidos</div>
-            <div class="metric-value v-success">${b.converteu || 0}</div>
-        </div>
-        <div class="metric-card">
-            <div class="metric-label">Receita Total</div>
-            <div class="metric-value v-success" style="font-size:22px">R$ ${(data.totalValue||0).toFixed(0)}</div>
-        </div>
-    `;
-
-    if (data.learning) {
-        document.getElementById('learningData').innerHTML = `
-            <div class="info-row">
-                <span class="text-muted">Versão do modelo</span>
-                <strong>${data.learning.versao}</strong>
-            </div>
-            <div class="info-row">
-                <span class="text-muted">Score médio dos leads</span>
-                <strong>${data.learning.score_medio}</strong>
-            </div>
-            <div class="info-row">
-                <span class="text-muted">Total de amostras</span>
-                <strong>${data.learning.total_amostras}</strong>
-            </div>`;
-    } else {
-        document.getElementById('learningData').innerHTML = `
-            <div class="empty-state" style="padding:32px">
-                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
-                <h3>Sem dados de aprendizado</h3>
-                <p>Execute o Autopilot para gerar dados de análise de leads.</p>
-            </div>`;
-    }
-
-    updateAutopilotPill(data.autopilot?.active);
-}
-
-// ══════════════════════════════════════════════
-//  INICIALIZAÇÃO
-// ══════════════════════════════════════════════
-loadLeads();
-loadQueue();
-setInterval(loadLeads, 30000);
-setInterval(loadQueue, 15000);
+document.addEventListener('DOMContentLoaded', init);
 </script>
 </body>
 </html>

@@ -20,6 +20,12 @@ const SETTINGS_FILE = path.join(__dirname, '..', 'config', 'dashboard-settings.j
 const THEMES_FILE   = path.join(__dirname, '..', 'config', 'dashboard-themes.json');
 const TRACKER_DIR   = path.join(DATA_DIR, 'tracker');
 const LEARNING_FILE = path.join(DATA_DIR, 'learning', 'style-memory.json');
+const LOGS_DIR      = path.join(__dirname, '..', 'logs');
+const PIPELINE_LOGS = [
+  { file: path.join(LOGS_DIR, 'autopilot-out.log'),     label: 'autopilot'   },
+  { file: path.join(LOGS_DIR, 'notion-sync-out.log'),   label: 'notion-sync' },
+  { file: path.join(LOGS_DIR, 'dashboard-out.log'),     label: 'dashboard'   },
+];
 
 const autopilotDB = new AutopilotDB();
 const dmQueueDB = new DmQueueDB();
@@ -276,6 +282,19 @@ const server = http.createServer(async (req, res) => {
     return json(res, { ok: true, message: `Autopilot iniciado: ${n} | qtd:${q} | max:${ma}` });
   }
 
+  // Analisar perfil específico pelo pipeline completo (5-orchestrator.js)
+  if (req.method === 'POST' && pathname === '/api/lead/run') {
+    const { username } = await bodyJSON(req);
+    if (!username) return json(res, { ok: false, error: 'username obrigatorio' }, 400);
+    const clean = username.replace(/^@/, '').trim().toLowerCase();
+    if (!clean) return json(res, { ok: false, error: 'username invalido' }, 400);
+    setTimeout(() => {
+      spawnSync('node', [path.join(__dirname, '5-orchestrator.js'), clean],
+        { stdio: 'inherit', cwd: __dirname, env: process.env });
+    }, 100);
+    return json(res, { ok: true, message: `Pipeline iniciado para @${clean}` });
+  }
+
   if (req.method === 'POST' && pathname === '/api/lead/status') {
     const { username, status, nota } = await bodyJSON(req);
     if (!username || !status)
@@ -321,6 +340,87 @@ const server = http.createServer(async (req, res) => {
         last_run: autopilotConfig.last_run
       }
     });
+  }
+
+  // ── LOGS: últimas N linhas de todos os arquivos de log ──────────────────
+  if (req.method === 'GET' && pathname === '/api/logs') {
+    const lines = parseInt(new URLSearchParams(req.url.split('?')[1] || '').get('lines') || '120');
+    const result = [];
+    for (const { file, label } of PIPELINE_LOGS) {
+      if (!fs.existsSync(file)) continue;
+      try {
+        const content = fs.readFileSync(file, 'utf8');
+        const all = content.split('\n').filter(Boolean);
+        all.slice(-lines).forEach(text => result.push({ label, text }));
+      } catch {}
+    }
+    result.sort((a, b) => 0); // mantém ordem cronológica por arquivo
+    return json(res, { ok: true, lines: result });
+  }
+
+  // ── LOGS: SSE stream — envia novas linhas em tempo real ─────────────────
+  if (req.method === 'GET' && pathname === '/api/logs/stream') {
+    res.writeHead(200, {
+      'Content-Type':  'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'Connection':    'keep-alive',
+      'Access-Control-Allow-Origin': '*',
+    });
+    const send = (label, text) => {
+      res.write(`data: ${JSON.stringify({ label, text })}\n\n`);
+    };
+    // Envia histórico inicial (últimas 80 linhas)
+    const sizes = {};
+    for (const { file, label } of PIPELINE_LOGS) {
+      try {
+        if (fs.existsSync(file)) {
+          const st = fs.statSync(file);
+          sizes[file] = st.size;
+          const content = fs.readFileSync(file, 'utf8');
+          const last = content.split('\n').filter(Boolean).slice(-80);
+          last.forEach(text => send(label, text));
+        } else { sizes[file] = 0; }
+      } catch { sizes[file] = 0; }
+    }
+    send('system', '── histórico carregado — aguardando novos logs ──');
+    // Poll a cada 1.5s para novas linhas
+    const iv = setInterval(() => {
+      for (const { file, label } of PIPELINE_LOGS) {
+        try {
+          if (!fs.existsSync(file)) continue;
+          const st = fs.statSync(file);
+          const prev = sizes[file] || 0;
+          if (st.size > prev) {
+            const fd = fs.openSync(file, 'r');
+            const buf = Buffer.alloc(st.size - prev);
+            fs.readSync(fd, buf, 0, buf.length, prev);
+            fs.closeSync(fd);
+            sizes[file] = st.size;
+            buf.toString('utf8').split('\n').filter(Boolean).forEach(text => send(label, text));
+          }
+        } catch {}
+      }
+    }, 1500);
+    req.on('close', () => clearInterval(iv));
+    return;
+  }
+
+  // ── NOTION: forçar sync manual ───────────────────────────────────────────
+  if (req.method === 'POST' && pathname === '/api/notion/sync') {
+    setTimeout(() => {
+      spawnSync('node', [path.join(__dirname, '9-notion-sync.js'), 'sync'],
+        { stdio: 'inherit', cwd: __dirname, env: process.env });
+    }, 100);
+    return json(res, { ok: true, message: 'Notion sync iniciado' });
+  }
+
+  // ── NOTION: verificar status da integração ───────────────────────────────
+  if (req.method === 'GET' && pathname === '/api/notion/status') {
+    const r = spawnSync('node', [path.join(__dirname, '9-notion-sync.js'), 'status'],
+      { stdio: 'pipe', cwd: __dirname, env: process.env });
+    const out = (r.stdout?.toString() || '') + (r.stderr?.toString() || '');
+    const ok  = r.status === 0;
+    return json(res, { ok, output: out.trim() });
   }
 
   json(res, { error: 'Not found' }, 404);

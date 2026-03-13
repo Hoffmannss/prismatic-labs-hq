@@ -1,7 +1,8 @@
 // =============================================================
 // MODULO 1: ANALYZER AI - PRISMATIC LABS VENDEDOR AUTOMATICO
-// Analisa perfil + posts e detecta produto ideal (API ou LP)
+// Analisa perfil + posts e identifica fit com o produto do usuário
 // Stack: Groq API (Llama 3.3 70B) - GRATIS
+// Funciona para QUALQUER nicho/produto — configurado via Dashboard
 // =============================================================
 
 require('dotenv').config();
@@ -10,24 +11,18 @@ const fs = require('fs');
 const path = require('path');
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+const { loadNegocio, buildContexto } = require('../config/negocio-config');
 
-// ---- CARREGAR KNOWLEDGE BASE ----
-const nichosConfig = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'config', 'nichos-config.json'), 'utf8'));
-const produtos = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'data', 'produtos.json'), 'utf8')).produtos;
+// ---- CONFIGURAÇÃO DO NEGÓCIO (definida no Dashboard) ----
+const negocio        = loadNegocio();
+const negocioCtx     = buildContexto(negocio);
 
 // ---- DADOS DO LEAD ----
-const username   = process.argv[2] || process.env.LEAD_USERNAME || 'exemplo_lead';
-const bioText    = process.argv[3] || process.env.LEAD_BIO || '';
+const username       = process.argv[2] || process.env.LEAD_USERNAME || 'exemplo_lead';
+const bioText        = process.argv[3] || process.env.LEAD_BIO || '';
 const followersCount = process.argv[4] || process.env.LEAD_FOLLOWERS || '0';
-const postsCount = process.argv[5] || process.env.LEAD_POSTS || '0';
-const postsDesc  = process.argv[6] || process.env.LEAD_POSTS_DESC || '';
-
-// ---- MONTAR CONTEXTO DOS PRODUTOS ----
-const api = produtos.find(p => p.id === 'lead-normalizer-api');
-const nichosSinaisAPI = nichosConfig.nichos
-  .filter(n => n.produto_alvo === 'lead_normalizer_api')
-  .map(n => `- ${n.nome}: sinais [${n.sinais ? n.sinais.join(', ') : n.keywords.join(', ')}]`)
-  .join('\n');
+const postsCount     = process.argv[5] || process.env.LEAD_POSTS || '0';
+const postsDesc      = process.argv[6] || process.env.LEAD_POSTS_DESC || '';
 
 async function analyzeProfile() {
   console.log(`\n[ANALYZER] Iniciando analise do perfil: @${username}`);
@@ -47,33 +42,27 @@ Para os posts acima, identifique:
 ` : '';
 
   // ---- PROMPT PRINCIPAL ----
-  const prompt = `Voce e o SUPER VENDEDOR da Prismatic Labs.
+  const prompt = `Você é um especialista em análise de perfis do Instagram para prospecção B2B/B2C.
 
-A Prismatic Labs tem 2 produtos:
+${negocioCtx.prompt}
 
-PRODUTO A - Lead Normalizer API (SaaS, recorrente em USD)
-- O que faz: 1 chamada normaliza telefone BR para E.164, limpa email, parseia UTMs, gera SHA-256 dedupe hash
-- Preco: Free (100 req/mes), Starter $29/mes, Pro $79/mes, Enterprise $199/mes
-- URL: ${api.url_landing}
-- Ideal para: ${api.icp.primario.join('; ')}
-- Sinais no perfil para detectar API lead:
-${nichosSinaisAPI}
-
-PRODUTO B - Landing Page Premium Dark Mode + Neon (servico, pagamento unico)
-- O que faz: landing pages premium para infoprodutores
-- Preco: R$1.497 a R$5.997
-- Ideal para: infoprodutores, ecommerce, coaches, consultores com audiencia
+Seu objetivo: analisar o perfil abaixo e determinar o quanto esse lead é um potencial cliente para o produto/serviço acima.
 
 PERFIL A ANALISAR:
 - Username: @${username}
-- Bio: ${bioText || 'Nao disponivel'}
+- Bio: ${bioText || 'Não disponível'}
 - Seguidores: ${followersCount}
 - Posts: ${postsCount}
 ${postsSection}
-INSTRUCAO CRITICA PARA DETECCAO DE PRODUTO:
-- Bio/posts com Make.com, n8n, Zapier, automacao, CRM, trafego, leads, webhook, API, SaaS, dev, integracao -> servico_ideal = "lead_normalizer_api"
-- Bio/posts com infoprodutor, lancamento, coach, ecommerce, criador de conteudo, mentoria -> servico_ideal = "landing_page"
-- Em caso de duvida: analise o tipo de negocio e decida pelo produto com mais chance de dor real
+CRITÉRIOS DE SCORE (0-100):
+- 80-100: Lead ideal — bio/posts mostram dor direta que o produto resolve
+- 60-79:  Bom lead — perfil compatível com o público-alvo, sinal claro de interesse
+- 40-59:  Lead morno — possível fit, mas sem sinal forte
+- 20-39:  Lead frio — perfil genérico, pouco contexto
+- 0-19:   Desqualificado — fora do público-alvo ou perfil irrelevante
+
+INSTRUÇÃO: Avalie o fit entre o perfil do lead e o produto/serviço configurado.
+Se o negócio não estiver configurado, faça uma análise genérica de qualidade do perfil para prospecção.
 
 Responda JSON com esta estrutura:
 {
@@ -86,8 +75,8 @@ Responda JSON com esta estrutura:
   "urgencia_estimada": "baixa/media/alta",
   "angulo_abordagem": "angulo mais especifico possivel para este lead",
   "objecoes_previstas": ["lista"],
-  "servico_ideal": "lead_normalizer_api" ou "landing_page",
-  "motivo_produto": "por que este produto resolve a dor DESTE lead especificamente",
+  "produto_sugerido": "nome do produto/servico do negocio configurado que melhor resolve a dor deste lead",
+  "motivo_fit": "por que este produto resolve a dor DESTE lead especificamente",
   "preco_estimado_aceito": "faixa",
   "melhor_horario_contato": "manha/tarde/noite",
   "plataforma_adicional": "LinkedIn/YouTube/outro se visivel na bio",
@@ -132,14 +121,12 @@ RESPONDA APENAS O JSON, SEM TEXTO ADICIONAL.`;
     const outputFile = path.join(outputDir, `${username}_analysis.json`);
     fs.writeFileSync(outputFile, JSON.stringify(result, null, 2));
 
-    const produtoLabel = analysis.servico_ideal === 'lead_normalizer_api' ? '🔵 Lead Normalizer API' : '🟣 Landing Page Premium';
-
     console.log(`\n[ANALYZER] Analise concluida!`);
     console.log(`[ANALYZER] Score de potencial: ${analysis.score_potencial}/100`);
     console.log(`[ANALYZER] Prioridade: ${analysis.prioridade?.toUpperCase()}`);
-    console.log(`[ANALYZER] Produto detectado: ${produtoLabel}`);
+    if (analysis.produto_sugerido) console.log(`[ANALYZER] Produto sugerido: ${analysis.produto_sugerido}`);
     console.log(`[ANALYZER] Problema principal: ${analysis.problema_principal}`);
-    console.log(`[ANALYZER] Motivo: ${analysis.motivo_produto}`);
+    if (analysis.motivo_fit) console.log(`[ANALYZER] Motivo fit: ${analysis.motivo_fit}`);
 
     if (analysis.analise_posts?.tem_posts_analisados) {
       console.log(`\n[ANALYZER] 📊 ANALISE DE POSTS:`);

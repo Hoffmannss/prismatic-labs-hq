@@ -1,10 +1,14 @@
 // =============================================================
 // MODULO 9: NOTION SYNC - PRISMATIC LABS VENDEDOR AI
-// Sincroniza o CRM JSON com um Database no Notion
+// Sincroniza o CRM JSON com um Database no Notion (BIDIRECIONAL)
+//
+// Direcao VPS → Notion : cria/atualiza paginas para cada lead
+// Direcao Notion → VPS : se lead deletado no Notion E ja estava
+//                        no cache de sync → remove do leads-database.json
 //
 // Comandos:
 //   node 9-notion-sync.js setup  -> Cria o database no Notion
-//   node 9-notion-sync.js sync   -> Sincroniza todos os leads
+//   node 9-notion-sync.js sync   -> Sync bidirecional (padrao)
 //   node 9-notion-sync.js status -> Verifica conexao
 // =============================================================
 
@@ -209,7 +213,7 @@ async function sync() {
   let cache = {};
   try { if (fs.existsSync(CACHE_FILE)) cache = JSON.parse(fs.readFileSync(CACHE_FILE, 'utf8')); } catch {}
 
-  let created = 0, updated = 0, skipped = 0, errors = 0;
+  let created = 0, updated = 0, skipped = 0, errors = 0, deleted = 0;
 
   for (const lead of leads) {
     const pageId     = existing[lead.username];
@@ -243,12 +247,38 @@ async function sync() {
     await sleep(300);
   }
 
+  // ─── REVERSE SYNC: remove do CRM leads deletados no Notion ──────────────
+  console.log(`\n${C.yellow}[NOTION] Verificando exclusoes no Notion...${C.reset}`);
+
+  const leadsRetidos = leads.filter(lead => {
+    // Se estava no cache (já sincronizado) mas página sumiu do Notion → deletado lá
+    if (cache[lead.username] !== undefined && existing[lead.username] === undefined) {
+      console.log(`${C.yellow}  [DELETE] @${lead.username} — removido do Notion, excluindo do CRM${C.reset}`);
+      delete cache[lead.username];
+      deleted++;
+      return false; // remove do array
+    }
+    return true; // mantém
+  });
+
+  if (deleted > 0) {
+    db.leads = leadsRetidos;
+    try {
+      fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2));
+      console.log(`${C.yellow}[NOTION] ${deleted} lead(s) removido(s) do CRM local${C.reset}`);
+    } catch(e) {
+      console.error(`${C.red}[NOTION] Erro ao salvar CRM apos exclusoes: ${e.message}${C.reset}`);
+    }
+  } else {
+    console.log(`${C.cyan}[NOTION] Nenhuma exclusao detectada${C.reset}`);
+  }
+
   // Persistir cache atualizado
   try { fs.writeFileSync(CACHE_FILE, JSON.stringify(cache, null, 2)); } catch {}
 
   console.log(`\n${C.magenta}${'='.repeat(52)}${C.reset}`);
   console.log(`${C.bright}  SYNC CONCLUIDO${C.reset}`);
-  console.log(`  Criados: ${C.cyan}${created}${C.reset}  Atualizados: ${C.green}${updated}${C.reset}  Pulados: ${skipped}  Erros: ${C.red}${errors}${C.reset}`);
+  console.log(`  Criados: ${C.cyan}${created}${C.reset}  Atualizados: ${C.green}${updated}${C.reset}  Pulados: ${skipped}  Deletados: ${C.yellow}${deleted}${C.reset}  Erros: ${C.red}${errors}${C.reset}`);
   console.log(`${C.magenta}${'='.repeat(52)}${C.reset}\n`);
 }
 
