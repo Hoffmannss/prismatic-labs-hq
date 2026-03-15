@@ -426,12 +426,15 @@ const server = http.createServer(async (req, res) => {
 
   // ── STATUS DAS APIs ──────────────────────────────────────────────────────
   if (req.method === 'GET' && pathname === '/api/status') {
-    const sessionFile = path.join(DATA_DIR, 'session', 'instagram-session.json');
+    // Resolve caminho da sessão Instagram (suporta env var customizada)
+    const sessionPath = process.env.INSTAGRAM_SESSION_FILE
+      ? path.join(__dirname, '..', process.env.INSTAGRAM_SESSION_FILE)
+      : path.join(DATA_DIR, 'session', 'instagram-session.json');
     return json(res, {
       groq:      !!process.env.GROQ_API_KEY,
-      gemini:    !!(process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_API_KEY),
+      gemini:    !!(process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_API_KEY || process.env.GOOGLE_API_KEY),
       notion:    !!process.env.NOTION_API_KEY,
-      instagram: fs.existsSync(sessionFile),
+      instagram: fs.existsSync(sessionPath),
     });
   }
 
