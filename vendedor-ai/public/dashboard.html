@@ -112,6 +112,63 @@ html,body{height:100%;font-family:'Inter',system-ui,-apple-system,sans-serif;bac
 @media(max-width:1400px){.grid-4{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:960px){.grid-3{grid-template-columns:1fr 1fr}.grid-2{grid-template-columns:1fr}}
 
+/* ─── RESPONSIVO MOBILE ─── */
+.hamburger{display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--t2);font-size:20px;line-height:1;flex-shrink:0}
+.sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:199;backdrop-filter:blur(2px)}
+.sidebar-overlay.open{display:block}
+
+@media(max-width:860px){
+  /* Sidebar offcanvas */
+  .sidebar{position:fixed;left:-260px;top:0;height:100%;z-index:200;transition:left .25s ease;box-shadow:4px 0 24px rgba(0,0,0,.5)}
+  .sidebar.open{left:0}
+  .hamburger{display:flex;align-items:center;justify-content:center}
+
+  /* Topbar compacto */
+  .topbar-pills{display:none}
+  .topbar-cmd-btn{display:none}
+  .topbar{padding:0 14px;gap:10px}
+  .topbar-title{font-size:13px}
+
+  /* Content ocupa tela toda */
+  .main{width:100%}
+  .content{padding:0}
+  .section{padding:16px}
+
+  /* Grids viram 1 coluna */
+  .grid-4{grid-template-columns:1fr 1fr}
+  .grid-5{grid-template-columns:repeat(2,1fr)}
+  .grid-2{grid-template-columns:1fr}
+  .overview-grid{grid-template-columns:1fr}
+  .guide-grid{grid-template-columns:1fr}
+
+  /* FAQ span full */
+  .guide-card[style*="grid-column"]{grid-column:span 1 !important}
+
+  /* Página header menor */
+  .page-header h1{font-size:17px}
+  .page-header{margin-bottom:14px}
+}
+
+@media(max-width:480px){
+  .grid-4{grid-template-columns:1fr}
+  .grid-5{grid-template-columns:1fr 1fr}
+  .kpi-value{font-size:26px}
+  .pipeline{gap:6px}
+  .ps-count{font-size:18px}
+
+  /* Topbar mínimo */
+  .topbar-title span{display:none}
+
+  /* Tabela CRM scroll horizontal */
+  #section-crm .card{overflow-x:auto}
+  .leads-table{min-width:600px}
+
+  /* DM Queue */
+  .dm-item{flex-wrap:wrap}
+  .dm-actions{width:100%;display:flex;gap:8px}
+  .send-btn,.skip-btn{flex:1}
+}
+
 /* ─── CARD ─── */
 .card{background:var(--bg-surface);border:1px solid var(--b);border-radius:var(--r-lg);padding:18px;position:relative;overflow:hidden;transition:border-color .2s,box-shadow .2s}
 .card:hover{border-color:var(--b-m)}
@@ -325,6 +382,49 @@ tbody tr:last-child td{border-bottom:none}
 @keyframes spin{to{transform:rotate(360deg)}}
 .overview-grid{display:grid;grid-template-columns:1fr 300px;gap:14px;margin-bottom:14px}
 @media(max-width:1180px){.overview-grid{grid-template-columns:1fr}}
+
+/* ─── AUTOPILOT HERO ─── */
+.autopilot-hero{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:20px 24px;margin-bottom:14px;background:linear-gradient(135deg,rgba(124,58,237,.13) 0%,rgba(0,212,255,.05) 100%);border-color:rgba(124,58,237,.35);position:relative;overflow:hidden}
+.autopilot-hero::before{content:'';position:absolute;top:-50px;right:-30px;width:180px;height:180px;background:radial-gradient(circle,rgba(124,58,237,.18) 0%,transparent 70%);pointer-events:none}
+.ah-left{display:flex;align-items:center;gap:18px;flex:1;min-width:0}
+.ah-icon{font-size:36px;line-height:1;flex-shrink:0}
+.ah-title{font-size:17px;font-weight:800;color:var(--t);margin-bottom:3px;letter-spacing:-.2px}
+.ah-desc{font-size:12px;color:var(--t2);margin-bottom:7px;line-height:1.45}
+.ah-status{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--t3);font-family:'JetBrains Mono',monospace}
+.ah-dot{width:7px;height:7px;border-radius:50%;display:inline-block;flex-shrink:0}
+.ah-dot.idle{background:var(--t3)}
+.ah-dot.running{background:var(--green);box-shadow:0 0 7px var(--green);animation:pulse 1.5s infinite}
+.ah-dot.done{background:var(--cyan);box-shadow:0 0 7px var(--cyan)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.45}}
+.ah-btn{flex-shrink:0;padding:13px 32px;background:linear-gradient(135deg,var(--purple),#5b21b6);color:#fff;border:none;border-radius:var(--r);font-size:15px;font-weight:700;cursor:pointer;transition:all .2s;box-shadow:0 4px 22px rgba(124,58,237,.45);letter-spacing:.2px;white-space:nowrap}
+.ah-btn:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 7px 30px rgba(124,58,237,.6)}
+.ah-btn:active:not(:disabled){transform:translateY(0)}
+.ah-btn:disabled{opacity:.55;cursor:not-allowed;transform:none}
+.ah-btn.running{background:linear-gradient(135deg,#dc2626,#991b1b);box-shadow:0 4px 20px rgba(239,68,68,.35)}
+@media(max-width:700px){.autopilot-hero{flex-direction:column;align-items:flex-start}.ah-btn{width:100%}}
+
+/* ─── COMO USAR ─── */
+.guide-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:14px;margin-bottom:18px}
+.guide-card{padding:20px 22px}
+.guide-step-num{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,var(--purple),var(--cyan));color:#fff;font-size:11px;font-weight:800;margin-bottom:10px;flex-shrink:0}
+.guide-card-header{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.guide-card-icon{font-size:22px;line-height:1}
+.guide-card-title{font-size:14px;font-weight:700;color:var(--t)}
+.guide-card-sub{font-size:11px;color:var(--t3)}
+.guide-steps{display:flex;flex-direction:column;gap:8px;margin-top:4px}
+.guide-step{display:flex;align-items:flex-start;gap:10px;font-size:12px;color:var(--t2);line-height:1.5}
+.guide-step strong{color:var(--t)}
+.guide-tip{margin-top:12px;padding:9px 12px;background:rgba(0,212,255,.07);border:1px solid rgba(0,212,255,.2);border-radius:8px;font-size:11px;color:var(--cyan);line-height:1.5}
+.guide-tip strong{font-weight:700}
+.guide-warning{margin-top:10px;padding:9px 12px;background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.25);border-radius:8px;font-size:11px;color:var(--amber);line-height:1.5}
+.guide-faq{margin-top:14px}
+.guide-faq-item{border-bottom:1px solid var(--b);padding:11px 0}
+.guide-faq-item:last-child{border-bottom:none}
+.guide-faq-q{font-size:13px;font-weight:600;color:var(--t);margin-bottom:5px;cursor:pointer;display:flex;justify-content:space-between;align-items:center}
+.guide-faq-a{font-size:12px;color:var(--t2);line-height:1.6}
+.guide-flow{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin:12px 0}
+.guide-flow-step{padding:5px 12px;background:var(--bg-el);border:1px solid var(--b);border-radius:99px;font-size:11px;color:var(--t2);white-space:nowrap}
+.guide-flow-arrow{color:var(--t3);font-size:13px}
 </style>
 </head>
 <body>
@@ -361,6 +461,8 @@ tbody tr:last-child td{border-bottom:none}
 
 <!-- TOASTS -->
 <div class="toast-container" id="toasts"></div>
+<!-- SIDEBAR OVERLAY (mobile) -->
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
 
 <!-- ── APP ── -->
 <div class="app">
@@ -405,6 +507,9 @@ tbody tr:last-child td{border-bottom:none}
         <span class="nav-icon">≡</span><span>Logs</span>
       </div>
       <div class="nav-section-label">Sistema</div>
+      <div class="nav-item" onclick="navigate('guide')" id="nav-guide">
+        <span class="nav-icon">?</span><span>Como Usar</span>
+      </div>
       <div class="nav-item" onclick="navigate('settings')" id="nav-settings">
         <span class="nav-icon">⚙</span><span>Configurações</span>
       </div>
@@ -423,6 +528,7 @@ tbody tr:last-child td{border-bottom:none}
 
     <!-- TOPBAR -->
     <header class="topbar">
+      <button class="hamburger" onclick="toggleSidebar()" aria-label="Menu">☰</button>
       <div class="topbar-title" id="topbarTitle">Command Center <span>Overview</span></div>
       <div class="topbar-spacer"></div>
       <div class="topbar-pills">
@@ -442,6 +548,19 @@ tbody tr:last-child td{border-bottom:none}
         <div class="page-header">
           <h1>Command Center</h1>
           <p>Visão geral em tempo real — <span id="lastUpdate" style="color:var(--purple-l)">carregando...</span></p>
+        </div>
+
+        <!-- AUTOPILOT HERO -->
+        <div class="card autopilot-hero" id="autopilotHero">
+          <div class="ah-left">
+            <div class="ah-icon" id="ahIcon">⚡</div>
+            <div>
+              <div class="ah-title">Autopilot — Pipeline Completo</div>
+              <div class="ah-desc">Coleta leads no Instagram → analisa nicho e score → gera DMs personalizadas automaticamente</div>
+              <div class="ah-status" id="ahStatus"><span class="ah-dot idle"></span>&nbsp;Aguardando — clique para iniciar</div>
+            </div>
+          </div>
+          <button class="ah-btn" id="ahBtn" onclick="triggerAutopilot()">⚡ Iniciar Autopilot</button>
         </div>
 
         <div class="grid-4" style="margin-bottom:14px">
@@ -770,6 +889,182 @@ tbody tr:last-child td{border-bottom:none}
         </div>
       </section>
 
+      <!-- ══ COMO USAR ══ -->
+      <section class="section" id="section-guide">
+        <div class="page-header">
+          <h1>Como Usar</h1>
+          <p>Guia completo para operar o Vendedor AI do zero</p>
+        </div>
+
+        <!-- FLUXO GERAL -->
+        <div class="card" style="margin-bottom:18px;padding:22px 24px">
+          <div style="font-size:13px;font-weight:700;color:var(--purple-xl);margin-bottom:12px;text-transform:uppercase;letter-spacing:.8px">Fluxo do Sistema</div>
+          <div class="guide-flow">
+            <div class="guide-flow-step">🔍 Scraper<br><span style="font-size:9px;color:var(--t3)">coleta perfis</span></div>
+            <div class="guide-flow-arrow">→</div>
+            <div class="guide-flow-step">🧠 Analyzer<br><span style="font-size:9px;color:var(--t3)">score 0–100</span></div>
+            <div class="guide-flow-arrow">→</div>
+            <div class="guide-flow-step">✍️ Copywriter<br><span style="font-size:9px;color:var(--t3)">gera DM</span></div>
+            <div class="guide-flow-arrow">→</div>
+            <div class="guide-flow-step">📤 Sender<br><span style="font-size:9px;color:var(--t3)">envia DM</span></div>
+            <div class="guide-flow-arrow">→</div>
+            <div class="guide-flow-step">🔄 Notion Sync<br><span style="font-size:9px;color:var(--t3)">atualiza CRM</span></div>
+          </div>
+          <p style="font-size:12px;color:var(--t2);line-height:1.6">O <strong style="color:var(--t)">Autopilot</strong> executa todo esse fluxo automaticamente com um clique. Você pode também rodar cada etapa individualmente pela seção <strong style="color:var(--t)">Agentes</strong>.</p>
+        </div>
+
+        <div class="guide-grid">
+
+          <!-- CARD 1 — PRIMEIROS PASSOS -->
+          <div class="card guide-card">
+            <div class="guide-card-header">
+              <div class="guide-step-num">1</div>
+              <div class="guide-card-icon">🚀</div>
+              <div><div class="guide-card-title">Primeiros Passos</div><div class="guide-card-sub">Configure antes de usar</div></div>
+            </div>
+            <div class="guide-steps">
+              <div class="guide-step"><span>①</span><span>Vá em <strong>Configurações</strong> e confirme que Groq API, Gemini API e Notion API estão com status <strong style="color:var(--green)">✓ OK</strong></span></div>
+              <div class="guide-step"><span>②</span><span>Se alguma API mostrar <strong style="color:var(--red)">✗ Erro</strong>, a chave não está no arquivo <code style="background:var(--bg-el);padding:1px 5px;border-radius:4px;font-size:10px">.env</code> da VPS</span></div>
+              <div class="guide-step"><span>③</span><span>Confirme que <strong>Instagram Session</strong> está <strong style="color:var(--green)">✓ Ativa</strong> — se estiver Expirada, rode o scraper com <code style="background:var(--bg-el);padding:1px 5px;border-radius:4px;font-size:10px">--login</code> no terminal</span></div>
+              <div class="guide-step"><span>④</span><span>Ative o toggle <strong>Autopilot</strong> em Configurações → Automação</span></div>
+            </div>
+            <div class="guide-tip"><strong>💡 Dica:</strong> PM2 Status deve aparecer <strong>online</strong> em azul. Se não, o servidor precisa ser reiniciado.</div>
+          </div>
+
+          <!-- CARD 2 — INICIAR AUTOPILOT -->
+          <div class="card guide-card">
+            <div class="guide-card-header">
+              <div class="guide-step-num">2</div>
+              <div class="guide-card-icon">⚡</div>
+              <div><div class="guide-card-title">Usar o Autopilot</div><div class="guide-card-sub">Modo mais simples — recomendado</div></div>
+            </div>
+            <div class="guide-steps">
+              <div class="guide-step"><span>①</span><span>Vá ao <strong>Command Center</strong> (tela inicial)</span></div>
+              <div class="guide-step"><span>②</span><span>Clique no botão <strong style="color:var(--purple-xl)">⚡ Iniciar Autopilot</strong> — o sistema faz todo o resto automaticamente</span></div>
+              <div class="guide-step"><span>③</span><span>Aguarde — o processo leva <strong>5 a 15 minutos</strong> dependendo da quantidade de leads configurada</span></div>
+              <div class="guide-step"><span>④</span><span>Acompanhe em tempo real pela seção <strong>Logs</strong> ou pelo feed de <strong>Atividade Recente</strong></span></div>
+              <div class="guide-step"><span>⑤</span><span>Quando terminar, os leads aparecem no <strong>CRM</strong> e as DMs ficam na <strong>Fila de DMs</strong></span></div>
+            </div>
+            <div class="guide-tip"><strong>💡 Dica:</strong> Você pode rodar o Autopilot uma vez por dia. Mais do que isso aumenta o risco de bloqueio no Instagram.</div>
+          </div>
+
+          <!-- CARD 3 — CRM -->
+          <div class="card guide-card">
+            <div class="guide-card-header">
+              <div class="guide-step-num">3</div>
+              <div class="guide-card-icon">👥</div>
+              <div><div class="guide-card-title">CRM — Leads</div><div class="guide-card-sub">Gerenciar sua base de contatos</div></div>
+            </div>
+            <div class="guide-steps">
+              <div class="guide-step"><span>①</span><span>Todos os leads coletados aparecem aqui com <strong>nome, nicho, score e status</strong></span></div>
+              <div class="guide-step"><span>②</span><span>Use os filtros <strong>Novos / Score Alto / Contatados</strong> para focar nos melhores leads</span></div>
+              <div class="guide-step"><span>③</span><span>O <strong>Score</strong> vai de 0 a 100 — priorize leads acima de 70</span></div>
+              <div class="guide-step"><span>④</span><span>Clique em <strong>💬</strong> para ver a DM gerada para aquele lead</span></div>
+              <div class="guide-step"><span>⑤</span><span>Clique em <strong>↗</strong> para abrir o perfil do Instagram diretamente</span></div>
+            </div>
+            <div class="guide-tip"><strong>💡 Dica:</strong> Score Alto (≥70) significa que o Analyzer identificou um problema real que o seu produto resolve.</div>
+          </div>
+
+          <!-- CARD 4 — FILA DE DMS -->
+          <div class="card guide-card">
+            <div class="guide-card-header">
+              <div class="guide-step-num">4</div>
+              <div class="guide-card-icon">💬</div>
+              <div><div class="guide-card-title">Fila de DMs</div><div class="guide-card-sub">Revisar e enviar mensagens</div></div>
+            </div>
+            <div class="guide-steps">
+              <div class="guide-step"><span>①</span><span>Após o Autopilot rodar, as DMs geradas aparecem aqui para revisão</span></div>
+              <div class="guide-step"><span>②</span><span>Leia cada mensagem antes de enviar — o Gemini gera textos personalizados mas é bom revisar</span></div>
+              <div class="guide-step"><span>③</span><span>Clique em <strong>⚡ Enviar</strong> para enfileirar uma DM individual para o sender</span></div>
+              <div class="guide-step"><span>④</span><span>Ou clique <strong>Enviar Fila Completa</strong> para enviar todas de uma vez (respeita limite de 20/dia)</span></div>
+              <div class="guide-step"><span>⑤</span><span>Use <strong>Pular</strong> para remover uma DM da fila sem enviar</span></div>
+            </div>
+            <div class="guide-warning"><strong>⚠️ Anti-ban:</strong> O sistema tem delay automático de 3–8 minutos entre cada DM. Não tente enviar mais de 20 por dia.</div>
+          </div>
+
+          <!-- CARD 5 — ANALYTICS -->
+          <div class="card guide-card">
+            <div class="guide-card-header">
+              <div class="guide-step-num">5</div>
+              <div class="guide-card-icon">📊</div>
+              <div><div class="guide-card-title">Analytics</div><div class="guide-card-sub">Entender os resultados</div></div>
+            </div>
+            <div class="guide-steps">
+              <div class="guide-step"><span>①</span><span><strong>Leads por Dia</strong> — volume de coleta nos últimos 7 dias</span></div>
+              <div class="guide-step"><span>②</span><span><strong>Distribuição de Score</strong> — qualidade dos leads coletados (quanto mais à direita, melhor)</span></div>
+              <div class="guide-step"><span>③</span><span><strong>Breakdown por Status</strong> — quantos leads estão em cada etapa do funil</span></div>
+              <div class="guide-step"><span>④</span><span><strong>Top Nichos</strong> — quais nichos o scraper está encontrando mais</span></div>
+            </div>
+            <div class="guide-tip"><strong>💡 Meta:</strong> Taxa de Resposta acima de 5% é boa. Acima de 10% é excelente para prospecção fria no Instagram.</div>
+          </div>
+
+          <!-- CARD 6 — AGENTES MANUAIS -->
+          <div class="card guide-card">
+            <div class="guide-card-header">
+              <div class="guide-step-num">6</div>
+              <div class="guide-card-icon">🤖</div>
+              <div><div class="guide-card-title">Agentes Individuais</div><div class="guide-card-sub">Controle avançado do pipeline</div></div>
+            </div>
+            <div class="guide-steps">
+              <div class="guide-step"><span>①</span><span><strong>0-Scraper</strong> — coleta novos perfis no Instagram por hashtag. Roda em ~2 min</span></div>
+              <div class="guide-step"><span>②</span><span><strong>1-Analyzer</strong> — analisa os perfis coletados e atribui score via IA. Roda em ~5 min</span></div>
+              <div class="guide-step"><span>③</span><span><strong>2-Copywriter</strong> — gera DMs personalizadas para os leads com score alto. Roda em ~3 min</span></div>
+              <div class="guide-step"><span>④</span><span><strong>9-Notion Sync</strong> — sincroniza o CRM local com o Notion. Roda em ~1 min</span></div>
+              <div class="guide-step"><span>⑤</span><span>Para rodar qualquer agente, vá em <strong>Agentes</strong> e clique em <strong>▶ Rodar</strong></span></div>
+            </div>
+            <div class="guide-tip"><strong>💡 Dica:</strong> Use os agentes individuais quando quiser re-executar só uma etapa, como gerar novas DMs sem coletar leads novos.</div>
+          </div>
+
+          <!-- CARD 7 — LOGS -->
+          <div class="card guide-card">
+            <div class="guide-card-header">
+              <div class="guide-step-num">7</div>
+              <div class="guide-card-icon">📋</div>
+              <div><div class="guide-card-title">Logs do Sistema</div><div class="guide-card-sub">Monitorar o que está acontecendo</div></div>
+            </div>
+            <div class="guide-steps">
+              <div class="guide-step"><span>①</span><span>Os logs mostram tudo que os agentes estão fazendo em tempo real</span></div>
+              <div class="guide-step"><span>②</span><span>Use os filtros (<strong>0-scraper, 1-analyzer, 10-autopilot</strong>) para focar em um agente específico</span></div>
+              <div class="guide-step"><span>③</span><span>Linhas em <strong style="color:var(--green)">verde</strong> = sucesso. Linhas em <strong style="color:var(--red)">vermelho</strong> = erro</span></div>
+              <div class="guide-step"><span>④</span><span>Se um agente travar, verifique os logs primeiro — quase sempre mostra o motivo</span></div>
+              <div class="guide-step"><span>⑤</span><span>O botão <strong>Limpar</strong> apaga os logs visíveis (não apaga os arquivos de log reais)</span></div>
+            </div>
+            <div class="guide-tip"><strong>💡 Dica:</strong> Erros de API key aparecem nos logs como <code style="font-size:10px;background:var(--bg-el);padding:1px 4px;border-radius:3px">401 Unauthorized</code> — sinal de que a chave expirou ou está errada.</div>
+          </div>
+
+          <!-- CARD 8 — PERGUNTAS FREQUENTES -->
+          <div class="card guide-card" style="grid-column:span 2">
+            <div class="guide-card-header">
+              <div class="guide-card-icon">❓</div>
+              <div><div class="guide-card-title">Perguntas Frequentes</div><div class="guide-card-sub">Dúvidas comuns de operação</div></div>
+            </div>
+            <div class="guide-faq">
+              <div class="guide-faq-item">
+                <div class="guide-faq-q">Por que o CRM está vazio?</div>
+                <div class="guide-faq-a">O Autopilot ainda não foi executado, ou os agentes rodaram com erro. Verifique a seção Logs para ver o que aconteceu. Se as APIs estiverem com ✗ Erro em Configurações, resolva isso primeiro.</div>
+              </div>
+              <div class="guide-faq-item">
+                <div class="guide-faq-q">O que significa "Instagram Session: Expirada"?</div>
+                <div class="guide-faq-a">O Playwright precisa de uma sessão de login ativa para acessar o Instagram. A sessão expira periodicamente. Para renovar, execute <code style="background:var(--bg-el);padding:1px 5px;border-radius:4px;font-size:11px">node agents/0-scraper.js --login</code> no terminal da VPS e faça login manualmente.</div>
+              </div>
+              <div class="guide-faq-item">
+                <div class="guide-faq-q">Quantas DMs posso enviar por dia?</div>
+                <div class="guide-faq-a">O limite configurado é 20 DMs/dia com delay de 3–8 minutos entre cada envio. Esse limite existe para proteger a conta do Instagram de ser bloqueada. Não recomendamos aumentar acima de 25.</div>
+              </div>
+              <div class="guide-faq-item">
+                <div class="guide-faq-q">Os dados sincronizam com o Notion automaticamente?</div>
+                <div class="guide-faq-a">Sim, se o toggle "Sync Notion" estiver ativo nas Configurações. O processo roda via PM2 em background. Você também pode forçar um sync manual rodando o agente 9-Notion Sync manualmente.</div>
+              </div>
+              <div class="guide-faq-item">
+                <div class="guide-faq-q">O que fazer se um agente travar ou demorar muito?</div>
+                <div class="guide-faq-a">Verifique a seção Logs para erros. Se não houver erro visível, acesse a VPS e execute <code style="background:var(--bg-el);padding:1px 5px;border-radius:4px;font-size:11px">pm2 restart all</code> para reiniciar todos os processos.</div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
     </div><!-- /content -->
   </div><!-- /main -->
 </div><!-- /app -->
@@ -798,6 +1093,20 @@ const state = {
   ]
 };
 
+// ── Sidebar Mobile ──
+function toggleSidebar() {
+  const sb = document.querySelector('.sidebar');
+  const ov = document.getElementById('sidebarOverlay');
+  const open = sb.classList.toggle('open');
+  ov.classList.toggle('open', open);
+  document.body.style.overflow = open ? 'hidden' : '';
+}
+function closeSidebar() {
+  document.querySelector('.sidebar').classList.remove('open');
+  document.getElementById('sidebarOverlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
 // ── Navigation ──
 const SECTION_TITLES = {
   overview:  ['Command Center', 'Overview'],
@@ -806,10 +1115,12 @@ const SECTION_TITLES = {
   dmqueue:   ['Fila de DMs', 'Envio'],
   analytics: ['Analytics', 'Métricas'],
   logs:      ['Logs', 'Monitor'],
+  guide:     ['Como Usar', 'Guia Completo'],
   settings:  ['Configurações', 'Sistema'],
 };
 
 function navigate(section) {
+  closeSidebar();
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
   document.getElementById('section-' + section).classList.add('active');
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
@@ -1190,6 +1501,52 @@ async function checkAPIStatus() {
 
 function refreshData() {
   toast('Atualizando dados...', 'info');
+  fetchData();
+}
+
+// ── Autopilot Hero ──
+function triggerAutopilot() {
+  const btn = document.getElementById('ahBtn');
+  const statusEl = document.getElementById('ahStatus');
+  if (btn.disabled) return;
+  btn.disabled = true;
+  btn.textContent = '⏳ Iniciando...';
+  statusEl.innerHTML = '<span class="ah-dot running"></span>&nbsp;Iniciando pipeline...';
+  addLog('AUTOPILOT', '▶ Iniciado via Command Center');
+  fetch('/api/run/autopilot', { method: 'POST' })
+    .then(r => r.json())
+    .then(d => {
+      if (d.ok) {
+        btn.classList.add('running');
+        btn.disabled = false;
+        btn.textContent = '⏸ Em execução...';
+        statusEl.innerHTML = '<span class="ah-dot running"></span>&nbsp;Executando — aguarde 5–15 min';
+        document.getElementById('systemStatus').textContent = 'Autopilot ativo';
+        toast('✓ Autopilot iniciado — acompanhe nos Logs', 'success');
+        addLog('AUTOPILOT', '✓ Pipeline em andamento', 'ok');
+        setTimeout(resetAutopilotHero, 15 * 60 * 1000);
+      } else {
+        resetAutopilotHero();
+        toast(d.error || 'Erro ao iniciar autopilot', 'error');
+        addLog('AUTOPILOT', '✗ ' + (d.error || 'erro'), 'err');
+      }
+    })
+    .catch(() => {
+      resetAutopilotHero();
+      toast('Autopilot não disponível — verifique os Logs', 'error');
+      addLog('AUTOPILOT', '✗ Offline', 'err');
+    });
+}
+function resetAutopilotHero() {
+  const btn = document.getElementById('ahBtn');
+  if (!btn) return;
+  btn.className = 'ah-btn';
+  btn.disabled = false;
+  btn.textContent = '⚡ Iniciar Autopilot';
+  const statusEl = document.getElementById('ahStatus');
+  if (statusEl) statusEl.innerHTML = '<span class="ah-dot done"></span>&nbsp;Último run concluído';
+  const sysStatus = document.getElementById('systemStatus');
+  if (sysStatus) sysStatus.textContent = 'Sistema operacional';
   fetchData();
 }
 
