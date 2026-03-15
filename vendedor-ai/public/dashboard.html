@@ -704,7 +704,7 @@ tbody tr:last-child td{border-bottom:none}
               <div class="settings-group-title">Automação</div>
               <div class="setting-row">
                 <div class="setting-info"><h4>Autopilot</h4><p>Pipeline completo automático</p></div>
-                <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+                <div class="toggle on" id="toggle-autopilot" onclick="toggleSetting('autopilot',this)"></div>
               </div>
               <div class="setting-row">
                 <div class="setting-info"><h4>Limite diário de DMs</h4><p>Máximo por dia (anti-ban)</p></div>
@@ -723,11 +723,11 @@ tbody tr:last-child td{border-bottom:none}
               <div class="settings-group-title">Agendamento</div>
               <div class="setting-row">
                 <div class="setting-info"><h4>Scraping automático</h4><p>Coletar leads diariamente às 8h</p></div>
-                <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+                <div class="toggle" id="toggle-scraping" onclick="toggleSetting('scraping',this)"></div>
               </div>
               <div class="setting-row">
                 <div class="setting-info"><h4>Sync Notion</h4><p>Sincronizar CRM a cada 15 min</p></div>
-                <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+                <div class="toggle" id="toggle-notion-sync" onclick="toggleSetting('notion-sync',this)"></div>
               </div>
             </div>
           </div>
@@ -784,6 +784,7 @@ const state = {
   leads: [],
   stats: {},
   dmQueue: [],
+  realDmQueue: [],
   logs: [],
   filterStatus: 'all',
   logFilter: 'all',
@@ -964,8 +965,9 @@ function renderLeads() {
 }
 function previewDM(username) {
   const lead = state.leads.find(l => l.username === username);
-  if (!lead || !lead.dm_message) { toast('Nenhuma DM gerada para @' + username, 'info'); return; }
-  toast(`DM: ${lead.dm_message.slice(0, 80)}...`, 'info');
+  const dm = lead.mensagem_final || lead.dm_message;
+  if (!lead || !dm) { toast('Nenhuma DM gerada para @' + username, 'info'); return; }
+  toast(`DM: ${dm.slice(0, 80)}...`, 'info');
 }
 
 // ── DM Queue ──
@@ -987,10 +989,10 @@ function renderDMQueue() {
           <span class="dm-niche">${dm.niche || 'Geral'}</span>
           <span class="badge" style="background:rgba(0,212,255,.1);color:var(--cyan)">score ${dm.score || 0}</span>
         </div>
-        <div class="dm-msg">${dm.dm_message || dm.message || '—'}</div>
+        <div class="dm-msg">${dm.mensagem_final || dm.dm_message || dm.message || '—'}</div>
         <div class="dm-meta">
           <span>📍 ${dm.suggested_product || dm.product || '—'}</span>
-          <span>${(dm.dm_message || '').length} chars</span>
+          <span>${(dm.mensagem_final || dm.dm_message || dm.message || '').length} chars</span>
         </div>
       </div>
       <div class="dm-actions">
@@ -1002,15 +1004,36 @@ function renderDMQueue() {
 }
 function sendDM(idx) {
   const dm = state.dmQueue[idx];
+  if (!dm) return;
   toast(`Enviando DM para @${dm.username}...`, 'info');
   addLog('SENDER', `▶ Enviando para @${dm.username}`);
-  fetch('/api/send-dm', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(dm) })
+  const payload = {
+    username: dm.username,
+    mensagem_final: dm.mensagem_final || dm.dm_message || dm.message || dm.text,
+  };
+  fetch('/api/send-dm', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) })
     .then(r => r.json())
-    .then(() => { toast(`✓ DM enviada: @${dm.username}`, 'success'); addLog('SENDER', `✓ DM enviada @${dm.username}`, 'ok'); skipDM(idx); })
-    .catch(() => { toast('Endpoint /api/send-dm não disponível', 'error'); addLog('SENDER', '✗ Endpoint não disponível', 'err'); });
+    .then(d => {
+      if (d.ok) {
+        toast(`✓ DM enfileirada: @${dm.username}`, 'success');
+        addLog('SENDER', `✓ Na fila do sender @${dm.username}`, 'ok');
+        skipDM(idx);
+      } else {
+        toast(`Erro: ${d.error || 'falha desconhecida'}`, 'error');
+        addLog('SENDER', `✗ ${d.error || 'erro'}`, 'err');
+      }
+    })
+    .catch(() => { toast('Sender não disponível', 'error'); addLog('SENDER', '✗ Sender offline', 'err'); });
 }
 function skipDM(idx) { state.dmQueue.splice(idx, 1); renderDMQueue(); }
-function sendAllDMs() { toast('Envio em lote: disponível via 0-sender.js', 'info'); }
+function sendAllDMs() {
+  toast('Iniciando envio em lote...', 'info');
+  addLog('SENDER', '▶ Sender em lote iniciado');
+  fetch('/api/sender/start', { method: 'POST' })
+    .then(r => r.json())
+    .then(d => { toast(d.message || '✓ Sender iniciado', d.ok ? 'success' : 'error'); addLog('SENDER', d.message || '✓ OK', d.ok ? 'ok' : 'err'); })
+    .catch(() => { toast('Sender não disponível', 'error'); addLog('SENDER', '✗ Sender offline', 'err'); });
+}
 function clearDMQueue() { state.dmQueue = []; renderDMQueue(); toast('Fila limpa', 'info'); }
 
 // ── Analytics ──
@@ -1019,7 +1042,7 @@ function renderAnalytics() {
   const today = new Date().getDay();
   const labels = [...Array(7)].map((_, i) => days[(today - 6 + i + 7) % 7]);
   const counts = (() => {
-    if (!state.leads.length) return [2,5,3,8,4,7,3];
+    if (!state.leads.length) return [0,0,0,0,0,0,0];
     const byDay = {};
     state.leads.forEach(l => {
       if (!l.scraped_at) return;
@@ -1064,7 +1087,7 @@ function renderAnalytics() {
 function updateKPIs(leads) {
   const today = new Date().toDateString();
   const todayL = leads.filter(l => l.scraped_at && new Date(l.scraped_at).toDateString() === today).length;
-  const dmReady = leads.filter(l => l.dm_message && l.status !== 'contacted' && l.status !== 'replied' && l.status !== 'converted' && l.status !== 'ignored').length;
+  const dmReady = leads.filter(l => (l.mensagem_final || l.dm_message) && l.status !== 'contacted' && l.status !== 'replied' && l.status !== 'converted' && l.status !== 'ignored').length;
   const replied  = leads.filter(l => l.status === 'replied' || l.status === 'converted').length;
   const contacted = leads.filter(l => ['contacted','replied','converted'].includes(l.status)).length;
   const respRate = contacted > 0 ? Math.round(replied / contacted * 100) : 0;
@@ -1083,9 +1106,13 @@ function updateKPIs(leads) {
   document.getElementById('badge-leads').textContent = leads.length;
   document.getElementById('badge-dm').textContent    = dmReady;
 
-  state.dmQueue = leads
-    .filter(l => l.dm_message && !['contacted','replied','converted','ignored'].includes(l.status))
-    .slice(0, 20);
+  // Usa fila real (DmQueueDB) se disponível, senão deriva dos leads com DM gerada
+  state.dmQueue = (state.realDmQueue && state.realDmQueue.length)
+    ? state.realDmQueue
+    : leads
+        .filter(l => (l.mensagem_final || l.dm_message) && !['contacted','replied','converted','ignored'].includes(l.status))
+        .map(l => ({ ...l, dm_message: l.mensagem_final || l.dm_message }))
+        .slice(0, 20);
 }
 
 // ── Live Feed ──
@@ -1116,12 +1143,14 @@ function updateLiveFeed(leads) {
 async function fetchData() {
   document.getElementById('lastUpdate').textContent = 'atualizando...';
   try {
-    const [leadsRes, statsRes] = await Promise.allSettled([
+    const [leadsRes, statsRes, dmQueueRes] = await Promise.allSettled([
       fetch('/api/leads').then(r => r.ok ? r.json() : Promise.reject()),
       fetch('/api/stats').then(r => r.ok ? r.json() : Promise.reject()),
+      fetch('/api/dm-queue').then(r => r.ok ? r.json() : Promise.reject()),
     ]);
-    if (leadsRes.status === 'fulfilled' && Array.isArray(leadsRes.value)) state.leads = leadsRes.value;
+    if (leadsRes.status === 'fulfilled') state.leads = leadsRes.value?.leads || (Array.isArray(leadsRes.value) ? leadsRes.value : []);
     if (statsRes.status === 'fulfilled') state.stats = statsRes.value;
+    if (dmQueueRes.status === 'fulfilled') state.realDmQueue = dmQueueRes.value?.queue || [];
     updateKPIs(state.leads);
     updateLiveFeed(state.leads);
     renderLeads();
@@ -1164,6 +1193,39 @@ function refreshData() {
   fetchData();
 }
 
+// ── Settings ──
+function toggleSetting(key, el) {
+  el.classList.toggle('on');
+  const active = el.classList.contains('on');
+  if (key === 'autopilot') {
+    fetch('/api/autopilot/toggle', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ active }) })
+      .then(r => r.json())
+      .then(() => toast(`Autopilot ${active ? 'ativado' : 'desativado'}`, 'info'))
+      .catch(() => toast('Erro ao salvar configuração', 'error'));
+  } else {
+    const settings = {};
+    settings[key] = active;
+    fetch('/api/settings', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(settings) })
+      .then(() => toast(`${key} ${active ? 'ativado' : 'desativado'}`, 'info'))
+      .catch(() => toast('Erro ao salvar configuração', 'error'));
+  }
+}
+
+async function loadSettings() {
+  try {
+    const [cfg, settings] = await Promise.all([
+      fetch('/api/autopilot/config').then(r => r.json()),
+      fetch('/api/settings').then(r => r.json()),
+    ]);
+    const autopilotToggle = document.getElementById('toggle-autopilot');
+    if (autopilotToggle) autopilotToggle.classList.toggle('on', !!cfg.active);
+    const scrapingToggle = document.getElementById('toggle-scraping');
+    if (scrapingToggle) scrapingToggle.classList.toggle('on', settings.scraping !== false);
+    const notionToggle = document.getElementById('toggle-notion-sync');
+    if (notionToggle) notionToggle.classList.toggle('on', settings['notion-sync'] !== false);
+  } catch {}
+}
+
 // ── Keyboard Shortcuts ──
 let gMode = false;
 document.addEventListener('keydown', e => {
@@ -1185,8 +1247,10 @@ function init() {
   renderAgents();
   fetchData();
   checkAPIStatus();
+  loadSettings();
   setInterval(fetchData, 30000);
   setInterval(checkAPIStatus, 60000);
+  setInterval(loadSettings, 120000);
 }
 
 document.addEventListener('DOMContentLoaded', init);

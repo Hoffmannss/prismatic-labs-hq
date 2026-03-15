@@ -25,6 +25,7 @@ const PIPELINE_LOGS = [
   { file: path.join(LOGS_DIR, 'autopilot-out.log'),     label: 'autopilot'   },
   { file: path.join(LOGS_DIR, 'notion-sync-out.log'),   label: 'notion-sync' },
   { file: path.join(LOGS_DIR, 'dashboard-out.log'),     label: 'dashboard'   },
+  { file: path.join(LOGS_DIR, 'sender.log'),            label: 'sender'      },
 ];
 
 const autopilotDB = new AutopilotDB();
@@ -421,6 +422,59 @@ const server = http.createServer(async (req, res) => {
     const out = (r.stdout?.toString() || '') + (r.stderr?.toString() || '');
     const ok  = r.status === 0;
     return json(res, { ok, output: out.trim() });
+  }
+
+  // ── STATUS DAS APIs ──────────────────────────────────────────────────────
+  if (req.method === 'GET' && pathname === '/api/status') {
+    const sessionFile = path.join(DATA_DIR, 'session', 'instagram-session.json');
+    return json(res, {
+      groq:      !!process.env.GROQ_API_KEY,
+      gemini:    !!(process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_API_KEY),
+      notion:    !!process.env.NOTION_API_KEY,
+      instagram: fs.existsSync(sessionFile),
+    });
+  }
+
+  // ── RUN AGENT ────────────────────────────────────────────────────────────
+  if (req.method === 'POST' && pathname.startsWith('/api/run/')) {
+    const agentKey = pathname.split('/').pop();
+    const agentMap = {
+      scraper:    ['0-scraper.js'],
+      analyzer:   ['1-analyzer.js'],
+      copywriter: ['2-copywriter.js'],
+      notion:     ['9-notion-sync.js', 'sync'],
+      autopilot:  ['10-autopilot.js'],
+      scheduler:  ['14-scheduler.js'],
+    };
+    const args = agentMap[agentKey];
+    if (!args) return json(res, { ok: false, error: `Agente '${agentKey}' não encontrado` }, 404);
+    setTimeout(() => {
+      const child = spawn('node', [path.join(__dirname, ...args)], {
+        detached: true, stdio: 'ignore', cwd: __dirname, env: process.env
+      });
+      child.unref();
+    }, 100);
+    return json(res, { ok: true, message: `Agente ${agentKey} iniciado` });
+  }
+
+  // ── SEND DM (bridge → DmQueueDB + sender) ───────────────────────────────
+  if (req.method === 'POST' && pathname === '/api/send-dm') {
+    const body = await bodyJSON(req);
+    const { username, mensagem_final, dm_message, message } = body;
+    if (!username) return json(res, { ok: false, error: 'username obrigatório' }, 400);
+    const text = mensagem_final || dm_message || message;
+    if (!text) return json(res, { ok: false, error: 'mensagem não encontrada' }, 400);
+    const item = dmQueueDB.addToQueue(username, text);
+    const senderConfig = dmQueueDB.loadSenderConfig();
+    if (senderConfig.enabled) {
+      setTimeout(() => {
+        const child = spawn('node', [path.join(__dirname, '0-sender.js'), '--once'], {
+          detached: true, stdio: 'ignore', cwd: __dirname, env: process.env
+        });
+        child.unref();
+      }, 200);
+    }
+    return json(res, { ok: true, item, message: `DM para @${username} adicionada à fila` });
   }
 
   json(res, { error: 'Not found' }, 404);
