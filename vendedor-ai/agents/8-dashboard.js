@@ -16,8 +16,12 @@ const PORT          = parseInt(process.argv[2]) || 3131;
 const DATA_DIR      = path.join(__dirname, '..', 'data');
 const DB_FILE       = path.join(DATA_DIR, 'crm', 'leads-database.json');
 const HTML_FILE     = path.join(__dirname, '..', 'public', 'dashboard.html');
-const SETTINGS_FILE = path.join(__dirname, '..', 'config', 'dashboard-settings.json');
-const THEMES_FILE   = path.join(__dirname, '..', 'config', 'dashboard-themes.json');
+const SETTINGS_FILE   = path.join(__dirname, '..', 'config', 'dashboard-settings.json');
+const THEMES_FILE     = path.join(__dirname, '..', 'config', 'dashboard-themes.json');
+const BP_FILE         = path.join(__dirname, '..', 'config', 'business-profile.json');
+const SCHEDULE_FILE   = path.join(__dirname, '..', 'config', 'schedule-config.json');
+const USERS_FILE      = path.join(__dirname, '..', 'config', 'users.json');
+const crypto          = require('crypto');
 const TRACKER_DIR   = path.join(DATA_DIR, 'tracker');
 const LEARNING_FILE = path.join(DATA_DIR, 'learning', 'style-memory.json');
 const LOGS_DIR      = path.join(__dirname, '..', 'logs');
@@ -35,8 +39,8 @@ function json(res, data, status = 200) {
   res.writeHead(status, {
     'Content-Type': 'application/json; charset=utf-8',
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'GET,POST,PUT,OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type'
+    'Access-Control-Allow-Methods': 'GET,POST,PUT,PATCH,DELETE,OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization'
   });
   res.end(JSON.stringify(data));
 }
@@ -91,6 +95,35 @@ function bodyJSON(req) {
   });
 }
 
+function generateToken() {
+  return crypto.randomBytes(32).toString('hex');
+}
+
+function hashPassword(password) {
+  return crypto.createHash('sha256').update(password).digest('hex');
+}
+
+const activeSessions = {};
+
+function verifyToken(req) {
+  const auth = req.headers.authorization || '';
+  const token = auth.replace('Bearer ', '');
+  return activeSessions[token] || null;
+}
+
+function ensureUsersFile() {
+  if (!fs.existsSync(USERS_FILE)) {
+    const defaultAdmin = {
+      email: 'admin@prismatic.com',
+      password: hashPassword('admin123'),
+      is_admin: true,
+      company_name: 'Prismatic Labs',
+      created_at: new Date().toISOString()
+    };
+    saveJSON(USERS_FILE, { users: [defaultAdmin] });
+  }
+}
+
 function runTracker(args) {
   const r = spawnSync('node', [path.join(__dirname, '12-tracker.js'), ...args],
     { stdio: 'pipe', cwd: __dirname, env: process.env });
@@ -109,6 +142,16 @@ const server = http.createServer(async (req, res) => {
       : '<h1>dashboard.html nao encontrado em public/dashboard.html</h1>';
     res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
     return res.end(html);
+  }
+
+  // ── AUTH GUARD: protege todas as rotas /api/ exceto auth ─────────────
+  const isPublicRoute = pathname === '/api/auth/login' || pathname === '/api/auth/verify';
+  if (pathname.startsWith('/api/') && !isPublicRoute) {
+    const session = verifyToken(req);
+    if (!session) {
+      return json(res, { ok: false, error: 'Autenticação necessária' }, 401);
+    }
+    req.userSession = session;
   }
 
   if (req.method === 'GET' && pathname === '/api/leads') {
@@ -435,6 +478,7 @@ const server = http.createServer(async (req, res) => {
       gemini:    !!(process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_API_KEY || process.env.GOOGLE_API_KEY),
       notion:    !!process.env.NOTION_API_KEY,
       instagram: fs.existsSync(sessionPath),
+      instagram_username: process.env.INSTAGRAM_USERNAME || null,
     });
   }
 
@@ -458,6 +502,115 @@ const server = http.createServer(async (req, res) => {
       child.unref();
     }, 100);
     return json(res, { ok: true, message: `Agente ${agentKey} iniciado` });
+  }
+
+  // ── AUTHENTICATION ──────────────────────────────────────────────────────
+  if (req.method === 'POST' && pathname === '/api/auth/login') {
+    ensureUsersFile();
+    const { email, password } = await bodyJSON(req);
+    if (!email || !password) return json(res, { ok: false, error: 'E-mail e senha obrigatórios' }, 400);
+    const usersData = loadJSON(USERS_FILE, { users: [] });
+    const user = usersData.users.find(u => u.email === email && u.password === hashPassword(password));
+    if (!user) return json(res, { ok: false, error: 'E-mail ou senha incorretos' }, 401);
+    const token = generateToken();
+    activeSessions[token] = { email: user.email, is_admin: user.is_admin, company_name: user.company_name };
+    return json(res, { ok: true, token, user: { email: user.email, is_admin: user.is_admin, company_name: user.company_name } });
+  }
+
+  if (req.method === 'GET' && pathname === '/api/auth/verify') {
+    const session = verifyToken(req);
+    if (session) return json(res, { ok: true, user: session });
+    return json(res, { ok: false, error: 'Token inválido' }, 401);
+  }
+
+  if (req.method === 'POST' && pathname === '/api/auth/create-user') {
+    const session = verifyToken(req);
+    if (!session || !session.is_admin) return json(res, { ok: false, error: 'Acesso negado' }, 403);
+    const { email, password, company_name } = await bodyJSON(req);
+    if (!email || !password) return json(res, { ok: false, error: 'E-mail e senha obrigatórios' }, 400);
+    const usersData = loadJSON(USERS_FILE, { users: [] });
+    if (usersData.users.find(u => u.email === email)) return json(res, { ok: false, error: 'E-mail já cadastrado' }, 409);
+    usersData.users.push({ email, password: hashPassword(password), is_admin: false, company_name: company_name || '', created_at: new Date().toISOString() });
+    saveJSON(USERS_FILE, usersData);
+    return json(res, { ok: true, message: 'Usuário criado com sucesso' });
+  }
+
+  // ── BUSINESS PROFILE ────────────────────────────────────────────────────
+  if (req.method === 'GET' && pathname === '/api/business-profile') {
+    return json(res, loadJSON(BP_FILE, {}));
+  }
+
+  if (req.method === 'POST' && pathname === '/api/business-profile') {
+    const body = await bodyJSON(req);
+    saveJSON(BP_FILE, body);
+    return json(res, { ok: true, profile: body });
+  }
+
+  // ── SCHEDULE ────────────────────────────────────────────────────────────
+  if (req.method === 'GET' && pathname === '/api/schedule') {
+    return json(res, loadJSON(SCHEDULE_FILE, { active: false, time: '08:00', frequency: 'daily', days: [0,1,2,3,4,5,6] }));
+  }
+
+  if (req.method === 'POST' && pathname === '/api/schedule') {
+    const body = await bodyJSON(req);
+    const current = loadJSON(SCHEDULE_FILE, {});
+    const updated = { ...current, ...body };
+    // Calculate next run
+    if (updated.active && updated.time) {
+      const now = new Date();
+      const [h, m] = updated.time.split(':').map(Number);
+      const next = new Date(now);
+      next.setHours(h, m, 0, 0);
+      if (next <= now) next.setDate(next.getDate() + 1);
+      // Find next valid day
+      const days = updated.days || [0,1,2,3,4,5,6];
+      for (let i = 0; i < 7; i++) {
+        if (days.includes(next.getDay())) break;
+        next.setDate(next.getDate() + 1);
+      }
+      updated.next_run = next.toISOString();
+    } else {
+      updated.next_run = null;
+    }
+    saveJSON(SCHEDULE_FILE, updated);
+    return json(res, { ok: true, schedule: updated });
+  }
+
+  // ── INSTAGRAM SESSION MANAGEMENT ───────────────────────────────────────
+  if (req.method === 'POST' && pathname === '/api/instagram/request-renewal') {
+    // Log the renewal request
+    const renewalLog = path.join(DATA_DIR, 'instagram-renewal-requests.json');
+    const requests = loadJSON(renewalLog, { requests: [] });
+    requests.requests.push({ timestamp: new Date().toISOString(), status: 'pending' });
+    saveJSON(renewalLog, requests);
+    return json(res, { ok: true, message: 'Solicitação registrada' });
+  }
+
+  // ── REGENERATE DM (re-runs copywriter for a specific lead) ─────────────
+  if (req.method === 'POST' && pathname === '/api/regenerate-dm') {
+    const { username } = await bodyJSON(req);
+    if (!username) return json(res, { ok: false, error: 'username obrigatório' }, 400);
+    const clean = username.replace(/^@/, '').trim().toLowerCase();
+    // Run copywriter for this specific lead
+    try {
+      const result = spawnSync('node', [path.join(__dirname, '2-copywriter.js'), clean], {
+        stdio: 'pipe', cwd: __dirname, env: process.env, timeout: 60000
+      });
+      if (result.status === 0) {
+        // Re-read the generated message
+        const msg = getLeadMessages(clean);
+        const newText = msg?.revisao?.mensagem_final || msg?.mensagens?.mensagem1?.texto;
+        if (newText) {
+          return json(res, { ok: true, new_message: newText, username: clean });
+        }
+        return json(res, { ok: false, error: 'Copywriter executou mas não gerou mensagem nova' });
+      } else {
+        const errOut = (result.stderr || result.stdout || '').toString().slice(0, 200);
+        return json(res, { ok: false, error: `Copywriter falhou: ${errOut || 'erro desconhecido'}` });
+      }
+    } catch (e) {
+      return json(res, { ok: false, error: `Timeout ou erro: ${e.message}` });
+    }
   }
 
   // ── SEND DM (bridge → DmQueueDB + sender) ───────────────────────────────
@@ -489,10 +642,11 @@ server.listen(PORT, () => {
   console.log(`${C.b}  DASHBOARD COCKPIT - Prismatic Labs${C.r}`);
   console.log(`${C.m}${'='.repeat(52)}${C.r}`);
   console.log(`  URL     : ${C.c}http://localhost:${PORT}${C.r}`);
-  console.log(`  APIs    : /api/leads /api/settings /api/themes`);
-  console.log(`            /api/tracker /api/autopilot/* /api/stats`);
-  console.log(`  Autopilot: /api/autopilot/config (GET/POST)`);
-  console.log(`             /api/autopilot/start (POST)`);
-  console.log(`             /api/autopilot/toggle (POST)`);
+  console.log(`  APIs    : /api/leads /api/settings /api/stats /api/status`);
+  console.log(`  Profile : /api/business-profile /api/schedule`);
+  console.log(`  Auth    : /api/auth/login | /verify | /create-user`);
+  console.log(`  Autopilot: /api/autopilot/config | /start | /toggle`);
+  console.log(`  Pipeline : /api/lead/run | /api/run/:agent | /api/send-dm`);
+  console.log(`  Extra   : /api/regenerate-dm /api/instagram/request-renewal`);
   console.log(`${C.m}${'='.repeat(52)}${C.r}\n`);
 });

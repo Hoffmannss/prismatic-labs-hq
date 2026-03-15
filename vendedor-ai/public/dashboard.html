@@ -426,6 +426,23 @@ tbody tr:last-child td{border-bottom:none}
 .toggle.on::after{left:17px}
 .setting-val{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--cyan);background:var(--bg-el);padding:3px 8px;border-radius:5px;border:1px solid var(--b)}
 
+/* ─── SCHEDULE DAY CHECKS ─── */
+.day-check{display:flex;align-items:center;gap:4px;padding:6px 12px;border-radius:7px;border:1px solid var(--b);background:var(--bg-el);color:var(--t2);font-size:12px;font-weight:600;cursor:pointer;transition:.15s;user-select:none}
+.day-check:hover{background:var(--bg-hover);border-color:var(--b-m)}
+.day-check:has(input:checked){background:rgba(124,58,237,.15);color:var(--purple-l);border-color:var(--b-m)}
+.day-check input{display:none}
+
+/* ─── LOGIN PAGE ─── */
+.login-overlay{position:fixed;inset:0;background:var(--bg-deep);z-index:9999;display:flex;align-items:center;justify-content:center}
+.login-card{width:380px;max-width:calc(100vw - 32px);background:var(--bg-surface);border:1px solid var(--b-m);border-radius:var(--r-lg);padding:40px 32px;box-shadow:0 24px 60px rgba(0,0,0,.6)}
+.login-card .logo-icon{width:48px;height:48px;font-size:20px;margin:0 auto 18px;border-radius:12px}
+.login-title{text-align:center;font-size:20px;font-weight:800;color:var(--t);margin-bottom:4px}
+.login-sub{text-align:center;font-size:12px;color:var(--t3);margin-bottom:28px}
+.login-btn{width:100%;padding:13px;border-radius:var(--r);background:linear-gradient(135deg,var(--purple),#5b21b6);color:#fff;border:none;font-size:15px;font-weight:700;cursor:pointer;transition:all .2s;box-shadow:0 4px 18px rgba(124,58,237,.35);margin-top:8px}
+.login-btn:hover{transform:translateY(-1px);box-shadow:0 6px 24px rgba(124,58,237,.5)}
+.login-btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.login-error{color:var(--red);font-size:11px;text-align:center;margin-top:10px;min-height:16px}
+
 /* ─── COMMAND PALETTE ─── */
 .cmd-overlay{position:fixed;inset:0;background:rgba(5,6,15,.82);backdrop-filter:blur(5px);z-index:1000;display:none;align-items:flex-start;justify-content:center;padding-top:72px}
 .cmd-overlay.open{display:flex}
@@ -497,6 +514,40 @@ tbody tr:last-child td{border-bottom:none}
 .guide-step{display:flex;align-items:flex-start;gap:10px;font-size:12px;color:var(--t2);line-height:1.5}
 .guide-step strong{color:var(--t)}
 .guide-tip{margin-top:12px;padding:9px 12px;background:rgba(0,212,255,.07);border:1px solid rgba(0,212,255,.2);border-radius:8px;font-size:11px;color:var(--cyan);line-height:1.5}
+
+/* ─── BUSINESS PROFILE ─── */
+.bp-form{display:flex;flex-direction:column;gap:14px}
+.bp-field{display:flex;flex-direction:column;gap:4px}
+.bp-field label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--t2)}
+.bp-field input,.bp-field textarea,.bp-field select{background:var(--bg-el);border:1px solid var(--b);border-radius:8px;padding:10px 13px;font-family:inherit;font-size:13px;color:var(--t);outline:none;transition:border-color .2s;resize:vertical}
+.bp-field input:focus,.bp-field textarea:focus,.bp-field select:focus{border-color:var(--purple)}
+.bp-field textarea{min-height:72px}
+.bp-field select{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%238892b0' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center}
+.bp-field select option{background:var(--bg-surface);color:var(--t)}
+.bp-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:600px){.bp-row{grid-template-columns:1fr}}
+.bp-save-btn{padding:12px 28px;border-radius:var(--r);background:linear-gradient(135deg,var(--purple),#5b21b6);color:#fff;border:none;font-size:14px;font-weight:700;cursor:pointer;transition:all .2s;box-shadow:0 4px 18px rgba(124,58,237,.35);align-self:flex-start}
+.bp-save-btn:hover{transform:translateY(-1px);box-shadow:0 6px 24px rgba(124,58,237,.5)}
+.bp-save-btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.bp-status{font-size:11px;color:var(--green);display:flex;align-items:center;gap:5px;margin-top:4px}
+
+/* ─── MANUAL ANALYSIS ─── */
+.manual-analysis{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}
+.manual-analysis .bp-field{flex:1;min-width:200px}
+.manual-analysis-btn{padding:10px 22px;border-radius:var(--r);background:linear-gradient(135deg,var(--cyan-d),var(--cyan));color:#fff;border:none;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;white-space:nowrap;height:42px}
+.manual-analysis-btn:hover{transform:translateY(-1px);box-shadow:0 4px 16px rgba(0,212,255,.35)}
+.manual-analysis-btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+
+/* ─── REGENERAR DM ─── */
+.regen-btn{padding:5px 10px;border-radius:6px;border:1px solid rgba(0,212,255,.3);background:rgba(0,212,255,.08);color:var(--cyan);font-size:11px;cursor:pointer;font-family:inherit;transition:.15s;white-space:nowrap}
+.regen-btn:hover{background:rgba(0,212,255,.15);border-color:rgba(0,212,255,.5)}
+.regen-btn:disabled{opacity:.4;cursor:not-allowed}
+
+/* ─── DETAILS TOOLTIP ─── */
+.detail-btn{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;background:rgba(124,58,237,.12);color:var(--purple-l);font-size:9px;font-weight:800;cursor:help;border:1px solid var(--b);margin-left:4px;vertical-align:middle;position:relative}
+.detail-tooltip{display:none;position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);background:var(--bg-surface);border:1px solid var(--b-m);border-radius:10px;padding:12px 16px;min-width:240px;max-width:320px;font-size:11px;font-weight:400;color:var(--t2);line-height:1.6;box-shadow:0 12px 32px rgba(0,0,0,.5);z-index:500;text-transform:none;letter-spacing:0;white-space:normal}
+.detail-tooltip::after{content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--b-m)}
+.detail-btn:hover .detail-tooltip{display:block}
 .guide-tip strong{font-weight:700}
 .guide-warning{margin-top:10px;padding:9px 12px;background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.25);border-radius:8px;font-size:11px;color:var(--amber);line-height:1.5}
 .guide-faq{margin-top:14px}
@@ -521,16 +572,16 @@ tbody tr:last-child td{border-bottom:none}
     </div>
     <div class="cmd-list">
       <div class="cmd-group-label">Navegação</div>
-      <div class="cmd-item" onclick="navigate('overview');closePalette()"><div class="cmd-item-icon">⊞</div><span class="cmd-item-name">Command Center</span><span class="cmd-item-key">G O</span></div>
+      <div class="cmd-item" onclick="navigate('overview');closePalette()"><div class="cmd-item-icon">⊞</div><span class="cmd-item-name">Painel Principal</span><span class="cmd-item-key">G O</span></div>
       <div class="cmd-item" onclick="navigate('agents');closePalette()"><div class="cmd-item-icon">⬡</div><span class="cmd-item-name">Agentes</span><span class="cmd-item-key">G A</span></div>
       <div class="cmd-item" onclick="navigate('crm');closePalette()"><div class="cmd-item-icon">◈</div><span class="cmd-item-name">CRM — Leads</span><span class="cmd-item-key">G C</span></div>
       <div class="cmd-item" onclick="navigate('dmqueue');closePalette()"><div class="cmd-item-icon">◎</div><span class="cmd-item-name">Fila de DMs</span><span class="cmd-item-key">G D</span></div>
-      <div class="cmd-item" onclick="navigate('analytics');closePalette()"><div class="cmd-item-icon">◈</div><span class="cmd-item-name">Analytics</span><span class="cmd-item-key">G N</span></div>
-      <div class="cmd-item" onclick="navigate('logs');closePalette()"><div class="cmd-item-icon">≡</div><span class="cmd-item-name">Logs</span><span class="cmd-item-key">G L</span></div>
+      <div class="cmd-item" onclick="navigate('analytics');closePalette()"><div class="cmd-item-icon">◈</div><span class="cmd-item-name">Relatórios</span><span class="cmd-item-key">G N</span></div>
+      <div class="cmd-item" onclick="navigate('logs');closePalette()"><div class="cmd-item-icon">≡</div><span class="cmd-item-name">Registro de Atividades</span><span class="cmd-item-key">G L</span></div>
       <div class="cmd-group-label">Ações Rápidas</div>
       <div class="cmd-item" onclick="runAgent('autopilot');closePalette()"><div class="cmd-item-icon">⚡</div><span class="cmd-item-name">Iniciar Autopilot</span><span class="cmd-item-key">⌘ P</span></div>
-      <div class="cmd-item" onclick="runAgent('scraper');closePalette()"><div class="cmd-item-icon">🔍</div><span class="cmd-item-name">Rodar Scraper</span></div>
-      <div class="cmd-item" onclick="runAgent('copywriter');closePalette()"><div class="cmd-item-icon">✍️</div><span class="cmd-item-name">Gerar DMs (Copywriter)</span></div>
+      <div class="cmd-item" onclick="runAgent('scraper');closePalette()"><div class="cmd-item-icon">🔍</div><span class="cmd-item-name">Buscar Novos Leads</span></div>
+      <div class="cmd-item" onclick="runAgent('copywriter');closePalette()"><div class="cmd-item-icon">✍️</div><span class="cmd-item-name">Criar Mensagens</span></div>
       <div class="cmd-item" onclick="refreshData();closePalette()"><div class="cmd-item-icon">↻</div><span class="cmd-item-name">Atualizar Dados</span><span class="cmd-item-key">⌘ R</span></div>
     </div>
     <div class="cmd-footer">
@@ -543,6 +594,28 @@ tbody tr:last-child td{border-bottom:none}
 
 <!-- TOASTS -->
 <div class="toast-container" id="toasts"></div>
+
+<!-- LOGIN -->
+<div class="login-overlay" id="loginOverlay">
+  <div class="login-card">
+    <div class="logo-icon" style="display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;color:#fff;background:linear-gradient(135deg,var(--purple),var(--cyan));box-shadow:0 0 24px rgba(124,58,237,.5)">P</div>
+    <div class="login-title">Vendedor AI</div>
+    <div class="login-sub">Prismatic Labs · Acesse sua conta</div>
+    <div class="bp-form">
+      <div class="bp-field">
+        <label>E-mail</label>
+        <input type="email" id="login-email" placeholder="seu@email.com" onkeydown="if(event.key==='Enter')doLogin()">
+      </div>
+      <div class="bp-field">
+        <label>Senha</label>
+        <input type="password" id="login-password" placeholder="Sua senha" onkeydown="if(event.key==='Enter')doLogin()">
+      </div>
+    </div>
+    <button class="login-btn" id="loginBtn" onclick="doLogin()">Entrar</button>
+    <div class="login-error" id="loginError"></div>
+  </div>
+</div>
+
 <!-- SIDEBAR OVERLAY (mobile) -->
 <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
 
@@ -567,41 +640,49 @@ tbody tr:last-child td{border-bottom:none}
     <nav class="sidebar-nav">
       <div class="nav-section-label">Principal</div>
       <div class="nav-item active" onclick="navigate('overview')" id="nav-overview">
-        <span class="nav-icon">⊞</span><span>Command Center</span>
+        <span class="nav-icon">⊞</span><span>Painel Principal</span>
       </div>
       <div class="nav-item" onclick="navigate('agents')" id="nav-agents">
-        <span class="nav-icon">⬡</span><span>Agentes</span>
+        <span class="nav-icon">⬡</span><span>Módulos de IA</span>
         <span class="nav-badge" id="badge-running">0</span>
       </div>
       <div class="nav-item" onclick="navigate('crm')" id="nav-crm">
-        <span class="nav-icon">◈</span><span>CRM — Leads</span>
+        <span class="nav-icon">◈</span><span>Meus Leads</span>
         <span class="nav-badge amber" id="badge-leads">0</span>
       </div>
       <div class="nav-item" onclick="navigate('dmqueue')" id="nav-dmqueue">
-        <span class="nav-icon">◎</span><span>Fila de DMs</span>
+        <span class="nav-icon">◎</span><span>Fila de Mensagens</span>
         <span class="nav-badge red" id="badge-dm">0</span>
       </div>
-      <div class="nav-section-label">Monitor</div>
+      <div class="nav-section-label">Desempenho</div>
       <div class="nav-item" onclick="navigate('analytics')" id="nav-analytics">
-        <span class="nav-icon">▦</span><span>Analytics</span>
+        <span class="nav-icon">▦</span><span>Relatórios</span>
       </div>
       <div class="nav-item" onclick="navigate('logs')" id="nav-logs">
-        <span class="nav-icon">≡</span><span>Logs</span>
+        <span class="nav-icon">≡</span><span>Registro de Atividades</span>
       </div>
-      <div class="nav-section-label">Sistema</div>
+      <div class="nav-section-label">Meu Negócio</div>
+      <div class="nav-item" onclick="navigate('profile')" id="nav-profile">
+        <span class="nav-icon">◆</span><span>Perfil do Negócio</span>
+      </div>
+      <div class="nav-item" onclick="navigate('schedule')" id="nav-schedule">
+        <span class="nav-icon">⏰</span><span>Agendamento</span>
+      </div>
+      <div class="nav-item" onclick="navigate('instagram')" id="nav-instagram">
+        <span class="nav-icon">📷</span><span>Conta Instagram</span>
+      </div>
+      <div class="nav-section-label">Ajuda</div>
       <div class="nav-item" onclick="navigate('guide')" id="nav-guide">
         <span class="nav-icon">?</span><span>Como Usar</span>
-      </div>
-      <div class="nav-item" onclick="navigate('settings')" id="nav-settings">
-        <span class="nav-icon">⚙</span><span>Configurações</span>
       </div>
     </nav>
     <div class="sidebar-footer">
       <div class="footer-avatar">PL</div>
-      <div>
+      <div style="flex:1;min-width:0">
         <div class="footer-name">Prismatic Labs</div>
         <div class="footer-role">v3.0 · Admin</div>
       </div>
+      <button class="topbar-btn" onclick="logout()" title="Sair" style="width:24px;height:24px;font-size:11px;flex-shrink:0">⏻</button>
     </div>
   </aside>
 
@@ -611,12 +692,11 @@ tbody tr:last-child td{border-bottom:none}
     <!-- TOPBAR -->
     <header class="topbar">
       <button class="hamburger" onclick="toggleSidebar()" aria-label="Menu">☰</button>
-      <div class="topbar-title" id="topbarTitle">Command Center <span>Overview</span></div>
+      <div class="topbar-title" id="topbarTitle">Painel Principal <span>Visão Geral</span></div>
       <div class="topbar-spacer"></div>
       <div class="topbar-pills">
-        <div class="pill green" id="pill-pm2"><span class="dot"></span>PM2 Online</div>
-        <div class="pill" id="pill-scraper"><span class="dot"></span>Scraper</div>
-        <div class="pill" id="pill-autopilot"><span class="dot"></span>Autopilot</div>
+        <div class="pill green" id="pill-system"><span class="dot"></span>Sistema Ativo</div>
+        <div class="pill" id="pill-ig-session"><span class="dot"></span>Instagram</div>
       </div>
       <button class="topbar-cmd-btn" onclick="openPalette()">⌕ Buscar <kbd>⌘K</kbd></button>
       <button class="topbar-btn" onclick="refreshData()" title="Atualizar">↻</button>
@@ -628,7 +708,7 @@ tbody tr:last-child td{border-bottom:none}
       <!-- ══ OVERVIEW ══ -->
       <section class="section active" id="section-overview">
         <div class="page-header">
-          <h1>Command Center</h1>
+          <h1>Painel Principal</h1>
           <p>Visão geral em tempo real — <span id="lastUpdate" style="color:var(--purple-l)">carregando...</span></p>
         </div>
 
@@ -637,8 +717,8 @@ tbody tr:last-child td{border-bottom:none}
           <div class="ah-left">
             <div class="ah-icon" id="ahIcon">⚡</div>
             <div>
-              <div class="ah-title">Autopilot — Pipeline Completo</div>
-              <div class="ah-desc">Coleta leads no Instagram → analisa nicho e score → gera DMs personalizadas automaticamente</div>
+              <div class="ah-title">Prospecção Automática <span class="detail-btn">?<span class="detail-tooltip">Com um clique, o sistema busca potenciais clientes no Instagram, analisa cada perfil com IA (score de 0 a 100) e gera mensagens personalizadas para cada lead. Recomendamos rodar 1 vez por dia.</span></span></div>
+              <div class="ah-desc">Encontra potenciais clientes no Instagram, analisa cada perfil com inteligência artificial e cria mensagens únicas — tudo automaticamente</div>
               <div class="ah-status" id="ahStatus"><span class="ah-dot idle"></span>&nbsp;Aguardando — clique para iniciar</div>
             </div>
           </div>
@@ -647,25 +727,25 @@ tbody tr:last-child td{border-bottom:none}
 
         <div class="grid-4" style="margin-bottom:14px">
           <div class="card kpi-card" style="padding-bottom:0">
-            <div class="kpi-label">Leads Hoje</div>
+            <div class="kpi-label">Leads Hoje <span class="detail-btn">?<span class="detail-tooltip">Quantidade de novos leads coletados hoje pelo Autopilot ou Scraper.</span></span></div>
             <div class="kpi-value" id="kpi-leads-today">—</div>
             <div class="kpi-sub"><span class="up" id="kpi-leads-delta">↑ 0</span>&nbsp;vs. ontem</div>
             <div class="kpi-bar purple"></div>
           </div>
           <div class="card kpi-card" style="padding-bottom:0">
-            <div class="kpi-label">DMs na Fila</div>
+            <div class="kpi-label">DMs na Fila <span class="detail-btn">?<span class="detail-tooltip">Mensagens personalizadas geradas pela IA, prontas para você revisar e enviar.</span></span></div>
             <div class="kpi-value" id="kpi-dm-queue">—</div>
             <div class="kpi-sub">prontas para enviar</div>
             <div class="kpi-bar amber"></div>
           </div>
           <div class="card kpi-card" style="padding-bottom:0">
-            <div class="kpi-label">Taxa de Resposta</div>
+            <div class="kpi-label">Taxa de Resposta <span class="detail-btn">?<span class="detail-tooltip">Percentual de leads que responderam às suas DMs. Acima de 5% é bom, acima de 10% é excelente.</span></span></div>
             <div class="kpi-value" id="kpi-response-rate">—</div>
             <div class="kpi-sub">últimos 7 dias</div>
             <div class="kpi-bar green"></div>
           </div>
           <div class="card kpi-card" style="padding-bottom:0">
-            <div class="kpi-label">Total no CRM</div>
+            <div class="kpi-label">Total no CRM <span class="detail-btn">?<span class="detail-tooltip">Total de leads registrados no seu banco de dados, em qualquer status.</span></span></div>
             <div class="kpi-value" id="kpi-total-leads">—</div>
             <div class="kpi-sub">leads registrados</div>
             <div class="kpi-bar pink"></div>
@@ -674,7 +754,7 @@ tbody tr:last-child td{border-bottom:none}
 
         <div class="overview-grid">
           <div>
-            <div class="section-row"><h2>Pipeline de Prospecção</h2><div class="line"></div></div>
+            <div class="section-row"><h2>Pipeline de Prospecção <span class="detail-btn">?<span class="detail-tooltip">O Pipeline mostra quantos leads estão em cada etapa: Coletados → Analisados → DM Pronta → Enviados → Respondidos. Quanto mais leads avançam no pipeline, melhor sua prospecção.</span></span></h2><div class="line"></div></div>
             <div class="pipeline">
               <div class="pipeline-stage">
                 <div class="ps-dot" style="background:#a78bfa"></div>
@@ -709,6 +789,22 @@ tbody tr:last-child td{border-bottom:none}
             </div>
 
             <div class="section-row" style="margin-top:18px">
+              <h2>Analisar Perfil Específico</h2>
+              <div class="line"></div>
+              <span class="detail-btn">?<span class="detail-tooltip">Analise qualquer perfil do Instagram sem precisar do Scraper. Digite o @ do perfil e o sistema coleta dados, analisa com IA e gera uma DM personalizada automaticamente.</span></span>
+            </div>
+            <div class="card" style="margin-bottom:14px;padding:16px 18px">
+              <div class="manual-analysis">
+                <div class="bp-field" style="margin-bottom:0">
+                  <label>Perfil do Instagram</label>
+                  <input type="text" id="manualUsername" placeholder="@usuario ou usuario" onkeydown="if(event.key==='Enter')analyzeProfile()">
+                </div>
+                <button class="manual-analysis-btn" id="manualAnalyzeBtn" onclick="analyzeProfile()">🔍 Analisar Perfil</button>
+              </div>
+              <div id="manualAnalysisStatus" style="margin-top:8px;font-size:11px;color:var(--t3)"></div>
+            </div>
+
+            <div class="section-row">
               <h2>Controles Rápidos</h2>
               <div class="line"></div>
               <div class="action-btn" onclick="navigate('agents')">Ver todos →</div>
@@ -716,28 +812,28 @@ tbody tr:last-child td{border-bottom:none}
             <div class="grid-5">
               <div class="card" style="padding:11px;text-align:center;cursor:pointer" onclick="runAgent('scraper')">
                 <div style="font-size:19px;margin-bottom:5px">🔍</div>
-                <div style="font-size:11px;font-weight:700;color:var(--t);margin-bottom:1px">Scraper</div>
-                <div style="font-size:9px;color:var(--t3)">0-scraper</div>
+                <div style="font-size:11px;font-weight:700;color:var(--t);margin-bottom:1px">Buscar Leads</div>
+                <div style="font-size:9px;color:var(--t3)">Coletar perfis</div>
               </div>
               <div class="card" style="padding:11px;text-align:center;cursor:pointer" onclick="runAgent('analyzer')">
                 <div style="font-size:19px;margin-bottom:5px">🧠</div>
-                <div style="font-size:11px;font-weight:700;color:var(--t);margin-bottom:1px">Analyzer</div>
-                <div style="font-size:9px;color:var(--t3)">1-analyzer</div>
+                <div style="font-size:11px;font-weight:700;color:var(--t);margin-bottom:1px">Analisar</div>
+                <div style="font-size:9px;color:var(--t3)">Pontuar leads</div>
               </div>
               <div class="card" style="padding:11px;text-align:center;cursor:pointer" onclick="runAgent('copywriter')">
                 <div style="font-size:19px;margin-bottom:5px">✍️</div>
-                <div style="font-size:11px;font-weight:700;color:var(--t);margin-bottom:1px">Copywriter</div>
-                <div style="font-size:9px;color:var(--t3)">2-copywriter</div>
+                <div style="font-size:11px;font-weight:700;color:var(--t);margin-bottom:1px">Criar DMs</div>
+                <div style="font-size:9px;color:var(--t3)">Gerar mensagens</div>
               </div>
               <div class="card" style="padding:11px;text-align:center;cursor:pointer" onclick="runAgent('notion')">
                 <div style="font-size:19px;margin-bottom:5px">🔄</div>
-                <div style="font-size:11px;font-weight:700;color:var(--t);margin-bottom:1px">Notion Sync</div>
-                <div style="font-size:9px;color:var(--t3)">9-notion</div>
+                <div style="font-size:11px;font-weight:700;color:var(--t);margin-bottom:1px">Sincronizar</div>
+                <div style="font-size:9px;color:var(--t3)">Atualizar CRM</div>
               </div>
               <div class="card" style="padding:11px;text-align:center;cursor:pointer;background:rgba(124,58,237,.08);border-color:var(--b-m)" onclick="runAgent('autopilot')">
                 <div style="font-size:19px;margin-bottom:5px">⚡</div>
-                <div style="font-size:11px;font-weight:700;color:var(--purple-xl);margin-bottom:1px">Autopilot</div>
-                <div style="font-size:9px;color:var(--purple-l)">10-autopilot</div>
+                <div style="font-size:11px;font-weight:700;color:var(--purple-xl);margin-bottom:1px">Automático</div>
+                <div style="font-size:9px;color:var(--purple-l)">Tudo de uma vez</div>
               </div>
             </div>
           </div>
@@ -759,8 +855,8 @@ tbody tr:last-child td{border-bottom:none}
       <!-- ══ AGENTS ══ -->
       <section class="section" id="section-agents">
         <div class="page-header">
-          <h1>Agentes</h1>
-          <p>Gerenciamento e monitoramento dos módulos do Vendedor AI</p>
+          <h1>Módulos de IA</h1>
+          <p>Cada módulo executa uma etapa do processo de prospecção automatizada</p>
         </div>
         <div class="agent-grid" id="agentGrid"></div>
       </section>
@@ -768,8 +864,8 @@ tbody tr:last-child td{border-bottom:none}
       <!-- ══ CRM ══ -->
       <section class="section" id="section-crm">
         <div class="page-header">
-          <h1>CRM — Leads</h1>
-          <p>Base de leads coletados, analisados e pontuados pelo pipeline</p>
+          <h1>Meus Leads</h1>
+          <p>Todos os potenciais clientes encontrados, analisados e pontuados pela IA</p>
         </div>
         <div class="table-wrap">
           <div class="table-toolbar">
@@ -808,8 +904,8 @@ tbody tr:last-child td{border-bottom:none}
       <!-- ══ DM QUEUE ══ -->
       <section class="section" id="section-dmqueue">
         <div class="page-header">
-          <h1>Fila de DMs</h1>
-          <p>Mensagens personalizadas prontas para envio — revise antes de disparar</p>
+          <h1>Fila de Mensagens</h1>
+          <p>Mensagens personalizadas prontas para envio — revise cada uma antes de disparar</p>
         </div>
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
           <div style="font-size:12px;color:var(--t2)">
@@ -833,8 +929,8 @@ tbody tr:last-child td{border-bottom:none}
       <!-- ══ ANALYTICS ══ -->
       <section class="section" id="section-analytics">
         <div class="page-header">
-          <h1>Analytics</h1>
-          <p>Performance da prospecção e distribuição de leads</p>
+          <h1>Relatórios</h1>
+          <p>Desempenho da prospecção e distribuição de leads</p>
         </div>
         <div class="grid-3" style="margin-bottom:14px">
           <div class="card">
@@ -861,16 +957,16 @@ tbody tr:last-child td{border-bottom:none}
       <!-- ══ LOGS ══ -->
       <section class="section" id="section-logs">
         <div class="page-header">
-          <h1>Logs do Sistema</h1>
-          <p>Output em tempo real de todos os agentes e processos</p>
+          <h1>Registro de Atividades</h1>
+          <p>Acompanhe em tempo real tudo que os módulos estão fazendo</p>
         </div>
         <div style="display:flex;gap:7px;margin-bottom:10px;flex-wrap:wrap">
           <button class="filter-btn active" onclick="setLogFilter('all',this)">Todos</button>
-          <button class="filter-btn" onclick="setLogFilter('scraper',this)">0-scraper</button>
-          <button class="filter-btn" onclick="setLogFilter('analyzer',this)">1-analyzer</button>
-          <button class="filter-btn" onclick="setLogFilter('copy',this)">2-copywriter</button>
-          <button class="filter-btn" onclick="setLogFilter('autopilot',this)">10-autopilot</button>
-          <button class="filter-btn" onclick="setLogFilter('err',this)" style="color:var(--red)">⚠ Errors</button>
+          <button class="filter-btn" onclick="setLogFilter('scraper',this)">🔍 Busca</button>
+          <button class="filter-btn" onclick="setLogFilter('analyzer',this)">🧠 Análise</button>
+          <button class="filter-btn" onclick="setLogFilter('copy',this)">✍️ Mensagens</button>
+          <button class="filter-btn" onclick="setLogFilter('autopilot',this)">⚡ Automático</button>
+          <button class="filter-btn" onclick="setLogFilter('err',this)" style="color:var(--red)">⚠ Erros</button>
           <div style="flex:1"></div>
           <button class="filter-btn" onclick="clearLogs()">✕ Limpar</button>
         </div>
@@ -894,10 +990,243 @@ tbody tr:last-child td{border-bottom:none}
       </section>
 
       <!-- ══ SETTINGS ══ -->
+      <!-- ══ PERFIL DO NEGÓCIO ══ -->
+      <section class="section" id="section-profile">
+        <div class="page-header">
+          <h1>Perfil do Negócio</h1>
+          <p>Configure sua identidade — a IA adapta todas as mensagens e análises automaticamente</p>
+        </div>
+        <div class="grid-2">
+          <div class="card">
+            <div class="settings-group">
+              <div class="settings-group-title">Identidade da Empresa</div>
+              <div class="bp-form">
+                <div class="bp-field">
+                  <label>Nome da Empresa <span style="color:var(--red)">*</span></label>
+                  <input type="text" id="bp-company-name" placeholder="Ex: Prismatic Labs">
+                </div>
+                <div class="bp-field">
+                  <label>Segmento / Nicho de Atuação <span style="color:var(--red)">*</span></label>
+                  <input type="text" id="bp-segment" placeholder="Ex: Automação de marketing com IA">
+                </div>
+                <div class="bp-row">
+                  <div class="bp-field">
+                    <label>Produto / Serviço Principal <span style="color:var(--red)">*</span></label>
+                    <input type="text" id="bp-product" placeholder="Ex: Sistema de prospecção via Instagram">
+                  </div>
+                  <div class="bp-field">
+                    <label>Faixa de Preço</label>
+                    <input type="text" id="bp-price" placeholder="Ex: R$497–R$2.997/mês">
+                  </div>
+                </div>
+                <div class="bp-field">
+                  <label>Proposta de Valor (em 1 frase) <span style="color:var(--red)">*</span></label>
+                  <input type="text" id="bp-value-prop" placeholder="Ex: Ajudamos empresas a conseguir clientes no Instagram com IA">
+                </div>
+                <div class="bp-field">
+                  <label>Problema Principal que Resolve</label>
+                  <textarea id="bp-problem" placeholder="Ex: Empresas perdem horas tentando prospectar manualmente no Instagram sem resultado consistente"></textarea>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="settings-group">
+              <div class="settings-group-title">Tom e Posicionamento</div>
+              <div class="bp-form">
+                <div class="bp-field">
+                  <label>Tom das Mensagens</label>
+                  <select id="bp-tone">
+                    <option value="profissional-amigavel">Profissional e Amigável (Recomendado)</option>
+                    <option value="casual-direto">Casual e Direto</option>
+                    <option value="formal-corporativo">Formal e Corporativo</option>
+                    <option value="tecnico-especialista">Técnico e Especialista</option>
+                    <option value="consultivo-empatico">Consultivo e Empático</option>
+                  </select>
+                </div>
+                <div class="bp-field">
+                  <label>Diferenciais (o que te destaca da concorrência)</label>
+                  <textarea id="bp-differentials" placeholder="Ex: IA que personaliza cada mensagem com base no perfil real do lead, sem templates genéricos"></textarea>
+                </div>
+                <div class="bp-field">
+                  <label>Público-Alvo Ideal <span style="color:var(--red)">*</span></label>
+                  <textarea id="bp-target" placeholder="Ex: Donos de agências de marketing, coaches de negócio e consultores que usam Instagram para vendas"></textarea>
+                </div>
+                <div class="bp-field">
+                  <label>Instagram da Empresa</label>
+                  <input type="text" id="bp-instagram" placeholder="@sua_empresa">
+                </div>
+                <div class="bp-field">
+                  <label>Link do Site / Landing Page (opcional)</label>
+                  <input type="text" id="bp-website" placeholder="https://seusite.com">
+                </div>
+              </div>
+            </div>
+            <div style="margin-top:14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+              <button class="bp-save-btn" id="bpSaveBtn" onclick="saveBusinessProfile()">💾 Salvar Perfil</button>
+              <div id="bpSaveStatus" class="bp-status"></div>
+            </div>
+          </div>
+        </div>
+        <div class="card" style="margin-top:14px;padding:16px 20px">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+            <span style="font-size:18px">🧠</span>
+            <div>
+              <div style="font-size:13px;font-weight:700;color:var(--t)">Como isso funciona?</div>
+              <div style="font-size:11px;color:var(--t3)">Entenda o poder do Perfil do Negócio</div>
+            </div>
+          </div>
+          <p style="font-size:12px;color:var(--t2);line-height:1.7">
+            Quando você preenche o Perfil do Negócio, a IA do Vendedor AI <strong style="color:var(--t)">adapta automaticamente</strong> todo o processo:
+            o <strong style="color:var(--cyan)">Analyzer</strong> identifica leads mais relevantes para seu nicho,
+            o <strong style="color:var(--green)">Copywriter</strong> gera DMs no tom da sua marca mencionando seus produtos e diferenciais,
+            e o score de prioridade considera a compatibilidade do lead com seu público-alvo.
+            Quanto mais completo o perfil, melhores os resultados.
+          </p>
+        </div>
+      </section>
+
+      <!-- ══ AGENDAMENTO ══ -->
+      <section class="section" id="section-schedule">
+        <div class="page-header">
+          <h1>Agendamento</h1>
+          <p>Configure quando o sistema deve prospectar automaticamente</p>
+        </div>
+        <div class="grid-2">
+          <div class="card">
+            <div class="settings-group">
+              <div class="settings-group-title">Prospecção Automática</div>
+              <div class="setting-row">
+                <div class="setting-info"><h4>Ativar agendamento</h4><p>O sistema roda a prospecção completa automaticamente</p></div>
+                <div class="toggle" id="toggle-schedule-active" onclick="toggleSchedule('active',this)"></div>
+              </div>
+              <div class="bp-form" style="margin-top:14px">
+                <div class="bp-row">
+                  <div class="bp-field">
+                    <label>Horário de Execução</label>
+                    <select id="schedule-time">
+                      <option value="06:00">06:00 — Manhã cedo</option>
+                      <option value="08:00" selected>08:00 — Manhã (Recomendado)</option>
+                      <option value="10:00">10:00 — Meio da manhã</option>
+                      <option value="12:00">12:00 — Meio-dia</option>
+                      <option value="14:00">14:00 — Tarde</option>
+                      <option value="16:00">16:00 — Final da tarde</option>
+                      <option value="18:00">18:00 — Início da noite</option>
+                      <option value="20:00">20:00 — Noite</option>
+                    </select>
+                  </div>
+                  <div class="bp-field">
+                    <label>Frequência</label>
+                    <select id="schedule-frequency">
+                      <option value="daily" selected>Todo dia</option>
+                      <option value="weekdays">Dias úteis (Seg–Sex)</option>
+                      <option value="custom">Dias específicos</option>
+                    </select>
+                  </div>
+                </div>
+                <div id="schedule-days-row" style="display:none">
+                  <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--t2);margin-bottom:6px;display:block">Selecione os dias</label>
+                  <div style="display:flex;gap:6px;flex-wrap:wrap">
+                    <label class="day-check"><input type="checkbox" value="1" class="schedule-day"> Seg</label>
+                    <label class="day-check"><input type="checkbox" value="2" class="schedule-day"> Ter</label>
+                    <label class="day-check"><input type="checkbox" value="3" class="schedule-day"> Qua</label>
+                    <label class="day-check"><input type="checkbox" value="4" class="schedule-day"> Qui</label>
+                    <label class="day-check"><input type="checkbox" value="5" class="schedule-day"> Sex</label>
+                    <label class="day-check"><input type="checkbox" value="6" class="schedule-day"> Sáb</label>
+                    <label class="day-check"><input type="checkbox" value="0" class="schedule-day"> Dom</label>
+                  </div>
+                </div>
+              </div>
+              <div style="margin-top:16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+                <button class="bp-save-btn" onclick="saveSchedule()">💾 Salvar Agendamento</button>
+                <div id="scheduleSaveStatus" class="bp-status"></div>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="settings-group">
+              <div class="settings-group-title">Informações</div>
+              <div style="font-size:12px;color:var(--t2);line-height:1.7">
+                <p style="margin-bottom:10px">Quando o agendamento está ativo, o sistema executa a <strong style="color:var(--t)">Prospecção Automática</strong> no horário e dias que você configurar.</p>
+                <p style="margin-bottom:10px">A cada execução, o sistema:</p>
+                <div style="margin-left:8px;margin-bottom:10px">
+                  <div style="display:flex;gap:6px;margin-bottom:4px"><span>🔍</span><span>Busca novos leads no Instagram</span></div>
+                  <div style="display:flex;gap:6px;margin-bottom:4px"><span>🧠</span><span>Analisa e pontua cada perfil</span></div>
+                  <div style="display:flex;gap:6px;margin-bottom:4px"><span>✍️</span><span>Cria mensagens personalizadas</span></div>
+                  <div style="display:flex;gap:6px"><span>📊</span><span>Atualiza seu CRM automaticamente</span></div>
+                </div>
+                <div style="padding:10px 12px;background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.2);border-radius:8px;font-size:11px;color:var(--amber);line-height:1.5;margin-top:10px">
+                  <strong>⚠️ Importante:</strong> Recomendamos no máximo 1 execução por dia para proteger sua conta do Instagram.
+                </div>
+              </div>
+            </div>
+            <div class="settings-group" style="margin-top:16px">
+              <div class="settings-group-title">Status do Agendamento</div>
+              <div class="setting-row">
+                <div class="setting-info"><h4>Próxima execução</h4></div>
+                <span class="setting-val" id="schedule-next-run" style="color:var(--cyan)">Não agendado</span>
+              </div>
+              <div class="setting-row">
+                <div class="setting-info"><h4>Última execução</h4></div>
+                <span class="setting-val" id="schedule-last-run" style="color:var(--t3)">Nunca</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ══ CONTA INSTAGRAM ══ -->
+      <section class="section" id="section-instagram">
+        <div class="page-header">
+          <h1>Conta Instagram</h1>
+          <p>Conecte sua conta do Instagram para o sistema buscar leads e enviar mensagens</p>
+        </div>
+        <div class="grid-2">
+          <div class="card">
+            <div class="settings-group">
+              <div class="settings-group-title">Status da Conexão</div>
+              <div id="ig-connection-status" style="padding:20px;text-align:center">
+                <div style="font-size:36px;margin-bottom:10px">📷</div>
+                <div id="ig-conn-label" style="font-size:14px;font-weight:700;color:var(--t);margin-bottom:4px">Verificando...</div>
+                <div id="ig-conn-detail" style="font-size:12px;color:var(--t2)">Checando sessão do Instagram</div>
+              </div>
+              <div class="setting-row">
+                <div class="setting-info"><h4>Conta conectada</h4><p>Perfil usado para prospecção</p></div>
+                <span class="setting-val" id="ig-connected-account">—</span>
+              </div>
+              <div class="setting-row">
+                <div class="setting-info"><h4>Sessão</h4><p>Status da autenticação</p></div>
+                <span class="setting-val" id="ig-session-status">—</span>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="settings-group">
+              <div class="settings-group-title">Sobre a Conexão</div>
+              <div style="font-size:12px;color:var(--t2);line-height:1.7">
+                <p style="margin-bottom:10px">O Vendedor AI precisa de uma <strong style="color:var(--t)">sessão ativa do Instagram</strong> para funcionar. Essa sessão permite ao sistema buscar perfis e enviar mensagens em seu nome.</p>
+                <p style="margin-bottom:10px">A sessão pode expirar periodicamente por segurança do Instagram. Quando isso acontecer, você verá um aviso no painel e precisará renovar a conexão.</p>
+                <div style="padding:10px 12px;background:rgba(16,185,129,.07);border:1px solid rgba(16,185,129,.2);border-radius:8px;font-size:11px;color:var(--green);line-height:1.5;margin-top:10px">
+                  <strong>🔒 Segurança:</strong> Sua sessão é criptografada com AES-256-GCM. Nenhuma senha é armazenada no sistema.
+                </div>
+                <div style="margin-top:14px;padding:10px 12px;background:rgba(124,58,237,.07);border:1px solid rgba(124,58,237,.2);border-radius:8px;font-size:11px;color:var(--purple-l);line-height:1.5">
+                  <strong>💡 Sessão expirou?</strong> Clique no botão abaixo para solicitar a renovação. Nossa equipe resolve em até 24 horas sem que você precise fazer nada técnico.
+                </div>
+              </div>
+              <div style="margin-top:16px">
+                <button class="bp-save-btn" onclick="requestSessionRenewal()" style="background:linear-gradient(135deg,var(--cyan-d),var(--cyan))">🔄 Solicitar Renovação de Sessão</button>
+                <div id="igRenewalStatus" class="bp-status" style="margin-top:8px"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ══ SETTINGS (admin-only, hidden from nav) ══ -->
       <section class="section" id="section-settings">
         <div class="page-header">
-          <h1>Configurações</h1>
-          <p>Parâmetros operacionais e status de integrações</p>
+          <h1>Configurações Administrativas</h1>
+          <p>Parâmetros operacionais e status de integrações (somente admin)</p>
         </div>
         <div class="grid-2">
           <div class="card">
@@ -914,10 +1243,6 @@ tbody tr:last-child td{border-bottom:none}
               <div class="setting-row">
                 <div class="setting-info"><h4>Delay entre DMs</h4><p>Intervalo aleatório</p></div>
                 <span class="setting-val">3–8 min</span>
-              </div>
-              <div class="setting-row">
-                <div class="setting-info"><h4>Rotação de copy</h4><p>Variar mensagem a cada N envios</p></div>
-                <span class="setting-val">3 msgs</span>
               </div>
             </div>
             <div class="settings-group">
@@ -936,35 +1261,31 @@ tbody tr:last-child td{border-bottom:none}
             <div class="settings-group">
               <div class="settings-group-title">APIs &amp; Integrações</div>
               <div class="setting-row">
-                <div class="setting-info"><h4>Groq API</h4><p>Llama 3.3-70B · Analyzer</p></div>
+                <div class="setting-info"><h4>Groq API</h4></div>
                 <span class="setting-val" id="groq-status">—</span>
               </div>
               <div class="setting-row">
-                <div class="setting-info"><h4>Gemini API</h4><p>1.5 Flash · Copywriter</p></div>
+                <div class="setting-info"><h4>Gemini API</h4></div>
                 <span class="setting-val" id="gemini-status">—</span>
               </div>
               <div class="setting-row">
-                <div class="setting-info"><h4>Notion API</h4><p>Sync bidirecional CRM</p></div>
+                <div class="setting-info"><h4>Notion API</h4></div>
                 <span class="setting-val" id="notion-status">—</span>
               </div>
               <div class="setting-row">
-                <div class="setting-info"><h4>Instagram Session</h4><p>Playwright · Scraping</p></div>
+                <div class="setting-info"><h4>Sessão Instagram</h4></div>
                 <span class="setting-val" id="ig-status">—</span>
               </div>
             </div>
             <div class="settings-group">
               <div class="settings-group-title">Sistema</div>
               <div class="setting-row">
-                <div class="setting-info"><h4>Versão</h4><p>Vendedor AI</p></div>
+                <div class="setting-info"><h4>Versão</h4></div>
                 <span class="setting-val">v3.0</span>
               </div>
               <div class="setting-row">
-                <div class="setting-info"><h4>PM2 Status</h4><p>Process manager</p></div>
+                <div class="setting-info"><h4>PM2 Status</h4></div>
                 <span class="setting-val" id="pm2-status" style="color:var(--green)">online</span>
-              </div>
-              <div class="setting-row">
-                <div class="setting-info"><h4>Polling</h4><p>Atualização automática</p></div>
-                <span class="setting-val">30s</span>
               </div>
             </div>
           </div>
@@ -975,24 +1296,24 @@ tbody tr:last-child td{border-bottom:none}
       <section class="section" id="section-guide">
         <div class="page-header">
           <h1>Como Usar</h1>
-          <p>Guia completo para operar o Vendedor AI do zero</p>
+          <p>Guia completo para começar a prospectar clientes com o Vendedor AI</p>
         </div>
 
         <!-- FLUXO GERAL -->
         <div class="card" style="margin-bottom:18px;padding:22px 24px">
-          <div style="font-size:13px;font-weight:700;color:var(--purple-xl);margin-bottom:12px;text-transform:uppercase;letter-spacing:.8px">Fluxo do Sistema</div>
+          <div style="font-size:13px;font-weight:700;color:var(--purple-xl);margin-bottom:12px;text-transform:uppercase;letter-spacing:.8px">Como o Vendedor AI Funciona</div>
           <div class="guide-flow">
-            <div class="guide-flow-step">🔍 Scraper<br><span style="font-size:9px;color:var(--t3)">coleta perfis</span></div>
+            <div class="guide-flow-step">🔍 Busca<br><span style="font-size:9px;color:var(--t3)">encontra clientes</span></div>
             <div class="guide-flow-arrow">→</div>
-            <div class="guide-flow-step">🧠 Analyzer<br><span style="font-size:9px;color:var(--t3)">score 0–100</span></div>
+            <div class="guide-flow-step">🧠 Análise<br><span style="font-size:9px;color:var(--t3)">qualifica leads</span></div>
             <div class="guide-flow-arrow">→</div>
-            <div class="guide-flow-step">✍️ Copywriter<br><span style="font-size:9px;color:var(--t3)">gera DM</span></div>
+            <div class="guide-flow-step">✍️ Mensagem<br><span style="font-size:9px;color:var(--t3)">cria DM única</span></div>
             <div class="guide-flow-arrow">→</div>
-            <div class="guide-flow-step">📤 Sender<br><span style="font-size:9px;color:var(--t3)">envia DM</span></div>
+            <div class="guide-flow-step">📤 Envio<br><span style="font-size:9px;color:var(--t3)">manda a DM</span></div>
             <div class="guide-flow-arrow">→</div>
-            <div class="guide-flow-step">🔄 Notion Sync<br><span style="font-size:9px;color:var(--t3)">atualiza CRM</span></div>
+            <div class="guide-flow-step">📊 Resultado<br><span style="font-size:9px;color:var(--t3)">acompanhe</span></div>
           </div>
-          <p style="font-size:12px;color:var(--t2);line-height:1.6">O <strong style="color:var(--t)">Autopilot</strong> executa todo esse fluxo automaticamente com um clique. Você pode também rodar cada etapa individualmente pela seção <strong style="color:var(--t)">Agentes</strong>.</p>
+          <p style="font-size:12px;color:var(--t2);line-height:1.6">O <strong style="color:var(--t)">Autopilot</strong> faz tudo isso automaticamente com <strong style="color:var(--purple-xl)">um único clique</strong>. Você só precisa revisar as mensagens antes do envio.</p>
         </div>
 
         <div class="guide-grid">
@@ -1002,144 +1323,152 @@ tbody tr:last-child td{border-bottom:none}
             <div class="guide-card-header">
               <div class="guide-step-num">1</div>
               <div class="guide-card-icon">🚀</div>
-              <div><div class="guide-card-title">Primeiros Passos</div><div class="guide-card-sub">Configure antes de usar</div></div>
+              <div><div class="guide-card-title">Primeiros Passos</div><div class="guide-card-sub">O que fazer na primeira vez</div></div>
             </div>
             <div class="guide-steps">
-              <div class="guide-step"><span>①</span><span>Vá em <strong>Configurações</strong> e confirme que Groq API, Gemini API e Notion API estão com status <strong style="color:var(--green)">✓ OK</strong></span></div>
-              <div class="guide-step"><span>②</span><span>Se alguma API mostrar <strong style="color:var(--red)">✗ Erro</strong>, a chave não está no arquivo <code style="background:var(--bg-el);padding:1px 5px;border-radius:4px;font-size:10px">.env</code> da VPS</span></div>
-              <div class="guide-step"><span>③</span><span>Confirme que <strong>Instagram Session</strong> está <strong style="color:var(--green)">✓ Ativa</strong> — se estiver Expirada, rode o scraper com <code style="background:var(--bg-el);padding:1px 5px;border-radius:4px;font-size:10px">--login</code> no terminal</span></div>
-              <div class="guide-step"><span>④</span><span>Ative o toggle <strong>Autopilot</strong> em Configurações → Automação</span></div>
+              <div class="guide-step"><span>①</span><span>Vá em <strong>Perfil do Negócio</strong> no menu lateral e preencha as informações da sua empresa — nome, produto, tom das mensagens, público-alvo</span></div>
+              <div class="guide-step"><span>②</span><span>A IA usa essas informações para <strong>personalizar todas as mensagens</strong> e análises automaticamente</span></div>
+              <div class="guide-step"><span>③</span><span>Quanto mais completo o perfil, <strong>melhores os resultados</strong> das DMs geradas</span></div>
+              <div class="guide-step"><span>④</span><span>Depois, vá ao <strong>Painel Principal</strong> e clique em <strong style="color:var(--purple-xl)">⚡ Iniciar Autopilot</strong></span></div>
             </div>
-            <div class="guide-tip"><strong>💡 Dica:</strong> PM2 Status deve aparecer <strong>online</strong> em azul. Se não, o servidor precisa ser reiniciado.</div>
+            <div class="guide-tip"><strong>💡 Dica:</strong> Preencher o Perfil do Negócio leva menos de 2 minutos e aumenta significativamente a qualidade das DMs.</div>
           </div>
 
-          <!-- CARD 2 — INICIAR AUTOPILOT -->
+          <!-- CARD 2 — USAR O AUTOPILOT -->
           <div class="card guide-card">
             <div class="guide-card-header">
               <div class="guide-step-num">2</div>
               <div class="guide-card-icon">⚡</div>
-              <div><div class="guide-card-title">Usar o Autopilot</div><div class="guide-card-sub">Modo mais simples — recomendado</div></div>
+              <div><div class="guide-card-title">Usar o Autopilot</div><div class="guide-card-sub">O modo mais simples — recomendado</div></div>
             </div>
             <div class="guide-steps">
-              <div class="guide-step"><span>①</span><span>Vá ao <strong>Command Center</strong> (tela inicial)</span></div>
-              <div class="guide-step"><span>②</span><span>Clique no botão <strong style="color:var(--purple-xl)">⚡ Iniciar Autopilot</strong> — o sistema faz todo o resto automaticamente</span></div>
-              <div class="guide-step"><span>③</span><span>Aguarde — o processo leva <strong>5 a 15 minutos</strong> dependendo da quantidade de leads configurada</span></div>
-              <div class="guide-step"><span>④</span><span>Acompanhe em tempo real pela seção <strong>Logs</strong> ou pelo feed de <strong>Atividade Recente</strong></span></div>
-              <div class="guide-step"><span>⑤</span><span>Quando terminar, os leads aparecem no <strong>CRM</strong> e as DMs ficam na <strong>Fila de DMs</strong></span></div>
+              <div class="guide-step"><span>①</span><span>Vá ao <strong>Painel Principal</strong> (tela inicial)</span></div>
+              <div class="guide-step"><span>②</span><span>Clique no botão <strong style="color:var(--purple-xl)">⚡ Iniciar Autopilot</strong> — o sistema encontra leads, analisa e gera mensagens automaticamente</span></div>
+              <div class="guide-step"><span>③</span><span>Aguarde <strong>5 a 15 minutos</strong> — acompanhe o progresso em tempo real no painel</span></div>
+              <div class="guide-step"><span>④</span><span>Quando terminar, os leads aparecem no <strong>CRM</strong> e as DMs ficam na <strong>Fila de DMs</strong> prontas para revisão</span></div>
             </div>
-            <div class="guide-tip"><strong>💡 Dica:</strong> Você pode rodar o Autopilot uma vez por dia. Mais do que isso aumenta o risco de bloqueio no Instagram.</div>
+            <div class="guide-tip"><strong>💡 Dica:</strong> Recomendamos rodar o Autopilot <strong>uma vez por dia</strong>. Mais que isso pode gerar restrições no Instagram.</div>
           </div>
 
-          <!-- CARD 3 — CRM -->
+          <!-- CARD 3 — ANALISAR PERFIL ESPECÍFICO -->
           <div class="card guide-card">
             <div class="guide-card-header">
               <div class="guide-step-num">3</div>
-              <div class="guide-card-icon">👥</div>
-              <div><div class="guide-card-title">CRM — Leads</div><div class="guide-card-sub">Gerenciar sua base de contatos</div></div>
+              <div class="guide-card-icon">🔍</div>
+              <div><div class="guide-card-title">Analisar um Perfil</div><div class="guide-card-sub">Prospectar um lead específico</div></div>
             </div>
             <div class="guide-steps">
-              <div class="guide-step"><span>①</span><span>Todos os leads coletados aparecem aqui com <strong>nome, nicho, score e status</strong></span></div>
-              <div class="guide-step"><span>②</span><span>Use os filtros <strong>Novos / Score Alto / Contatados</strong> para focar nos melhores leads</span></div>
-              <div class="guide-step"><span>③</span><span>O <strong>Score</strong> vai de 0 a 100 — priorize leads acima de 70</span></div>
-              <div class="guide-step"><span>④</span><span>Clique em <strong>💬</strong> para ver a DM gerada para aquele lead</span></div>
-              <div class="guide-step"><span>⑤</span><span>Clique em <strong>↗</strong> para abrir o perfil do Instagram diretamente</span></div>
+              <div class="guide-step"><span>①</span><span>No <strong>Painel Principal</strong>, encontre o campo <strong>"Analisar Perfil Específico"</strong></span></div>
+              <div class="guide-step"><span>②</span><span>Digite o <strong>@username</strong> do perfil do Instagram que você quer prospectar</span></div>
+              <div class="guide-step"><span>③</span><span>O sistema vai coletar os dados do perfil, analisar com IA e gerar uma DM personalizada</span></div>
+              <div class="guide-step"><span>④</span><span>O lead aparecerá no CRM com score e a mensagem na Fila de DMs</span></div>
             </div>
-            <div class="guide-tip"><strong>💡 Dica:</strong> Score Alto (≥70) significa que o Analyzer identificou um problema real que o seu produto resolve.</div>
+            <div class="guide-tip"><strong>💡 Use para:</strong> Quando você viu um perfil interessante no Instagram e quer prospectar aquela pessoa específica.</div>
           </div>
 
-          <!-- CARD 4 — FILA DE DMS -->
+          <!-- CARD 4 — REVISAR E ENVIAR DMS -->
           <div class="card guide-card">
             <div class="guide-card-header">
               <div class="guide-step-num">4</div>
               <div class="guide-card-icon">💬</div>
-              <div><div class="guide-card-title">Fila de DMs</div><div class="guide-card-sub">Revisar e enviar mensagens</div></div>
+              <div><div class="guide-card-title">Revisar e Enviar DMs</div><div class="guide-card-sub">Controle total sobre suas mensagens</div></div>
             </div>
             <div class="guide-steps">
-              <div class="guide-step"><span>①</span><span>Após o Autopilot rodar, as DMs geradas aparecem aqui para revisão</span></div>
-              <div class="guide-step"><span>②</span><span>Leia cada mensagem antes de enviar — o Gemini gera textos personalizados mas é bom revisar</span></div>
-              <div class="guide-step"><span>③</span><span>Clique em <strong>⚡ Enviar</strong> para enfileirar uma DM individual para o sender</span></div>
-              <div class="guide-step"><span>④</span><span>Ou clique <strong>Enviar Fila Completa</strong> para enviar todas de uma vez (respeita limite de 20/dia)</span></div>
-              <div class="guide-step"><span>⑤</span><span>Use <strong>Pular</strong> para remover uma DM da fila sem enviar</span></div>
+              <div class="guide-step"><span>①</span><span>Após o Autopilot rodar, vá à <strong>Fila de DMs</strong> para ver as mensagens geradas</span></div>
+              <div class="guide-step"><span>②</span><span><strong>Revise cada mensagem</strong> antes de enviar — a IA personaliza mas sua aprovação é essencial</span></div>
+              <div class="guide-step"><span>③</span><span>Não gostou de uma mensagem? Clique em <strong style="color:var(--cyan)">🔄 Regenerar</strong> para a IA criar uma nova versão</span></div>
+              <div class="guide-step"><span>④</span><span>Clique em <strong>⚡ Enviar</strong> para enviar individualmente ou <strong>Enviar Fila Completa</strong> para todas</span></div>
+              <div class="guide-step"><span>⑤</span><span>O envio é automático e seguro: o sistema espera <strong>3–8 minutos entre cada DM</strong></span></div>
             </div>
-            <div class="guide-warning"><strong>⚠️ Anti-ban:</strong> O sistema tem delay automático de 3–8 minutos entre cada DM. Não tente enviar mais de 20 por dia.</div>
+            <div style="margin-top:12px;padding:9px 12px;background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.2);border-radius:8px;font-size:11px;color:var(--amber);line-height:1.5"><strong>⚠️ Limite de segurança:</strong> Máximo 20 DMs por dia para proteger sua conta do Instagram.</div>
           </div>
 
-          <!-- CARD 5 — ANALYTICS -->
+          <!-- CARD 5 — CRM -->
           <div class="card guide-card">
             <div class="guide-card-header">
               <div class="guide-step-num">5</div>
-              <div class="guide-card-icon">📊</div>
-              <div><div class="guide-card-title">Analytics</div><div class="guide-card-sub">Entender os resultados</div></div>
+              <div class="guide-card-icon">👥</div>
+              <div><div class="guide-card-title">CRM — Seus Leads</div><div class="guide-card-sub">Acompanhe todos os contatos</div></div>
             </div>
             <div class="guide-steps">
-              <div class="guide-step"><span>①</span><span><strong>Leads por Dia</strong> — volume de coleta nos últimos 7 dias</span></div>
-              <div class="guide-step"><span>②</span><span><strong>Distribuição de Score</strong> — qualidade dos leads coletados (quanto mais à direita, melhor)</span></div>
-              <div class="guide-step"><span>③</span><span><strong>Breakdown por Status</strong> — quantos leads estão em cada etapa do funil</span></div>
-              <div class="guide-step"><span>④</span><span><strong>Top Nichos</strong> — quais nichos o scraper está encontrando mais</span></div>
+              <div class="guide-step"><span>①</span><span>Todos os leads coletados aparecem com <strong>nome, nicho, score e status</strong></span></div>
+              <div class="guide-step"><span>②</span><span>O <strong>Score</strong> (0-100) indica o potencial do lead — priorize quem está <strong>acima de 70</strong></span></div>
+              <div class="guide-step"><span>③</span><span>Use os filtros para focar: <strong>Novos</strong> (recém-coletados), <strong>Score Alto</strong> (mais promissores), <strong>Contatados</strong> (já receberam DM)</span></div>
+              <div class="guide-step"><span>④</span><span>Clique em <strong>💬</strong> para ver a DM do lead ou <strong>↗</strong> para abrir o Instagram dele</span></div>
+            </div>
+            <div class="guide-tip"><strong>💡 Dica:</strong> Score ≥ 70 significa que a IA identificou um problema real no perfil que o seu produto resolve.</div>
+          </div>
+
+          <!-- CARD 6 — ANALYTICS -->
+          <div class="card guide-card">
+            <div class="guide-card-header">
+              <div class="guide-step-num">6</div>
+              <div class="guide-card-icon">📊</div>
+              <div><div class="guide-card-title">Relatórios</div><div class="guide-card-sub">Entenda seus resultados</div></div>
+            </div>
+            <div class="guide-steps">
+              <div class="guide-step"><span>①</span><span><strong>Leads por Dia</strong> — quantos novos contatos foram encontrados</span></div>
+              <div class="guide-step"><span>②</span><span><strong>Distribuição de Score</strong> — qualidade geral dos leads (mais à direita = melhor)</span></div>
+              <div class="guide-step"><span>③</span><span><strong>Status do Funil</strong> — quantos leads estão em cada etapa: novo → contatado → respondeu → convertido</span></div>
+              <div class="guide-step"><span>④</span><span><strong>Top Nichos</strong> — quais segmentos estão gerando mais leads</span></div>
             </div>
             <div class="guide-tip"><strong>💡 Meta:</strong> Taxa de Resposta acima de 5% é boa. Acima de 10% é excelente para prospecção fria no Instagram.</div>
           </div>
 
-          <!-- CARD 6 — AGENTES MANUAIS -->
-          <div class="card guide-card">
-            <div class="guide-card-header">
-              <div class="guide-step-num">6</div>
-              <div class="guide-card-icon">🤖</div>
-              <div><div class="guide-card-title">Agentes Individuais</div><div class="guide-card-sub">Controle avançado do pipeline</div></div>
-            </div>
-            <div class="guide-steps">
-              <div class="guide-step"><span>①</span><span><strong>0-Scraper</strong> — coleta novos perfis no Instagram por hashtag. Roda em ~2 min</span></div>
-              <div class="guide-step"><span>②</span><span><strong>1-Analyzer</strong> — analisa os perfis coletados e atribui score via IA. Roda em ~5 min</span></div>
-              <div class="guide-step"><span>③</span><span><strong>2-Copywriter</strong> — gera DMs personalizadas para os leads com score alto. Roda em ~3 min</span></div>
-              <div class="guide-step"><span>④</span><span><strong>9-Notion Sync</strong> — sincroniza o CRM local com o Notion. Roda em ~1 min</span></div>
-              <div class="guide-step"><span>⑤</span><span>Para rodar qualquer agente, vá em <strong>Agentes</strong> e clique em <strong>▶ Rodar</strong></span></div>
-            </div>
-            <div class="guide-tip"><strong>💡 Dica:</strong> Use os agentes individuais quando quiser re-executar só uma etapa, como gerar novas DMs sem coletar leads novos.</div>
-          </div>
-
-          <!-- CARD 7 — LOGS -->
+          <!-- CARD 7 — PERFIL DO NEGÓCIO -->
           <div class="card guide-card">
             <div class="guide-card-header">
               <div class="guide-step-num">7</div>
-              <div class="guide-card-icon">📋</div>
-              <div><div class="guide-card-title">Logs do Sistema</div><div class="guide-card-sub">Monitorar o que está acontecendo</div></div>
+              <div class="guide-card-icon">◆</div>
+              <div><div class="guide-card-title">Perfil do Negócio</div><div class="guide-card-sub">Personalize a IA para sua marca</div></div>
             </div>
             <div class="guide-steps">
-              <div class="guide-step"><span>①</span><span>Os logs mostram tudo que os agentes estão fazendo em tempo real</span></div>
-              <div class="guide-step"><span>②</span><span>Use os filtros (<strong>0-scraper, 1-analyzer, 10-autopilot</strong>) para focar em um agente específico</span></div>
-              <div class="guide-step"><span>③</span><span>Linhas em <strong style="color:var(--green)">verde</strong> = sucesso. Linhas em <strong style="color:var(--red)">vermelho</strong> = erro</span></div>
-              <div class="guide-step"><span>④</span><span>Se um agente travar, verifique os logs primeiro — quase sempre mostra o motivo</span></div>
-              <div class="guide-step"><span>⑤</span><span>O botão <strong>Limpar</strong> apaga os logs visíveis (não apaga os arquivos de log reais)</span></div>
+              <div class="guide-step"><span>①</span><span>Acesse <strong>Perfil do Negócio</strong> no menu lateral</span></div>
+              <div class="guide-step"><span>②</span><span>Preencha: nome da empresa, produto, proposta de valor, tom das mensagens e público-alvo</span></div>
+              <div class="guide-step"><span>③</span><span>A IA adapta <strong>automaticamente</strong> todas as análises e DMs com base nessas informações</span></div>
+              <div class="guide-step"><span>④</span><span>Você pode atualizar a qualquer momento — as próximas DMs já usarão as novas informações</span></div>
             </div>
-            <div class="guide-tip"><strong>💡 Dica:</strong> Erros de API key aparecem nos logs como <code style="font-size:10px;background:var(--bg-el);padding:1px 4px;border-radius:3px">401 Unauthorized</code> — sinal de que a chave expirou ou está errada.</div>
+            <div class="guide-tip"><strong>💡 Dica:</strong> O campo "Tom das Mensagens" é especialmente importante — ele define se suas DMs serão formais, casuais, consultivas, etc.</div>
           </div>
 
           <!-- CARD 8 — PERGUNTAS FREQUENTES -->
           <div class="card guide-card" style="grid-column:span 2">
             <div class="guide-card-header">
               <div class="guide-card-icon">❓</div>
-              <div><div class="guide-card-title">Perguntas Frequentes</div><div class="guide-card-sub">Dúvidas comuns de operação</div></div>
+              <div><div class="guide-card-title">Perguntas Frequentes</div><div class="guide-card-sub">Dúvidas comuns</div></div>
             </div>
             <div class="guide-faq">
               <div class="guide-faq-item">
-                <div class="guide-faq-q">Por que o CRM está vazio?</div>
-                <div class="guide-faq-a">O Autopilot ainda não foi executado, ou os agentes rodaram com erro. Verifique a seção Logs para ver o que aconteceu. Se as APIs estiverem com ✗ Erro em Configurações, resolva isso primeiro.</div>
-              </div>
-              <div class="guide-faq-item">
-                <div class="guide-faq-q">O que significa "Instagram Session: Expirada"?</div>
-                <div class="guide-faq-a">O Playwright precisa de uma sessão de login ativa para acessar o Instagram. A sessão expira periodicamente. Para renovar, execute <code style="background:var(--bg-el);padding:1px 5px;border-radius:4px;font-size:11px">node agents/0-scraper.js --login</code> no terminal da VPS e faça login manualmente.</div>
+                <div class="guide-faq-q">O que é o Autopilot?</div>
+                <div class="guide-faq-a">É o modo automático do Vendedor AI. Com um clique, ele busca potenciais clientes no Instagram, analisa cada perfil com IA, e gera mensagens personalizadas. Você só precisa revisar e aprovar o envio.</div>
               </div>
               <div class="guide-faq-item">
                 <div class="guide-faq-q">Quantas DMs posso enviar por dia?</div>
-                <div class="guide-faq-a">O limite configurado é 20 DMs/dia com delay de 3–8 minutos entre cada envio. Esse limite existe para proteger a conta do Instagram de ser bloqueada. Não recomendamos aumentar acima de 25.</div>
+                <div class="guide-faq-a">O sistema envia até 20 DMs por dia com intervalos de 3–8 minutos entre cada uma. Esse limite protege sua conta do Instagram contra bloqueios. Não recomendamos alterar esse limite.</div>
               </div>
               <div class="guide-faq-item">
-                <div class="guide-faq-q">Os dados sincronizam com o Notion automaticamente?</div>
-                <div class="guide-faq-a">Sim, se o toggle "Sync Notion" estiver ativo nas Configurações. O processo roda via PM2 em background. Você também pode forçar um sync manual rodando o agente 9-Notion Sync manualmente.</div>
+                <div class="guide-faq-q">Minha conta do Instagram pode ser bloqueada?</div>
+                <div class="guide-faq-a">O Vendedor AI tem múltiplas camadas de proteção: delays humanizados, limite diário, e pausas automáticas. Seguindo as recomendações (máx. 20 DMs/dia, 1 execução do Autopilot/dia), o risco é mínimo.</div>
               </div>
               <div class="guide-faq-item">
-                <div class="guide-faq-q">O que fazer se um agente travar ou demorar muito?</div>
-                <div class="guide-faq-a">Verifique a seção Logs para erros. Se não houver erro visível, acesse a VPS e execute <code style="background:var(--bg-el);padding:1px 5px;border-radius:4px;font-size:11px">pm2 restart all</code> para reiniciar todos os processos.</div>
+                <div class="guide-faq-q">As mensagens parecem escritas por IA?</div>
+                <div class="guide-faq-a">Não. Cada mensagem é personalizada com base no perfil real do lead — o que ele faz, seus problemas, seu nicho. As DMs são escritas em tom natural e humano, sem templates genéricos.</div>
+              </div>
+              <div class="guide-faq-item">
+                <div class="guide-faq-q">Não gostei de uma DM gerada. Posso mudar?</div>
+                <div class="guide-faq-a">Sim! Na Fila de DMs, clique em <strong>🔄 Regenerar</strong> para a IA criar uma nova versão da mensagem. Você pode regenerar quantas vezes quiser antes de enviar.</div>
+              </div>
+              <div class="guide-faq-item">
+                <div class="guide-faq-q">Posso prospectar um perfil específico?</div>
+                <div class="guide-faq-a">Sim. No Painel Principal, use o campo "Analisar Perfil Específico". Digite o @username e o sistema analisa e gera uma DM para aquele perfil específico.</div>
+              </div>
+              <div class="guide-faq-item">
+                <div class="guide-faq-q">Preciso de conhecimento técnico?</div>
+                <div class="guide-faq-a">Não. O Vendedor AI foi feito para ser usado sem nenhum conhecimento técnico. Preencha seu Perfil do Negócio, clique no Autopilot, revise as DMs e envie. É só isso.</div>
+              </div>
+              <div class="guide-faq-item">
+                <div class="guide-faq-q">Como renovar a sessão do Instagram?</div>
+                <div class="guide-faq-a">Se o sistema indicar que a sessão do Instagram expirou, entre em contato com o suporte da Prismatic Labs. Nossa equipe renova a sessão remotamente sem que você precise fazer nada.</div>
               </div>
             </div>
           </div>
@@ -1166,12 +1495,12 @@ const state = {
   filterStatus: 'all',
   logFilter: 'all',
   agentsData: [
-    { id: '0-scraper',    name: 'Scraper',     icon: '🔍', desc: 'Coleta perfis Instagram via hashtags usando Playwright.',  status: 'idle', lastRun: 'Nunca', runsToday: 0, leadsFound: 0, key: 'scraper' },
-    { id: '1-analyzer',   name: 'Analyzer',    icon: '🧠', desc: 'Analisa perfis e atribui score 0-100 via Groq Llama.',    status: 'idle', lastRun: 'Nunca', runsToday: 0, leadsFound: 0, key: 'analyzer' },
-    { id: '2-copywriter', name: 'Copywriter',  icon: '✍️', desc: 'Gera DMs personalizadas via Gemini 1.5 Flash.',           status: 'idle', lastRun: 'Nunca', runsToday: 0, leadsFound: 0, key: 'copywriter' },
-    { id: '9-notion-sync',name: 'Notion Sync', icon: '🔄', desc: 'Sincronização bidirecional entre CRM local e Notion.',   status: 'idle', lastRun: 'Nunca', runsToday: 0, leadsFound: 0, key: 'notion' },
-    { id: '10-autopilot', name: 'Autopilot',   icon: '⚡', desc: 'Orquestra o pipeline completo de prospecção.',            status: 'idle', lastRun: 'Nunca', runsToday: 0, leadsFound: 0, key: 'autopilot' },
-    { id: '14-scheduler', name: 'Scheduler',   icon: '⏰', desc: 'Agendamento automático de tarefas recorrentes.',          status: 'idle', lastRun: 'Nunca', runsToday: 0, leadsFound: 0, key: 'scheduler' },
+    { id: '0-scraper',    name: 'Buscar Leads',       icon: '🔍', desc: 'Encontra novos perfis de potenciais clientes no Instagram por hashtag.',  status: 'idle', lastRun: 'Nunca', runsToday: 0, leadsFound: 0, key: 'scraper' },
+    { id: '1-analyzer',   name: 'Analisar Perfis',    icon: '🧠', desc: 'Analisa cada perfil com IA e atribui uma pontuação de 0 a 100.',    status: 'idle', lastRun: 'Nunca', runsToday: 0, leadsFound: 0, key: 'analyzer' },
+    { id: '2-copywriter', name: 'Criar Mensagens',    icon: '✍️', desc: 'Gera mensagens personalizadas e únicas para cada lead.',           status: 'idle', lastRun: 'Nunca', runsToday: 0, leadsFound: 0, key: 'copywriter' },
+    { id: '9-notion-sync',name: 'Sincronizar CRM',    icon: '🔄', desc: 'Sincroniza seus leads entre o sistema local e o Notion.',   status: 'idle', lastRun: 'Nunca', runsToday: 0, leadsFound: 0, key: 'notion' },
+    { id: '10-autopilot', name: 'Prospecção Automática',icon: '⚡', desc: 'Executa todo o processo automaticamente: busca, análise e criação de mensagens.',            status: 'idle', lastRun: 'Nunca', runsToday: 0, leadsFound: 0, key: 'autopilot' },
+    { id: '14-scheduler', name: 'Agendador',          icon: '⏰', desc: 'Executa a prospecção automaticamente no dia e horário que você configurar.',          status: 'idle', lastRun: 'Nunca', runsToday: 0, leadsFound: 0, key: 'scheduler' },
   ]
 };
 
@@ -1191,26 +1520,35 @@ function closeSidebar() {
 
 // ── Navigation ──
 const SECTION_TITLES = {
-  overview:  ['Command Center', 'Overview'],
-  agents:    ['Agentes', 'Gerenciamento'],
-  crm:       ['CRM — Leads', 'Prospecção'],
-  dmqueue:   ['Fila de DMs', 'Envio'],
-  analytics: ['Analytics', 'Métricas'],
-  logs:      ['Logs', 'Monitor'],
-  guide:     ['Como Usar', 'Guia Completo'],
-  settings:  ['Configurações', 'Sistema'],
+  overview:  ['Painel Principal', 'Visão Geral'],
+  agents:    ['Módulos de IA', 'Automação'],
+  crm:       ['Meus Leads', 'Prospecção'],
+  dmqueue:   ['Fila de Mensagens', 'Envio'],
+  analytics: ['Relatórios', 'Desempenho'],
+  logs:      ['Registro de Atividades', 'Monitor'],
+  profile:   ['Perfil do Negócio', 'Identidade'],
+  schedule:  ['Agendamento', 'Automático'],
+  instagram: ['Conta Instagram', 'Conexão'],
+  guide:     ['Como Usar', 'Guia'],
+  settings:  ['Configurações', 'Admin'],
 };
+
+const statusLabels = { online: 'Ativo', idle: 'Parado', running: 'Executando', error: 'Erro' };
 
 function navigate(section) {
   closeSidebar();
-  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-  document.getElementById('section-' + section).classList.add('active');
+  document.querySelectorAll('.section').forEach(s => { s.classList.remove('active'); s.style.display = ''; });
+  const target = document.getElementById('section-' + section);
+  if (target) { target.style.display = 'block'; target.classList.add('active'); }
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   const nav = document.getElementById('nav-' + section);
   if (nav) nav.classList.add('active');
   const t = SECTION_TITLES[section] || [section, ''];
   document.getElementById('topbarTitle').innerHTML = `${t[0]} <span>${t[1]}</span>`;
   if (section === 'analytics') renderAnalytics();
+  if (section === 'profile') loadBusinessProfile();
+  if (section === 'schedule') loadSchedule();
+  if (section === 'instagram') loadInstagramStatus();
 }
 
 // ── Command Palette ──
@@ -1225,6 +1563,21 @@ function closePalette() {
 document.getElementById('cmdOverlay').addEventListener('click', e => {
   if (e.target === e.currentTarget) closePalette();
 });
+
+// ── Auth Headers Helper ──
+function authHeaders(extra = {}) {
+  const token = localStorage.getItem('vendedor_token');
+  return { 'Content-Type': 'application/json', ...(token ? { 'Authorization': 'Bearer ' + token } : {}), ...extra };
+}
+function authFetch(url, opts = {}) {
+  const token = localStorage.getItem('vendedor_token');
+  if (!opts.headers) opts.headers = {};
+  if (token) opts.headers['Authorization'] = 'Bearer ' + token;
+  return fetch(url, opts).then(r => {
+    if (r.status === 401) { logout(); throw new Error('Sessão expirada'); }
+    return r;
+  });
+}
 
 // ── Toast ──
 function toast(msg, type = 'info') {
@@ -1269,7 +1622,7 @@ function runAgent(key) {
   toast(`Iniciando ${label}...`, 'info');
   if (agent) { agent.status = 'running'; renderAgents(); }
   addLog(key.toUpperCase(), `▶ Iniciado via dashboard`, 'ok');
-  fetch(`/api/run/${key}`, { method: 'POST' })
+  authFetch(`/api/run/${key}`, { method: 'POST' })
     .then(r => r.json())
     .then(d => {
       toast(`${label}: ${d.message || 'OK'}`, 'success');
@@ -1286,7 +1639,6 @@ function runAgent(key) {
 
 // ── Agents Grid ──
 function renderAgents() {
-  const statusLabels = { online: 'Online', idle: 'Idle', running: 'Running', error: 'Error' };
   const running = state.agentsData.filter(a => a.status === 'running').length;
   document.getElementById('badge-running').textContent = running;
   document.getElementById('agentGrid').innerHTML = state.agentsData.map(a => `
@@ -1299,7 +1651,7 @@ function renderAgents() {
       <div class="ac-name">${a.name}</div>
       <div class="ac-desc">${a.desc}</div>
       <div class="ac-stats">
-        <div class="ac-stat"><strong>${a.runsToday}</strong>runs hoje</div>
+        <div class="ac-stat"><strong>${a.runsToday}</strong>execuções</div>
         <div class="ac-stat"><strong>${a.leadsFound}</strong>leads</div>
         <div class="ac-stat" style="flex:1"><strong style="font-size:10px;color:var(--t3)">${a.lastRun}</strong>último run</div>
       </div>
@@ -1390,6 +1742,7 @@ function renderDMQueue() {
       </div>
       <div class="dm-actions">
         <button class="send-btn" onclick="sendDM(${i})">⚡ Enviar</button>
+        <button class="regen-btn" onclick="regenDM(${i})" id="regen-${i}">🔄 Regenerar</button>
         <button class="skip-btn" onclick="skipDM(${i})">Pular</button>
       </div>
     </div>`;
@@ -1404,7 +1757,7 @@ function sendDM(idx) {
     username: dm.username,
     mensagem_final: dm.mensagem_final || dm.dm_message || dm.message || dm.text,
   };
-  fetch('/api/send-dm', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) })
+  authFetch('/api/send-dm', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) })
     .then(r => r.json())
     .then(d => {
       if (d.ok) {
@@ -1422,7 +1775,7 @@ function skipDM(idx) { state.dmQueue.splice(idx, 1); renderDMQueue(); }
 function sendAllDMs() {
   toast('Iniciando envio em lote...', 'info');
   addLog('SENDER', '▶ Sender em lote iniciado');
-  fetch('/api/sender/start', { method: 'POST' })
+  authFetch('/api/sender/start', { method: 'POST' })
     .then(r => r.json())
     .then(d => { toast(d.message || '✓ Sender iniciado', d.ok ? 'success' : 'error'); addLog('SENDER', d.message || '✓ OK', d.ok ? 'ok' : 'err'); })
     .catch(() => { toast('Sender não disponível', 'error'); addLog('SENDER', '✗ Sender offline', 'err'); });
@@ -1537,9 +1890,9 @@ async function fetchData() {
   document.getElementById('lastUpdate').textContent = 'atualizando...';
   try {
     const [leadsRes, statsRes, dmQueueRes] = await Promise.allSettled([
-      fetch('/api/leads').then(r => r.ok ? r.json() : Promise.reject()),
-      fetch('/api/stats').then(r => r.ok ? r.json() : Promise.reject()),
-      fetch('/api/dm-queue').then(r => r.ok ? r.json() : Promise.reject()),
+      authFetch('/api/leads').then(r => r.ok ? r.json() : Promise.reject()),
+      authFetch('/api/stats').then(r => r.ok ? r.json() : Promise.reject()),
+      authFetch('/api/dm-queue').then(r => r.ok ? r.json() : Promise.reject()),
     ]);
     if (leadsRes.status === 'fulfilled') state.leads = leadsRes.value?.leads || (Array.isArray(leadsRes.value) ? leadsRes.value : []);
     if (statsRes.status === 'fulfilled') state.stats = statsRes.value;
@@ -1565,7 +1918,7 @@ async function checkAPIStatus() {
     el.style.color = ok ? 'var(--green)' : 'var(--red)';
   };
   try {
-    const r = await fetch('/api/status');
+    const r = await authFetch('/api/status');
     const d = await r.json();
     setVal('groq-status',   d.groq,      ['✓ OK', '✗ Erro']);
     setVal('gemini-status', d.gemini,    ['✓ OK', '✗ Erro']);
@@ -1594,8 +1947,8 @@ function triggerAutopilot() {
   btn.disabled = true;
   btn.textContent = '⏳ Iniciando...';
   statusEl.innerHTML = '<span class="ah-dot running"></span>&nbsp;Iniciando pipeline...';
-  addLog('AUTOPILOT', '▶ Iniciado via Command Center');
-  fetch('/api/run/autopilot', { method: 'POST' })
+  addLog('AUTOPILOT', '▶ Iniciado via Painel Principal');
+  authFetch('/api/run/autopilot', { method: 'POST' })
     .then(r => r.json())
     .then(d => {
       if (d.ok) {
@@ -1637,14 +1990,14 @@ function toggleSetting(key, el) {
   el.classList.toggle('on');
   const active = el.classList.contains('on');
   if (key === 'autopilot') {
-    fetch('/api/autopilot/toggle', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ active }) })
+    authFetch('/api/autopilot/toggle', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ active }) })
       .then(r => r.json())
       .then(() => toast(`Autopilot ${active ? 'ativado' : 'desativado'}`, 'info'))
       .catch(() => toast('Erro ao salvar configuração', 'error'));
   } else {
     const settings = {};
     settings[key] = active;
-    fetch('/api/settings', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(settings) })
+    authFetch('/api/settings', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(settings) })
       .then(() => toast(`${key} ${active ? 'ativado' : 'desativado'}`, 'info'))
       .catch(() => toast('Erro ao salvar configuração', 'error'));
   }
@@ -1653,8 +2006,8 @@ function toggleSetting(key, el) {
 async function loadSettings() {
   try {
     const [cfg, settings] = await Promise.all([
-      fetch('/api/autopilot/config').then(r => r.json()),
-      fetch('/api/settings').then(r => r.json()),
+      authFetch('/api/autopilot/config').then(r => r.json()),
+      authFetch('/api/settings').then(r => r.json()),
     ]);
     const autopilotToggle = document.getElementById('toggle-autopilot');
     if (autopilotToggle) autopilotToggle.classList.toggle('on', !!cfg.active);
@@ -1672,7 +2025,7 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Escape') { closePalette(); return; }
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
   if (gMode) {
-    const map = { o:'overview', a:'agents', c:'crm', d:'dmqueue', n:'analytics', l:'logs', s:'settings' };
+    const map = { o:'overview', a:'agents', c:'crm', d:'dmqueue', n:'analytics', l:'logs', p:'profile', h:'guide' };
     if (map[e.key]) navigate(map[e.key]);
     gMode = false;
     return;
@@ -1680,13 +2033,311 @@ document.addEventListener('keydown', e => {
   if (e.key === 'g') { gMode = true; setTimeout(() => { gMode = false; }, 1500); }
 });
 
+// ── Manual Profile Analysis ──
+function analyzeProfile() {
+  const input = document.getElementById('manualUsername');
+  const btn = document.getElementById('manualAnalyzeBtn');
+  const statusEl = document.getElementById('manualAnalysisStatus');
+  let username = (input.value || '').trim().replace(/^@/, '').toLowerCase();
+  if (!username) { toast('Digite um @username para analisar', 'error'); input.focus(); return; }
+  btn.disabled = true;
+  btn.textContent = '⏳ Analisando...';
+  statusEl.innerHTML = '<span class="spinner" style="width:10px;height:10px;border-width:1.5px"></span> Coletando e analisando @' + username + ' — aguarde...';
+  addLog('PIPELINE', `▶ Análise manual de @${username} iniciada`);
+  authFetch('/api/lead/run', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ username }) })
+    .then(r => r.json())
+    .then(d => {
+      if (d.ok) {
+        toast(`✓ Pipeline iniciado para @${username}`, 'success');
+        statusEl.innerHTML = '<span style="color:var(--green)">✓</span> Pipeline em execução para @' + username + ' — resultado aparecerá no CRM em alguns minutos';
+        addLog('PIPELINE', `✓ @${username} em processamento`, 'ok');
+        setTimeout(() => fetchData(), 30000);
+      } else {
+        toast(d.error || 'Erro ao analisar perfil', 'error');
+        statusEl.innerHTML = '<span style="color:var(--red)">✗</span> ' + (d.error || 'Erro');
+        addLog('PIPELINE', `✗ @${username}: ${d.error}`, 'err');
+      }
+    })
+    .catch(() => { toast('Erro de conexão', 'error'); statusEl.innerHTML = '<span style="color:var(--red)">✗</span> Erro de conexão'; })
+    .finally(() => { btn.disabled = false; btn.textContent = '🔍 Analisar Perfil'; });
+}
+
+// ── Regenerar DM ──
+function regenDM(idx) {
+  const dm = state.dmQueue[idx];
+  if (!dm) return;
+  const btn = document.getElementById('regen-' + idx);
+  if (btn) { btn.disabled = true; btn.textContent = '⏳...'; }
+  toast(`Regenerando DM para @${dm.username}...`, 'info');
+  addLog('COPYWRITER', `▶ Regenerando DM para @${dm.username}`);
+  authFetch('/api/regenerate-dm', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ username: dm.username }) })
+    .then(r => r.json())
+    .then(d => {
+      if (d.ok && d.new_message) {
+        dm.mensagem_final = d.new_message;
+        dm.dm_message = d.new_message;
+        renderDMQueue();
+        toast(`✓ Nova DM gerada para @${dm.username}`, 'success');
+        addLog('COPYWRITER', `✓ DM regenerada: @${dm.username}`, 'ok');
+      } else {
+        toast(d.error || 'Erro ao regenerar — tente novamente', 'error');
+        addLog('COPYWRITER', `✗ ${d.error || 'erro'}`, 'err');
+        if (btn) { btn.disabled = false; btn.textContent = '🔄 Regenerar'; }
+      }
+    })
+    .catch(() => {
+      toast('Erro de conexão ao regenerar DM', 'error');
+      if (btn) { btn.disabled = false; btn.textContent = '🔄 Regenerar'; }
+    });
+}
+
+// ── Business Profile ──
+function saveBusinessProfile() {
+  const btn = document.getElementById('bpSaveBtn');
+  const status = document.getElementById('bpSaveStatus');
+  btn.disabled = true;
+  btn.textContent = '💾 Salvando...';
+  const required = ['company_name','segment','product','value_prop','target'];
+  const labels = { company_name:'Nome da Empresa', segment:'Segmento', product:'Produto', value_prop:'Proposta de Valor', target:'Público-Alvo' };
+  const profile = {
+    company_name: document.getElementById('bp-company-name').value.trim(),
+    segment:      document.getElementById('bp-segment').value.trim(),
+    product:      document.getElementById('bp-product').value.trim(),
+    price:        document.getElementById('bp-price').value.trim(),
+    value_prop:   document.getElementById('bp-value-prop').value.trim(),
+    problem:      document.getElementById('bp-problem').value.trim(),
+    tone:         document.getElementById('bp-tone').value,
+    differentials:document.getElementById('bp-differentials').value.trim(),
+    target:       document.getElementById('bp-target').value.trim(),
+    instagram:    document.getElementById('bp-instagram').value.trim(),
+    website:      document.getElementById('bp-website').value.trim(),
+    updated_at:   new Date().toISOString(),
+  };
+  const missing = required.filter(k => !profile[k]);
+  if (missing.length) {
+    btn.disabled = false; btn.textContent = '💾 Salvar Perfil';
+    toast('Preencha os campos obrigatórios: ' + missing.map(k => labels[k]).join(', '), 'error');
+    return;
+  }
+  authFetch('/api/business-profile', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(profile) })
+    .then(r => r.json())
+    .then(d => {
+      if (d.ok) {
+        toast('✓ Perfil do negócio salvo — IA adaptada', 'success');
+        status.innerHTML = '✓ Salvo com sucesso';
+        setTimeout(() => { status.innerHTML = ''; }, 4000);
+      } else {
+        toast('Erro ao salvar perfil', 'error');
+        status.innerHTML = '';
+      }
+    })
+    .catch(() => { toast('Erro de conexão', 'error'); status.innerHTML = ''; })
+    .finally(() => { btn.disabled = false; btn.textContent = '💾 Salvar Perfil'; });
+}
+
+function loadBusinessProfile() {
+  authFetch('/api/business-profile')
+    .then(r => r.json())
+    .then(p => {
+      if (!p || !p.company_name) return;
+      const fields = {
+        'bp-company-name': p.company_name, 'bp-segment': p.segment, 'bp-product': p.product,
+        'bp-price': p.price, 'bp-value-prop': p.value_prop, 'bp-problem': p.problem,
+        'bp-tone': p.tone, 'bp-differentials': p.differentials, 'bp-target': p.target,
+        'bp-instagram': p.instagram, 'bp-website': p.website,
+      };
+      Object.entries(fields).forEach(([id, val]) => {
+        const el = document.getElementById(id);
+        if (el && val) el.value = val;
+      });
+    })
+    .catch(() => {});
+}
+
+// ── Login System ──
+function doLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  const errEl = document.getElementById('loginError');
+  const btn = document.getElementById('loginBtn');
+  if (!email || !password) { errEl.textContent = 'Preencha e-mail e senha'; return; }
+  btn.disabled = true; btn.textContent = 'Entrando...'; errEl.textContent = '';
+  fetch('/api/auth/login', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ email, password }) })
+    .then(r => r.json())
+    .then(d => {
+      if (d.ok && d.token) {
+        localStorage.setItem('vendedor_token', d.token);
+        localStorage.setItem('vendedor_user', JSON.stringify(d.user || {}));
+        document.getElementById('loginOverlay').style.display = 'none';
+        if (d.user?.is_admin) document.body.classList.add('is-admin');
+        updateUserInfo(d.user);
+        toast('✓ Bem-vindo ao Vendedor AI!', 'success');
+      } else {
+        errEl.textContent = d.error || 'E-mail ou senha incorretos';
+      }
+    })
+    .catch(() => { errEl.textContent = 'Erro de conexão com o servidor'; })
+    .finally(() => { btn.disabled = false; btn.textContent = 'Entrar'; });
+}
+
+function checkAuth() {
+  const token = localStorage.getItem('vendedor_token');
+  if (!token) { document.getElementById('loginOverlay').style.display = 'flex'; return false; }
+  fetch('/api/auth/verify', { headers: { 'Authorization': 'Bearer ' + token } })
+    .then(r => r.json())
+    .then(d => {
+      if (d.ok) {
+        document.getElementById('loginOverlay').style.display = 'none';
+        if (d.user?.is_admin) document.body.classList.add('is-admin');
+        updateUserInfo(d.user);
+      } else {
+        localStorage.removeItem('vendedor_token');
+        document.getElementById('loginOverlay').style.display = 'flex';
+      }
+    })
+    .catch(() => {
+      // Servidor offline — manter login visível por segurança
+      // Só permite acesso se houver token válido em cache
+      const cached = localStorage.getItem('vendedor_user');
+      if (cached) {
+        try {
+          const user = JSON.parse(cached);
+          document.getElementById('loginOverlay').style.display = 'none';
+          updateUserInfo(user);
+        } catch { document.getElementById('loginOverlay').style.display = 'flex'; }
+      } else {
+        document.getElementById('loginOverlay').style.display = 'flex';
+      }
+    });
+  return true;
+}
+
+function updateUserInfo(user) {
+  if (!user) return;
+  const name = user.company_name || user.email || 'Usuário';
+  const avatar = name.slice(0, 2).toUpperCase();
+  document.querySelector('.footer-name').textContent = name;
+  document.querySelector('.footer-role').textContent = user.is_admin ? 'v3.0 · Administrador' : 'v3.0 · Usuário';
+  document.querySelector('.footer-avatar').textContent = avatar;
+}
+
+function logout() {
+  localStorage.removeItem('vendedor_token');
+  localStorage.removeItem('vendedor_user');
+  document.getElementById('loginOverlay').style.display = 'flex';
+  document.body.classList.remove('is-admin');
+  toast('Sessão encerrada', 'info');
+}
+
+// ── Schedule ──
+function toggleSchedule(key, el) {
+  el.classList.toggle('on');
+}
+
+document.getElementById('schedule-frequency')?.addEventListener('change', function() {
+  document.getElementById('schedule-days-row').style.display = this.value === 'custom' ? 'block' : 'none';
+});
+
+function saveSchedule() {
+  const active = document.getElementById('toggle-schedule-active')?.classList.contains('on') || false;
+  const time = document.getElementById('schedule-time').value;
+  const frequency = document.getElementById('schedule-frequency').value;
+  const days = frequency === 'custom'
+    ? [...document.querySelectorAll('.schedule-day:checked')].map(c => parseInt(c.value))
+    : frequency === 'weekdays' ? [1,2,3,4,5] : [0,1,2,3,4,5,6];
+  const schedule = { active, time, frequency, days, updated_at: new Date().toISOString() };
+  const statusEl = document.getElementById('scheduleSaveStatus');
+  authFetch('/api/schedule', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(schedule) })
+    .then(r => r.json())
+    .then(d => {
+      if (d.ok) {
+        toast('✓ Agendamento salvo', 'success');
+        statusEl.innerHTML = '✓ Salvo com sucesso';
+        loadSchedule();
+        setTimeout(() => { statusEl.innerHTML = ''; }, 4000);
+      } else {
+        toast(d.error || 'Erro ao salvar', 'error');
+      }
+    })
+    .catch(() => toast('Erro de conexão', 'error'));
+}
+
+function loadSchedule() {
+  authFetch('/api/schedule')
+    .then(r => r.json())
+    .then(s => {
+      if (!s) return;
+      const toggle = document.getElementById('toggle-schedule-active');
+      if (toggle) toggle.classList.toggle('on', !!s.active);
+      const timeEl = document.getElementById('schedule-time');
+      if (timeEl && s.time) timeEl.value = s.time;
+      const freqEl = document.getElementById('schedule-frequency');
+      if (freqEl && s.frequency) { freqEl.value = s.frequency; freqEl.dispatchEvent(new Event('change')); }
+      if (s.frequency === 'custom' && s.days) {
+        document.querySelectorAll('.schedule-day').forEach(c => { c.checked = s.days.includes(parseInt(c.value)); });
+      }
+      const nextRun = document.getElementById('schedule-next-run');
+      const lastRun = document.getElementById('schedule-last-run');
+      if (nextRun) nextRun.textContent = s.active && s.next_run ? new Date(s.next_run).toLocaleString('pt-BR') : 'Não agendado';
+      if (lastRun) lastRun.textContent = s.last_run ? new Date(s.last_run).toLocaleString('pt-BR') : 'Nunca';
+    })
+    .catch(() => {});
+}
+
+// ── Instagram Connection ──
+function loadInstagramStatus() {
+  authFetch('/api/status')
+    .then(r => r.json())
+    .then(d => {
+      const label = document.getElementById('ig-conn-label');
+      const detail = document.getElementById('ig-conn-detail');
+      const session = document.getElementById('ig-session-status');
+      const account = document.getElementById('ig-connected-account');
+      const pill = document.getElementById('pill-ig-session');
+      if (d.instagram) {
+        if (label) label.textContent = '✓ Instagram Conectado';
+        if (label) label.style.color = 'var(--green)';
+        if (detail) detail.textContent = 'Sessão ativa — sistema pronto para operar';
+        if (session) { session.textContent = '✓ Ativa'; session.style.color = 'var(--green)'; }
+        if (pill) { pill.className = 'pill green'; pill.innerHTML = '<span class="dot"></span>Instagram'; }
+      } else {
+        if (label) label.textContent = '⚠ Sessão Expirada';
+        if (label) label.style.color = 'var(--amber)';
+        if (detail) detail.textContent = 'A sessão precisa ser renovada para o sistema funcionar';
+        if (session) { session.textContent = '⚠ Expirada'; session.style.color = 'var(--amber)'; }
+        if (pill) { pill.className = 'pill amber'; pill.innerHTML = '<span class="dot"></span>Instagram'; }
+      }
+      if (account) account.textContent = '@' + (d.instagram_username || 'não configurado');
+    })
+    .catch(() => {});
+}
+
+function requestSessionRenewal() {
+  const statusEl = document.getElementById('igRenewalStatus');
+  authFetch('/api/instagram/request-renewal', { method: 'POST' })
+    .then(r => r.json())
+    .then(d => {
+      if (d.ok) {
+        toast('✓ Solicitação de renovação enviada', 'success');
+        statusEl.innerHTML = '✓ Solicitação enviada — aguarde até 24h';
+      } else {
+        toast(d.error || 'Erro na solicitação', 'error');
+      }
+    })
+    .catch(() => { toast('Erro de conexão', 'error'); });
+}
+
 // ── Init ──
 function init() {
+  checkAuth();
   document.getElementById('initTime').textContent = new Date().toTimeString().slice(0, 8);
   renderAgents();
   fetchData();
   checkAPIStatus();
   loadSettings();
+  loadBusinessProfile();
+  loadSchedule();
+  loadInstagramStatus();
   setInterval(fetchData, 30000);
   setInterval(checkAPIStatus, 60000);
   setInterval(loadSettings, 120000);
