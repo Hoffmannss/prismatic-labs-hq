@@ -88,6 +88,10 @@ html,body{height:100%;font-family:'Inter',system-ui,-apple-system,sans-serif;bac
 .pill.amber{background:rgba(245,158,11,.1);border-color:rgba(245,158,11,.3);color:var(--amber)}
 .pill.red{background:rgba(239,68,68,.1);border-color:rgba(239,68,68,.3);color:var(--red)}
 .pill .dot{width:5px;height:5px;border-radius:50%;background:currentColor}
+.pill-renew{cursor:pointer;border:none;transition:all .2s}
+.pill-renew:hover{background:var(--purple-d);border-color:var(--purple);color:var(--purple-l)}
+.pill-renew.renewing{animation:pulse-dot 1.5s ease-in-out infinite}
+@keyframes pulse-dot{0%,100%{opacity:1}50%{opacity:.4}}
 .topbar-btn{width:30px;height:30px;border-radius:7px;border:1px solid var(--b);background:var(--bg-el);color:var(--t2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px;transition:.15s}
 .topbar-btn:hover{background:var(--bg-hover);color:var(--t);border-color:var(--b-m)}
 .topbar-cmd-btn{display:flex;align-items:center;gap:5px;padding:5px 11px;border-radius:7px;border:1px solid var(--b);background:var(--bg-el);color:var(--t3);cursor:pointer;font-size:11px;transition:.15s;font-family:inherit}
@@ -530,6 +534,7 @@ tbody tr:last-child td{border-bottom:none}
 .bp-save-btn:hover{transform:translateY(-1px);box-shadow:0 6px 24px rgba(124,58,237,.5)}
 .bp-save-btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
 .bp-status{font-size:11px;color:var(--green);display:flex;align-items:center;gap:5px;margin-top:4px}
+.bp-field input::placeholder,.bp-field textarea::placeholder{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
 /* ─── MANUAL ANALYSIS ─── */
 .manual-analysis{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}
@@ -558,6 +563,18 @@ tbody tr:last-child td{border-bottom:none}
 .guide-flow{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin:12px 0}
 .guide-flow-step{padding:5px 12px;background:var(--bg-el);border:1px solid var(--b);border-radius:99px;font-size:11px;color:var(--t2);white-space:nowrap}
 .guide-flow-arrow{color:var(--t3);font-size:13px}
+/* Tooltip Portal */
+.detail-tooltip{display:none !important}
+#tip-overlay{position:fixed;z-index:9999;background:var(--bg-surface);border:1px solid rgba(124,58,237,.4);border-radius:10px;padding:11px 15px;font-size:11px;color:var(--t2);line-height:1.6;max-width:280px;box-shadow:0 14px 40px rgba(0,0,0,.6);pointer-events:none;display:none;letter-spacing:0;font-weight:400;text-transform:none}
+/* KPI Cards */
+.kpi-card{display:flex;flex-direction:column;padding:16px 16px 0 !important}
+.kpi-label{font-size:10px;font-weight:700;text-transform:uppercase;color:var(--t3);letter-spacing:.6px;margin-bottom:6px}
+.kpi-value{font-size:28px;font-weight:700;color:var(--purple-l);margin-bottom:4px;font-family:'JetBrains Mono',monospace;letter-spacing:-.5px}
+.kpi-sub{font-size:11px;color:var(--t2);margin-bottom:12px}
+.kpi-bar{height:3px;background:var(--purple-l);border-radius:2px;margin-top:auto}
+.kpi-bar.amber{background:var(--amber)}
+.kpi-bar.green{background:var(--green)}
+.kpi-bar.pink{background:var(--pink)}
 </style>
 </head>
 <body>
@@ -696,7 +713,7 @@ tbody tr:last-child td{border-bottom:none}
       <div class="topbar-spacer"></div>
       <div class="topbar-pills">
         <div class="pill green" id="pill-system"><span class="dot"></span>Sistema Ativo</div>
-        <div class="pill" id="pill-ig-session"><span class="dot"></span>Instagram</div>
+        <button class="pill pill-renew" id="pill-ig-session" onclick="autoRenewSession()" title="Renovar sessão do Instagram"><span class="dot"></span>Instagram<span id="renew-status" style="margin-left:4px;font-size:10px;opacity:.6"></span></button>
       </div>
       <button class="topbar-cmd-btn" onclick="openPalette()">⌕ Buscar <kbd>⌘K</kbd></button>
       <button class="topbar-btn" onclick="refreshData()" title="Atualizar">↻</button>
@@ -839,12 +856,13 @@ tbody tr:last-child td{border-bottom:none}
           </div>
 
           <div>
-            <div class="section-row"><h2>Atividade Recente</h2><div class="line"></div></div>
+            <div class="section-row"><h2>Últimas Ações</h2><div class="line"></div></div>
             <div class="card" style="padding:13px">
               <div class="live-feed" id="liveFeed">
-                <div style="text-align:center;padding:22px;color:var(--t3);font-size:12px">
-                  <div class="spinner" style="margin:0 auto 8px"></div>
-                  Aguardando dados...
+                <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px 16px;text-align:center">
+                  <div style="font-size:28px;margin-bottom:10px;opacity:.4">⚡</div>
+                  <div style="font-size:12px;font-weight:600;color:var(--t2);margin-bottom:4px">Nenhuma atividade ainda</div>
+                  <div style="font-size:11px;color:var(--t3);line-height:1.5">Clique em <strong style="color:var(--purple-l)">⚡ Iniciar Autopilot</strong><br>para começar</div>
                 </div>
               </div>
             </div>
@@ -856,9 +874,30 @@ tbody tr:last-child td{border-bottom:none}
       <section class="section" id="section-agents">
         <div class="page-header">
           <h1>Módulos de IA</h1>
-          <p>Cada módulo executa uma etapa do processo de prospecção automatizada</p>
+          <p>Execute cada etapa em ordem — ou use o <strong style="color:var(--purple-xl)">⚡ Autopilot</strong> no Painel Principal para rodar tudo automaticamente</p>
         </div>
-        <div class="agent-grid" id="agentGrid"></div>
+
+        <!-- Banner pipeline -->
+        <div class="card" style="margin-bottom:16px;padding:14px 20px;background:rgba(124,58,237,.06);border-color:rgba(124,58,237,.25)">
+          <div style="font-size:10px;font-weight:700;color:var(--purple-xl);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px">Ordem de Execução</div>
+          <div class="guide-flow" style="margin:0 0 10px">
+            <div class="guide-flow-step" style="background:rgba(167,139,250,.12);border-color:rgba(167,139,250,.3);color:var(--purple-l)">① Buscar Leads</div>
+            <div class="guide-flow-arrow">→</div>
+            <div class="guide-flow-step">② Analisar Perfis</div>
+            <div class="guide-flow-arrow">→</div>
+            <div class="guide-flow-step">③ Criar Mensagens</div>
+            <div class="guide-flow-arrow">→</div>
+            <div class="guide-flow-step">④ Sincronizar CRM</div>
+          </div>
+          <p style="font-size:11px;color:var(--t3);margin:0">💡 Recomendado: use o <span onclick="navigate('overview')" style="color:var(--cyan);cursor:pointer;text-decoration:underline">Autopilot no Painel Principal</span> — ele executa as 4 etapas com um clique.</p>
+        </div>
+
+        <!-- Grid pipeline steps -->
+        <div class="grid-2" id="agentGrid" style="margin-bottom:16px"></div>
+
+        <!-- Ferramentas auxiliares -->
+        <div class="section-row"><h2>Ferramentas Auxiliares</h2><div class="line"></div></div>
+        <div class="grid-2" id="agentGridAux"></div>
       </section>
 
       <!-- ══ CRM ══ -->
@@ -873,11 +912,22 @@ tbody tr:last-child td{border-bottom:none}
               <span class="search-icon">⌕</span>
               <input type="text" placeholder="Buscar @handle, nicho, nome..." id="crmSearch" oninput="filterLeads()">
             </div>
-            <button class="filter-btn active" onclick="setFilter('all',this)">Todos</button>
-            <button class="filter-btn" onclick="setFilter('new',this)">Novos</button>
-            <button class="filter-btn" onclick="setFilter('high',this)">Score Alto</button>
-            <button class="filter-btn" onclick="setFilter('contacted',this)">Contatados</button>
+            <button class="filter-btn active" onclick="setFilter('all',this)" data-filter="all">Todos</button>
+            <button class="filter-btn" onclick="setFilter('new',this)" data-filter="new">Novos</button>
+            <button class="filter-btn" onclick="setFilter('high',this)" data-filter="high">Score ≥70</button>
+            <button class="filter-btn" onclick="setFilter('hasdm',this)" data-filter="hasdm">Com DM</button>
+            <button class="filter-btn" onclick="setFilter('contacted',this)" data-filter="contacted">Enviados</button>
+            <button class="filter-btn" onclick="setFilter('replied',this)" data-filter="replied">Respondidos</button>
+            <button class="filter-btn" onclick="setFilter('converted',this)" data-filter="converted">Convertidos</button>
             <div class="table-spacer"></div>
+            <select id="crmSort" onchange="filterLeads()" style="background:var(--bg-el);border:1px solid var(--b);border-radius:7px;padding:5px 10px;font-family:inherit;font-size:11px;color:var(--t2);cursor:pointer;outline:none">
+              <option value="date-desc">Mais recentes</option>
+              <option value="date-asc">Mais antigos</option>
+              <option value="score-desc">Score ↓</option>
+              <option value="score-asc">Score ↑</option>
+              <option value="alpha-asc">A → Z</option>
+              <option value="alpha-desc">Z → A</option>
+            </select>
             <div class="table-count" id="crmCount">0 leads</div>
           </div>
           <div style="overflow-x:auto">
@@ -917,6 +967,20 @@ tbody tr:last-child td{border-bottom:none}
             <button class="filter-btn" onclick="clearDMQueue()">✕ Limpar Fila</button>
           </div>
         </div>
+        <div style="display:flex;align-items:center;gap:7px;margin-bottom:10px;flex-wrap:wrap">
+          <div class="search-input" style="max-width:200px">
+            <span class="search-icon">⌕</span>
+            <input type="text" placeholder="Buscar @username..." id="dmSearch" oninput="renderDMQueue()">
+          </div>
+          <select id="dmSort" onchange="renderDMQueue()" style="background:var(--bg-el);border:1px solid var(--b);border-radius:7px;padding:5px 10px;font-family:inherit;font-size:11px;color:var(--t2);cursor:pointer;outline:none">
+            <option value="score-desc">Score ↓ (padrão)</option>
+            <option value="score-asc">Score ↑</option>
+            <option value="alpha-asc">A → Z</option>
+            <option value="alpha-desc">Z → A</option>
+            <option value="len-desc">Mensagem mais longa</option>
+            <option value="len-asc">Mensagem mais curta</option>
+          </select>
+        </div>
         <div id="dmQueueList">
           <div class="empty-state">
             <div class="empty-state-icon">💬</div>
@@ -931,6 +995,33 @@ tbody tr:last-child td{border-bottom:none}
         <div class="page-header">
           <h1>Relatórios</h1>
           <p>Desempenho da prospecção e distribuição de leads</p>
+        </div>
+        <!-- KPI row analytics -->
+        <div class="grid-4" style="margin-bottom:14px" id="analytics-kpis">
+          <div class="card kpi-card" style="padding-bottom:0">
+            <div class="kpi-label">Score Médio</div>
+            <div class="kpi-value" id="akpi-avg-score">—</div>
+            <div class="kpi-sub">de todos os leads</div>
+            <div class="kpi-bar purple"></div>
+          </div>
+          <div class="card kpi-card" style="padding-bottom:0">
+            <div class="kpi-label">DMs Enviadas</div>
+            <div class="kpi-value" id="akpi-dms-sent">—</div>
+            <div class="kpi-sub">total geral</div>
+            <div class="kpi-bar amber"></div>
+          </div>
+          <div class="card kpi-card" style="padding-bottom:0">
+            <div class="kpi-label">Taxa de Conversão</div>
+            <div class="kpi-value" id="akpi-conversion">—</div>
+            <div class="kpi-sub">enviadas → clientes</div>
+            <div class="kpi-bar green"></div>
+          </div>
+          <div class="card kpi-card" style="padding-bottom:0">
+            <div class="kpi-label">Leads Esta Semana</div>
+            <div class="kpi-value" id="akpi-week">—</div>
+            <div class="kpi-sub">últimos 7 dias</div>
+            <div class="kpi-bar pink"></div>
+          </div>
         </div>
         <div class="grid-3" style="margin-bottom:14px">
           <div class="card">
@@ -957,8 +1048,8 @@ tbody tr:last-child td{border-bottom:none}
       <!-- ══ LOGS ══ -->
       <section class="section" id="section-logs">
         <div class="page-header">
-          <h1>Registro de Atividades</h1>
-          <p>Acompanhe em tempo real tudo que os módulos estão fazendo</p>
+          <h1>Últimas Ações</h1>
+          <p>Log em tempo real dos agentes</p>
         </div>
         <div style="display:flex;gap:7px;margin-bottom:10px;flex-wrap:wrap">
           <button class="filter-btn active" onclick="setLogFilter('all',this)">Todos</button>
@@ -1007,25 +1098,25 @@ tbody tr:last-child td{border-bottom:none}
                 </div>
                 <div class="bp-field">
                   <label>Segmento / Nicho de Atuação <span style="color:var(--red)">*</span></label>
-                  <input type="text" id="bp-segment" placeholder="Ex: Automação de marketing com IA">
+                  <input type="text" id="bp-segment" placeholder="Ex: Marketing com IA">
                 </div>
                 <div class="bp-row">
                   <div class="bp-field">
                     <label>Produto / Serviço Principal <span style="color:var(--red)">*</span></label>
-                    <input type="text" id="bp-product" placeholder="Ex: Sistema de prospecção via Instagram">
+                    <input type="text" id="bp-product" placeholder="Ex: Prospecção via Instagram">
                   </div>
                   <div class="bp-field">
                     <label>Faixa de Preço</label>
-                    <input type="text" id="bp-price" placeholder="Ex: R$497–R$2.997/mês">
+                    <input type="text" id="bp-price" placeholder="Ex: R$500–R$3k/mês">
                   </div>
                 </div>
                 <div class="bp-field">
                   <label>Proposta de Valor (em 1 frase) <span style="color:var(--red)">*</span></label>
-                  <input type="text" id="bp-value-prop" placeholder="Ex: Ajudamos empresas a conseguir clientes no Instagram com IA">
+                  <input type="text" id="bp-value-prop" placeholder="Ex: Clientes no Instagram com IA">
                 </div>
                 <div class="bp-field">
                   <label>Problema Principal que Resolve</label>
-                  <textarea id="bp-problem" placeholder="Ex: Empresas perdem horas tentando prospectar manualmente no Instagram sem resultado consistente"></textarea>
+                  <textarea id="bp-problem" placeholder="Ex: Prospecção manual no Instagram é lenta e inconsistente"></textarea>
                 </div>
               </div>
             </div>
@@ -1046,11 +1137,11 @@ tbody tr:last-child td{border-bottom:none}
                 </div>
                 <div class="bp-field">
                   <label>Diferenciais (o que te destaca da concorrência)</label>
-                  <textarea id="bp-differentials" placeholder="Ex: IA que personaliza cada mensagem com base no perfil real do lead, sem templates genéricos"></textarea>
+                  <textarea id="bp-differentials" placeholder="Ex: Mensagens personalizadas, sem templates genéricos"></textarea>
                 </div>
                 <div class="bp-field">
                   <label>Público-Alvo Ideal <span style="color:var(--red)">*</span></label>
-                  <textarea id="bp-target" placeholder="Ex: Donos de agências de marketing, coaches de negócio e consultores que usam Instagram para vendas"></textarea>
+                  <textarea id="bp-target" placeholder="Ex: Agências, coaches e consultores no Instagram"></textarea>
                 </div>
                 <div class="bp-field">
                   <label>Instagram da Empresa</label>
@@ -1641,26 +1732,72 @@ function runAgent(key) {
 function renderAgents() {
   const running = state.agentsData.filter(a => a.status === 'running').length;
   document.getElementById('badge-running').textContent = running;
-  document.getElementById('agentGrid').innerHTML = state.agentsData.map(a => `
-    <div class="agent-card">
+
+  const totalLeads = state.leads.length;
+  const unanalyzed = state.leads.filter(l => l.score === undefined || l.score === null).length;
+  const analyzed   = state.leads.filter(l => l.score !== undefined && l.score !== null).length;
+  const noMsg      = state.leads.filter(l => l.score !== undefined && !l.mensagem_final && !l.dm_message).length;
+  const withMsg    = state.leads.filter(l => l.mensagem_final || l.dm_message).length;
+
+  const depStatus = {
+    scraper:    { ok: true,          tip: 'Busca novos perfis no Instagram por hashtag/nicho', count: null, countLabel: null },
+    analyzer:   { ok: totalLeads > 0, tip: totalLeads > 0 ? `${unanalyzed > 0 ? unanalyzed + ' leads aguardando análise' : 'Todos os leads já analisados'}` : 'Execute "Buscar Leads" primeiro', count: unanalyzed, countLabel: 'aguardando' },
+    copywriter: { ok: analyzed > 0,  tip: analyzed > 0 ? `${noMsg > 0 ? noMsg + ' leads prontos para gerar DM' : 'Todos os leads já têm mensagem'}` : 'Execute "Analisar Perfis" primeiro', count: noMsg, countLabel: 'sem DM' },
+    notion:     { ok: true,          tip: `Sincroniza ${totalLeads} leads com o Notion CRM`, count: totalLeads, countLabel: 'leads' },
+  };
+
+  const pipelineAgents = [
+    { id: '0-scraper',    name: 'Buscar Leads',    icon: '🔍', step: 1, key: 'scraper',    desc: 'Encontra novos perfis de potenciais clientes no Instagram por hashtag ou nicho configurado.' },
+    { id: '1-analyzer',   name: 'Analisar Perfis', icon: '🧠', step: 2, key: 'analyzer',   desc: 'Analisa cada lead com IA (Groq/Llama) e atribui uma pontuação de 0 a 100 de potencial de conversão.' },
+    { id: '2-copywriter', name: 'Criar Mensagens', icon: '✍️', step: 3, key: 'copywriter', desc: 'Gera DMs únicas e personalizadas para cada lead com base no perfil do negócio configurado.' },
+    { id: '9-notion-sync',name: 'Sincronizar CRM', icon: '🔄', step: 4, key: 'notion',     desc: 'Sincroniza todos os leads entre o banco de dados local e o seu CRM no Notion.' },
+  ];
+  const auxAgents = [
+    { id: '10-autopilot', name: 'Prospecção Automática', icon: '⚡', key: 'autopilot', desc: 'Executa as 4 etapas do pipeline em sequência com um clique — o modo recomendado para uso diário.' },
+    { id: '14-scheduler', name: 'Agendador',           icon: '⏰', key: 'scheduler',  desc: 'Executa a prospecção automaticamente no horário e dias que você configurar em Agendamento.' },
+  ];
+
+  function makeCard(a, dep) {
+    const agentState = state.agentsData.find(x => x.key === a.key) || { status:'idle', lastRun:'Nunca', runsToday:0 };
+    const d = dep || { ok: true, tip: '', count: null, countLabel: null };
+    const blocked = !d.ok;
+    const countChip = d.count !== null && d.count > 0
+      ? `<span style="display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:99px;background:rgba(124,58,237,.12);color:var(--purple-l);font-size:10px;font-weight:700;margin-left:6px">${d.count} ${d.countLabel}</span>`
+      : '';
+    const stepBadge = a.step ? `<span style="font-size:9px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--t3);font-family:'JetBrains Mono',monospace">ETAPA ${a.step}</span>` : `<span style="font-size:9px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--t3);font-family:'JetBrains Mono',monospace">AUX</span>`;
+    const statusLabel = statusLabels[agentState.status] || agentState.status;
+    const depTag = blocked
+      ? `<span style="font-size:10px;color:var(--amber);background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.25);padding:2px 8px;border-radius:99px;flex-shrink:0">⚠ Aguardando etapa anterior</span>`
+      : `<span style="font-size:10px;color:var(--green);background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);padding:2px 8px;border-radius:99px;flex-shrink:0">✓ Pronto</span>`;
+    return `
+    <div class="agent-card" style="${blocked ? 'opacity:.75' : ''}">
       <div class="ac-header">
-        <span class="ac-num">${a.id}</span>
-        <span class="ac-status ${a.status}">${a.status === 'running' ? '<span class="spinner" style="width:8px;height:8px;border-width:1.5px;margin-right:2px"></span>' : ''}${statusLabels[a.status] || a.status}</span>
+        ${stepBadge}
+        <span class="ac-status ${agentState.status}">${agentState.status === 'running' ? '<span class="spinner" style="width:8px;height:8px;border-width:1.5px;margin-right:2px"></span>' : ''}${statusLabel}</span>
       </div>
-      <div class="ac-icon">${a.icon}</div>
-      <div class="ac-name">${a.name}</div>
-      <div class="ac-desc">${a.desc}</div>
+      <div style="display:flex;align-items:center;gap:10px;margin:8px 0 6px">
+        <span style="font-size:22px;line-height:1">${a.icon}</span>
+        <div>
+          <div class="ac-name">${a.name}${countChip}</div>
+          <div style="display:flex;align-items:center;gap:6px;margin-top:4px">${depTag}</div>
+        </div>
+      </div>
+      <div class="ac-desc" style="margin-bottom:10px">${blocked ? `<span style="color:var(--amber)">⚠</span> ${d.tip}` : a.desc}</div>
       <div class="ac-stats">
-        <div class="ac-stat"><strong>${a.runsToday}</strong>execuções</div>
-        <div class="ac-stat"><strong>${a.leadsFound}</strong>leads</div>
-        <div class="ac-stat" style="flex:1"><strong style="font-size:10px;color:var(--t3)">${a.lastRun}</strong>último run</div>
+        <div class="ac-stat"><strong>${agentState.runsToday}</strong>hoje</div>
+        <div class="ac-stat"><strong style="font-size:10px;color:var(--t3)">${agentState.lastRun}</strong>último run</div>
       </div>
-      <div class="ac-actions">
-        <button class="ac-btn" onclick="navigate('logs')">Logs</button>
-        <button class="ac-btn primary" onclick="runAgent('${a.key}')">▶ Rodar</button>
+      <div class="ac-actions" style="margin-top:10px">
+        <button class="ac-btn" onclick="navigate('logs')">Ver Logs</button>
+        <button class="ac-btn primary" onclick="${blocked ? `toast('${d.tip}','error')` : `runAgent('${a.key}')`}" ${blocked ? 'style="opacity:.5;cursor:not-allowed"' : ''}>▶ Rodar</button>
       </div>
-    </div>
-  `).join('');
+    </div>`;
+  }
+
+  const mainGrid = document.getElementById('agentGrid');
+  const auxGrid = document.getElementById('agentGridAux');
+  if (mainGrid) mainGrid.innerHTML = pipelineAgents.map(a => makeCard(a, depStatus[a.key])).join('');
+  if (auxGrid)  auxGrid.innerHTML  = auxAgents.map(a => makeCard(a, null)).join('');
 }
 
 // ── CRM ──
@@ -1672,16 +1809,33 @@ function setFilter(f, btn) {
 }
 function filterLeads() { renderLeads(); }
 function renderLeads() {
-  const query = (document.getElementById('crmSearch').value || '').toLowerCase();
+  const query  = (document.getElementById('crmSearch')?.value || '').toLowerCase();
   const filter = state.filterStatus;
+  const sort   = document.getElementById('crmSort')?.value || 'date-desc';
+
   let leads = state.leads.filter(l => {
     const matchQ = !query || JSON.stringify(l).toLowerCase().includes(query);
     const matchF = filter === 'all'
-      || (filter === 'new' && (!l.status || l.status === 'new'))
-      || (filter === 'high' && (l.score || 0) >= 70)
-      || (filter === 'contacted' && (l.status === 'contacted' || l.status === 'replied'));
+      || (filter === 'new'       && (!l.status || l.status === 'new'))
+      || (filter === 'high'      && (l.score || 0) >= 70)
+      || (filter === 'hasdm'     && (l.mensagem_final || l.dm_message))
+      || (filter === 'contacted' && l.status === 'contacted')
+      || (filter === 'replied'   && l.status === 'replied')
+      || (filter === 'converted' && l.status === 'converted');
     return matchQ && matchF;
   });
+
+  // Sort
+  leads = leads.sort((a, b) => {
+    if (sort === 'date-desc') return new Date(b.scraped_at||0) - new Date(a.scraped_at||0);
+    if (sort === 'date-asc')  return new Date(a.scraped_at||0) - new Date(b.scraped_at||0);
+    if (sort === 'score-desc')return (b.score||0) - (a.score||0);
+    if (sort === 'score-asc') return (a.score||0) - (b.score||0);
+    if (sort === 'alpha-asc') return (a.username||'').localeCompare(b.username||'');
+    if (sort === 'alpha-desc')return (b.username||'').localeCompare(a.username||'');
+    return 0;
+  });
+
   document.getElementById('crmCount').textContent = `${leads.length} leads`;
   if (!leads.length) {
     document.getElementById('leadsTable').innerHTML = `<tr><td colspan="7"><div class="empty-state"><div class="empty-state-icon">👥</div><h3>Nenhum lead</h3><p>Ajuste os filtros ou execute o Autopilot</p></div></td></tr>`;
@@ -1717,14 +1871,41 @@ function previewDM(username) {
 
 // ── DM Queue ──
 function renderDMQueue() {
-  const q = state.dmQueue;
-  document.getElementById('dmQueueCount').textContent = q.length;
-  document.getElementById('badge-dm').textContent = q.length;
-  if (!q.length) {
+  const query = (document.getElementById('dmSearch')?.value || '').toLowerCase();
+  const sort  = document.getElementById('dmSort')?.value || 'score-desc';
+
+  let q = state.dmQueue.map((dm, origIdx) => ({ ...dm, _origIdx: origIdx }));
+
+  // Search filter
+  if (query) q = q.filter(dm => (dm.username || '').toLowerCase().includes(query) || (dm.niche || '').toLowerCase().includes(query));
+
+  // Sort
+  q = q.sort((a, b) => {
+    if (sort === 'score-desc') return (b.score || 0) - (a.score || 0);
+    if (sort === 'score-asc')  return (a.score || 0) - (b.score || 0);
+    if (sort === 'alpha-asc')  return (a.username || '').localeCompare(b.username || '');
+    if (sort === 'alpha-desc') return (b.username || '').localeCompare(a.username || '');
+    const aLen = (a.mensagem_final || a.dm_message || a.message || '').length;
+    const bLen = (b.mensagem_final || b.dm_message || b.message || '').length;
+    if (sort === 'len-desc') return bLen - aLen;
+    if (sort === 'len-asc')  return aLen - bLen;
+    return 0;
+  });
+
+  document.getElementById('dmQueueCount').textContent = state.dmQueue.length;
+  document.getElementById('badge-dm').textContent = state.dmQueue.length;
+
+  if (!state.dmQueue.length) {
     document.getElementById('dmQueueList').innerHTML = `<div class="empty-state"><div class="empty-state-icon">💬</div><h3>Fila vazia</h3><p>Execute o Copywriter para gerar DMs</p></div>`;
     return;
   }
-  document.getElementById('dmQueueList').innerHTML = q.map((dm, i) => {
+  if (!q.length) {
+    document.getElementById('dmQueueList').innerHTML = `<div class="empty-state"><div class="empty-state-icon">🔍</div><h3>Nenhum resultado</h3><p>Tente outro termo de busca</p></div>`;
+    return;
+  }
+
+  document.getElementById('dmQueueList').innerHTML = q.map((dm) => {
+    const i = dm._origIdx;
     const initials = (dm.username || 'L').slice(0, 2).toUpperCase();
     return `<div class="dm-item" id="dmitem-${i}">
       <div class="dm-avatar">${initials}</div>
@@ -1784,6 +1965,21 @@ function clearDMQueue() { state.dmQueue = []; renderDMQueue(); toast('Fila limpa
 
 // ── Analytics ──
 function renderAnalytics() {
+  // Analytics KPIs
+  const avgScore = state.leads.length
+    ? Math.round(state.leads.reduce((s, l) => s + (l.score || 0), 0) / state.leads.length)
+    : 0;
+  const dmsSent  = state.leads.filter(l => ['contacted','replied','converted'].includes(l.status)).length;
+  const converted = state.leads.filter(l => l.status === 'converted').length;
+  const conversion = dmsSent > 0 ? Math.round(converted / dmsSent * 100) : 0;
+  const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate() - 7);
+  const weekLeads = state.leads.filter(l => l.scraped_at && new Date(l.scraped_at) >= weekAgo).length;
+  const el = id => document.getElementById(id);
+  if (el('akpi-avg-score')) el('akpi-avg-score').textContent = avgScore;
+  if (el('akpi-dms-sent'))  el('akpi-dms-sent').textContent  = dmsSent;
+  if (el('akpi-conversion'))el('akpi-conversion').textContent = conversion + '%';
+  if (el('akpi-week'))      el('akpi-week').textContent       = weekLeads;
+
   const days = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
   const today = new Date().getDay();
   const labels = [...Array(7)].map((_, i) => days[(today - 6 + i + 7) % 7]);
@@ -1863,26 +2059,43 @@ function updateKPIs(leads) {
 
 // ── Live Feed ──
 function updateLiveFeed(leads) {
+  const feedEl = document.getElementById('liveFeed');
+  if (!feedEl) return;
+
+  const items = [];
   const recent = [...leads]
     .filter(l => l.scraped_at)
-    .sort((a,b) => new Date(b.scraped_at) - new Date(a.scraped_at))
-    .slice(0, 10);
-  if (!recent.length) return;
-  const iconMap   = { replied:'green', contacted:'cyan', dm_message:'purple' };
-  const emojiMap  = { green:'💬', cyan:'📨', purple:'✍️', amber:'🔍' };
-  const msgFn = (l, icon) => ({
-    green:  `<strong>@${l.username}</strong> respondeu à DM`,
-    cyan:   `DM enviada para <strong>@${l.username}</strong>`,
-    purple: `DM gerada para <strong>@${l.username}</strong> · score ${l.score || 0}`,
-    amber:  `<strong>@${l.username}</strong> coletado · ${l.niche || 'sem nicho'}`,
-  }[icon]);
-  document.getElementById('liveFeed').innerHTML = recent.map(l => {
+    .sort((a, b) => new Date(b.scraped_at) - new Date(a.scraped_at))
+    .slice(0, 8);
+
+  recent.forEach(l => {
     const icon = l.status === 'replied' || l.status === 'converted' ? 'green'
       : l.status === 'contacted' ? 'cyan'
-      : l.dm_message ? 'purple' : 'amber';
-    const time = new Date(l.scraped_at).toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'});
-    return `<div class="feed-item"><div class="feed-icon ${icon}">${emojiMap[icon]}</div><div class="feed-body"><div class="feed-msg">${msgFn(l,icon)}</div><div class="feed-time">${time}</div></div></div>`;
-  }).join('');
+      : (l.mensagem_final || l.dm_message) ? 'purple' : 'amber';
+    const emoji = { green:'💬', cyan:'📨', purple:'✍️', amber:'🔍' };
+    const msg = {
+      green:  `<strong>@${l.username}</strong> respondeu à DM`,
+      cyan:   `DM enviada para <strong>@${l.username}</strong>`,
+      purple: `DM criada para <strong>@${l.username}</strong> · score ${l.score || 0}`,
+      amber:  `<strong>@${l.username}</strong> coletado · ${l.niche || 'sem nicho'}`,
+    }[icon];
+    const time = new Date(l.scraped_at).toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' });
+    items.push({ icon, emoji: emoji[icon], msg, time });
+  });
+
+  if (!items.length) {
+    feedEl.innerHTML = `
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px 16px;text-align:center">
+        <div style="font-size:28px;margin-bottom:10px;opacity:.4">⚡</div>
+        <div style="font-size:12px;font-weight:600;color:var(--t2);margin-bottom:4px">Nenhuma atividade ainda</div>
+        <div style="font-size:11px;color:var(--t3);line-height:1.5">Clique em <strong style="color:var(--purple-l)">⚡ Iniciar Autopilot</strong><br>para começar a prospectar</div>
+      </div>`;
+    return;
+  }
+
+  feedEl.innerHTML = items.map(i =>
+    `<div class="feed-item"><div class="feed-icon ${i.icon}">${i.emoji}</div><div class="feed-body"><div class="feed-msg">${i.msg}</div><div class="feed-time">${i.time}</div></div></div>`
+  ).join('');
 }
 
 // ── Data Fetch ──
@@ -1907,6 +2120,45 @@ async function fetchData() {
   } catch (e) {
     document.getElementById('lastUpdate').textContent = 'erro ao carregar';
     addLog('DASHBOARD', `✗ Erro: ${e.message || 'API indisponível'}`, 'err');
+  }
+}
+
+// ── Instagram Session Auto-Renew ──
+async function autoRenewSession() {
+  const btn = document.getElementById('pill-ig-session');
+  const statusEl = document.getElementById('renew-status');
+  if (!btn) return;
+  btn.classList.add('renewing');
+  btn.disabled = true;
+  if (statusEl) statusEl.textContent = '• renovando…';
+  toast('Iniciando renovação de sessão…', 'info');
+  addLog('SESSION', '▶ Solicitando renovação automática de sessão do Instagram');
+  try {
+    const r = await authFetch('/api/instagram/auto-renew', { method: 'POST' });
+    const d = await r.json();
+    if (d.ok) {
+      toast('✓ ' + (d.message || 'Renovação iniciada — aguarde 1–2 min'), 'success');
+      addLog('SESSION', '✓ ' + (d.message || 'Renovação iniciada'), 'ok');
+      if (statusEl) statusEl.textContent = '• renovando';
+      setTimeout(() => {
+        btn.classList.remove('renewing');
+        btn.disabled = false;
+        if (statusEl) statusEl.textContent = '';
+        checkAPIStatus();
+      }, 90000);
+    } else {
+      toast('Erro: ' + (d.error || 'falha desconhecida'), 'error');
+      addLog('SESSION', '✗ ' + (d.detail || d.error || 'erro'), 'err');
+      btn.classList.remove('renewing');
+      btn.disabled = false;
+      if (statusEl) statusEl.textContent = '';
+    }
+  } catch {
+    toast('Servidor offline', 'error');
+    addLog('SESSION', '✗ Servidor não disponível', 'err');
+    btn.classList.remove('renewing');
+    btn.disabled = false;
+    if (statusEl) statusEl.textContent = '';
   }
 }
 
@@ -2326,6 +2578,43 @@ function requestSessionRenewal() {
     })
     .catch(() => { toast('Erro de conexão', 'error'); });
 }
+
+// ── Tooltip Portal ──
+(function() {
+  const tip = document.createElement('div');
+  tip.id = 'tip-overlay';
+  document.body.appendChild(tip);
+  
+  function showTip(btn) {
+    const src = btn.querySelector('.detail-tooltip');
+    if (!src) return;
+    tip.textContent = src.textContent;
+    tip.style.display = 'block';
+    const r = btn.getBoundingClientRect();
+    const w = Math.min(280, window.innerWidth - 16);
+    tip.style.maxWidth = w + 'px';
+    requestAnimationFrame(() => {
+      const h = tip.offsetHeight;
+      const tw = tip.offsetWidth;
+      let left = r.left + r.width/2 - tw/2;
+      let top = r.top - h - 10;
+      if (left < 8) left = 8;
+      if (left + tw > window.innerWidth - 8) left = window.innerWidth - tw - 8;
+      if (top < 8) top = r.bottom + 10;
+      tip.style.left = left + 'px';
+      tip.style.top = top + 'px';
+    });
+  }
+  
+  document.addEventListener('mouseover', e => {
+    const btn = e.target.closest('.detail-btn');
+    if (btn) showTip(btn);
+  });
+  document.addEventListener('mouseout', e => {
+    if (e.target.closest('.detail-btn')) tip.style.display = 'none';
+  });
+  document.addEventListener('scroll', () => { tip.style.display = 'none'; }, true);
+})();
 
 // ── Init ──
 function init() {
