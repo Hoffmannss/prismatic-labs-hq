@@ -333,7 +333,9 @@ const server = http.createServer(async (req, res) => {
     const clean = username.replace(/^@/, '').trim().toLowerCase();
     if (!clean) return json(res, { ok: false, error: 'username invalido' }, 400);
     setTimeout(() => {
-      spawnSync('node', [path.join(__dirname, '5-orchestrator.js'), clean],
+      // 5-orchestrator.js requer: analyze @username bio followers posts
+      // Bio/followers/posts opcionais — o pipeline roda com dados mínimos
+      spawnSync('node', [path.join(__dirname, '5-orchestrator.js'), 'analyze', clean, '', '0', '0'],
         { stdio: 'inherit', cwd: __dirname, env: process.env });
     }, 100);
     return json(res, { ok: true, message: `Pipeline iniciado para @${clean}` });
@@ -578,12 +580,37 @@ const server = http.createServer(async (req, res) => {
 
   // ── INSTAGRAM SESSION MANAGEMENT ───────────────────────────────────────
   if (req.method === 'POST' && pathname === '/api/instagram/request-renewal') {
-    // Log the renewal request
     const renewalLog = path.join(DATA_DIR, 'instagram-renewal-requests.json');
     const requests = loadJSON(renewalLog, { requests: [] });
     requests.requests.push({ timestamp: new Date().toISOString(), status: 'pending' });
     saveJSON(renewalLog, requests);
     return json(res, { ok: true, message: 'Solicitação registrada' });
+  }
+
+  // ── INSTAGRAM AUTO-RENEW (roda 0-scraper.js login automaticamente) ───
+  if (req.method === 'POST' && pathname === '/api/instagram/auto-renew') {
+    const hasUser = !!process.env.INSTAGRAM_USERNAME;
+    const hasPass = !!process.env.INSTAGRAM_PASSWORD;
+    if (!hasUser || !hasPass) {
+      return json(res, {
+        ok: false,
+        error: 'Credenciais não configuradas',
+        detail: 'INSTAGRAM_USERNAME e INSTAGRAM_PASSWORD precisam estar no .env da VPS'
+      }, 400);
+    }
+    // Loga a tentativa de renovação
+    const renewalLog = path.join(DATA_DIR, 'instagram-renewal-requests.json');
+    const requests = loadJSON(renewalLog, { requests: [] });
+    requests.requests.push({ timestamp: new Date().toISOString(), status: 'auto-renew-started' });
+    saveJSON(renewalLog, requests);
+    // Dispara 0-scraper.js login em background
+    setTimeout(() => {
+      const child = spawn('node', [path.join(__dirname, '0-scraper.js'), 'login', '--auto'], {
+        detached: true, stdio: 'ignore', cwd: __dirname, env: process.env
+      });
+      child.unref();
+    }, 100);
+    return json(res, { ok: true, message: 'Renovação automática iniciada — aguarde 1–2 minutos' });
   }
 
   // ── REGENERATE DM (re-runs copywriter for a specific lead) ─────────────
