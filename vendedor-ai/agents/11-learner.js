@@ -4,7 +4,7 @@
 // (respondeu/converteu) para extrair padroes com LLM e gravar
 // uma memoria de aprendizado continuo (style-memory.json)
 // Alimenta copywriter e reviewer nas proximas geracoes
-// Stack: Google Gemini 1.5 Flash - Melhor quota gratuita, suficiente para insights
+// Stack: Google Gemini 2.0 Flash - Superior para insights qualitativos
 // =============================================================
 
 require('dotenv').config();
@@ -13,7 +13,7 @@ const fs     = require('fs');
 const path   = require('path');
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
-const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
 
 const MENSAGENS_DIR = path.join(__dirname, '..', 'data', 'mensagens');
 const LEADS_DIR     = path.join(__dirname, '..', 'data', 'leads');

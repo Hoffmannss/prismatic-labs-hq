@@ -49,22 +49,6 @@ function analyzeAndPrepare(args) {
     log('Falha no Analyzer. Abortando.', C.red); process.exit(1);
   }
 
-  // SCORE GATE — leads frios sem dados não passam para IA generativa
-  const MIN_SCORE = 30;
-  const analysisOutputFile = path.join(LEADS_DIR, `${clean}_analysis.json`);
-  try {
-    const ad = JSON.parse(fs.readFileSync(analysisOutputFile, 'utf8'));
-    const score = ad.analise?.score_potencial || 0;
-    if (score < MIN_SCORE) {
-      log(`\n[SCORE GATE] @${clean} score ${score}/100 < ${MIN_SCORE} — sem dados suficientes para personalizar`, C.yellow);
-      log(`[ORCHESTRATOR] Pulando vision/copywriter/reviewer — catalogando como cold e seguindo em frente`, C.yellow);
-      runModule('3-cataloger.js', ['add', clean]);
-      log(`${'='.repeat(60)}\n`, C.yellow);
-      process.exit(0);
-    }
-    log(`\n[SCORE GATE] @${clean} score ${score}/100 ✓ — seguindo pipeline completo`, C.green);
-  } catch (_) {} // Se não conseguir ler o arquivo, continua normalmente
-
   // STEP 1.5 — Vision (análise de imagens dos posts)
   if (hasGoogleKey) {
     log(`\n[STEP 2/${totalSteps}] Analisando imagens dos posts (vision AI)...`, C.yellow);
