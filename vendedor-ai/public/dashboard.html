@@ -2213,19 +2213,52 @@ async function submitIgLogin() {
 
     if (d.ok) {
       closeIgLoginModal();
-      toast('✓ Login iniciado — aguarde 1–2 minutos', 'success');
+      toast('▶ Login iniciado — acompanhando progresso…', 'success');
       addLog('SESSION', `▶ Renovação iniciada para @${user}`, 'ok');
       if (pill) pill.classList.add('renewing');
       if (pillStatus) pillStatus.textContent = '• renovando…';
-      if (pageStatus) pageStatus.innerHTML = '⏳ Login em andamento — aguarde 1–2 minutos…';
-      // Re-checa após 90s
-      setTimeout(() => {
-        if (pill) pill.classList.remove('renewing');
-        if (pillStatus) pillStatus.textContent = '';
-        if (pageStatus) pageStatus.innerHTML = '';
-        loadInstagramStatus();
-        checkAPIStatus();
-      }, 90000);
+      if (pageStatus) pageStatus.innerHTML = '⏳ Fazendo login no Instagram…';
+      // Polling do status real a cada 4s (até 3 minutos)
+      let pollCount = 0;
+      const maxPolls = 45;
+      const renewalPoll = setInterval(async () => {
+        pollCount++;
+        try {
+          const sr = await authFetch('/api/instagram/renewal-status');
+          const sd = await sr.json();
+          if (sd.status === 'success') {
+            clearInterval(renewalPoll);
+            if (pill) pill.classList.remove('renewing');
+            if (pillStatus) pillStatus.textContent = '';
+            if (pageStatus) pageStatus.innerHTML = '<span style="color:var(--green)">✓ Sessão renovada com sucesso!</span>';
+            toast('✓ Sessão do Instagram renovada!', 'success');
+            addLog('SESSION', '✓ Login realizado com sucesso', 'ok');
+            setTimeout(() => { loadInstagramStatus(); checkAPIStatus(); }, 1500);
+          } else if (sd.status === 'challenge') {
+            clearInterval(renewalPoll);
+            if (pill) pill.classList.remove('renewing');
+            if (pillStatus) pillStatus.textContent = '⚠';
+            if (pageStatus) pageStatus.innerHTML = '<span style="color:var(--amber)">⚠ Instagram pediu verificação — abra o app no celular e confirme o acesso.</span>';
+            toast('⚠ Verificação necessária — confirme no app do Instagram', 'warn');
+            addLog('SESSION', '⚠ Challenge detectado — verificação manual necessária', 'warn');
+          } else if (sd.status === 'error') {
+            clearInterval(renewalPoll);
+            if (pill) pill.classList.remove('renewing');
+            if (pillStatus) pillStatus.textContent = '✗';
+            if (pageStatus) pageStatus.innerHTML = `<span style="color:var(--red)">✗ ${sd.message}</span>`;
+            toast('✗ Falha no login: ' + sd.message, 'error');
+            addLog('SESSION', `✗ Falha: ${sd.message}`, 'err');
+          } else if (pollCount >= maxPolls) {
+            clearInterval(renewalPoll);
+            if (pill) pill.classList.remove('renewing');
+            if (pillStatus) pillStatus.textContent = '';
+            if (pageStatus) pageStatus.innerHTML = '<span style="color:var(--amber)">⏳ Processo demorou mais que o esperado.</span>';
+            toast('⚠ Login demorou demais — verifique o status manualmente', 'warn');
+          } else {
+            if (pageStatus) pageStatus.innerHTML = `⏳ Login em andamento… (${pollCount * 4}s)`;
+          }
+        } catch {}
+      }, 4000);
     } else {
       statusEl.textContent = '⚠ ' + (d.error || 'Falha ao iniciar login');
       statusEl.style.color = 'var(--red)';

@@ -601,20 +601,67 @@ const server = http.createServer(async (req, res) => {
         error: 'Credenciais do Instagram não fornecidas'
       }, 400);
     }
-    // Loga sem expor credenciais
-    const renewalLog = path.join(DATA_DIR, 'instagram-renewal-requests.json');
-    const requests = loadJSON(renewalLog, { requests: [] });
-    requests.requests.push({ timestamp: new Date().toISOString(), status: 'auto-renew-started', user: igUser });
-    saveJSON(renewalLog, requests);
+    // Arquivo de log do processo de renovação (substituído a cada tentativa)
+    const renewalLogFile = path.join(DATA_DIR, 'instagram-renewal-log.txt');
+    try {
+      fs.writeFileSync(renewalLogFile, `[${new Date().toISOString()}] INICIANDO login para @${igUser}...\n`);
+    } catch {}
     // Spawna 0-scraper login com as credenciais (nunca armazena no arquivo)
     const spawnEnv = { ...process.env, INSTAGRAM_USERNAME: igUser, INSTAGRAM_PASSWORD: igPass };
-    setTimeout(() => {
-      const child = spawn('node', [path.join(__dirname, '0-scraper.js'), 'login', '--auto'], {
-        detached: true, stdio: 'ignore', cwd: __dirname, env: spawnEnv
-      });
-      child.unref();
-    }, 100);
-    return json(res, { ok: true, message: 'Login iniciado — aguarde 1–2 minutos' });
+    const child = spawn('node', [path.join(__dirname, '0-scraper.js'), 'login', '--auto'], {
+      stdio: ['ignore', 'pipe', 'pipe'], cwd: __dirname, env: spawnEnv
+    });
+    // Redireciona stdout e stderr para o arquivo de log — dá visibilidade total ao processo
+    const logStream = fs.createWriteStream(renewalLogFile, { flags: 'a' });
+    child.stdout.pipe(logStream);
+    child.stderr.pipe(logStream);
+    child.on('exit', (code) => {
+      try {
+        fs.appendFileSync(renewalLogFile, `\n[EXIT] code=${code} ts=${new Date().toISOString()}\n`);
+        logStream.end();
+      } catch {}
+    });
+    child.on('error', (err) => {
+      try {
+        fs.appendFileSync(renewalLogFile, `\n[ERROR] ${err.message}\n`);
+        logStream.end();
+      } catch {}
+    });
+    return json(res, { ok: true, message: 'Login iniciado' });
+  }
+
+  // ── INSTAGRAM RENEWAL STATUS (lê log do processo de login) ────────────
+  if (req.method === 'GET' && pathname === '/api/instagram/renewal-status') {
+    const renewalLogFile = path.join(DATA_DIR, 'instagram-renewal-log.txt');
+    if (!fs.existsSync(renewalLogFile)) {
+      return json(res, { status: 'idle', message: 'Nenhum processo de login iniciado' });
+    }
+    let log = '';
+    try { log = fs.readFileSync(renewalLogFile, 'utf8'); } catch {}
+    const logLower = log.toLowerCase();
+    let status = 'running';
+    let message = 'Login em andamento…';
+    if (log.includes('[EXIT] code=0')) {
+      status = 'success';
+      message = 'Sessão renovada com sucesso!';
+    } else if (/\[EXIT\] code=[^0\n]/.test(log)) {
+      if (logLower.includes('challenge') || logLower.includes('checkpoint') || logLower.includes('verification') || logLower.includes('suspicious')) {
+        status = 'challenge';
+        message = 'Instagram pediu verificação de segurança — tente login manual pelo app.';
+      } else if (logLower.includes('incorrect password') || logLower.includes('wrong password') || logLower.includes('senha') || logLower.includes('invalid')) {
+        status = 'error';
+        message = 'Usuário ou senha incorretos.';
+      } else {
+        status = 'error';
+        message = 'Login falhou. Verifique logs para detalhes.';
+      }
+    }
+    // Detecta sucesso via linha de log (antes do EXIT)
+    if (status === 'running' && (logLower.includes('sessão salva') || logLower.includes('session saved') || logLower.includes('login successful') || logLower.includes('logged in'))) {
+      status = 'success';
+      message = 'Sessão renovada com sucesso!';
+    }
+    return json(res, { status, message, tail: log.slice(-600) });
   }
 
   // ── REGENERATE DM (re-analyzes profile, then regenerates message with old as context) ──
