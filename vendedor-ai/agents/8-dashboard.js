@@ -587,57 +587,118 @@ const server = http.createServer(async (req, res) => {
     return json(res, { ok: true, message: 'Solicitação registrada' });
   }
 
-  // ── INSTAGRAM AUTO-RENEW (roda 0-scraper.js login automaticamente) ───
+  // ── INSTAGRAM AUTO-RENEW (roda 0-scraper.js login) ────────────────────
+  // Aceita credenciais no body OU usa as do .env (fallback)
+  // As credenciais do body NÃO são armazenadas — usadas apenas para o spawn
   if (req.method === 'POST' && pathname === '/api/instagram/auto-renew') {
-    const hasUser = !!process.env.INSTAGRAM_USERNAME;
-    const hasPass = !!process.env.INSTAGRAM_PASSWORD;
-    if (!hasUser || !hasPass) {
+    const body = await bodyJSON(req);
+    const igUser = (body.username || '').trim() || process.env.INSTAGRAM_USERNAME;
+    const igPass = (body.password || '').trim() || process.env.INSTAGRAM_PASSWORD;
+    if (!igUser || !igPass) {
       return json(res, {
         ok: false,
-        error: 'Credenciais não configuradas',
-        detail: 'INSTAGRAM_USERNAME e INSTAGRAM_PASSWORD precisam estar no .env da VPS'
+        need_credentials: true,
+        error: 'Credenciais do Instagram não fornecidas'
       }, 400);
     }
-    // Loga a tentativa de renovação
+    // Loga sem expor credenciais
     const renewalLog = path.join(DATA_DIR, 'instagram-renewal-requests.json');
     const requests = loadJSON(renewalLog, { requests: [] });
-    requests.requests.push({ timestamp: new Date().toISOString(), status: 'auto-renew-started' });
+    requests.requests.push({ timestamp: new Date().toISOString(), status: 'auto-renew-started', user: igUser });
     saveJSON(renewalLog, requests);
-    // Dispara 0-scraper.js login em background
+    // Spawna 0-scraper login com as credenciais (nunca armazena no arquivo)
+    const spawnEnv = { ...process.env, INSTAGRAM_USERNAME: igUser, INSTAGRAM_PASSWORD: igPass };
     setTimeout(() => {
       const child = spawn('node', [path.join(__dirname, '0-scraper.js'), 'login', '--auto'], {
-        detached: true, stdio: 'ignore', cwd: __dirname, env: process.env
+        detached: true, stdio: 'ignore', cwd: __dirname, env: spawnEnv
       });
       child.unref();
     }, 100);
-    return json(res, { ok: true, message: 'Renovação automática iniciada — aguarde 1–2 minutos' });
+    return json(res, { ok: true, message: 'Login iniciado — aguarde 1–2 minutos' });
   }
 
-  // ── REGENERATE DM (re-runs copywriter for a specific lead) ─────────────
+  // ── REGENERATE DM (re-analyzes profile, then regenerates message with old as context) ──
   if (req.method === 'POST' && pathname === '/api/regenerate-dm') {
     const { username } = await bodyJSON(req);
     if (!username) return json(res, { ok: false, error: 'username obrigatório' }, 400);
     const clean = username.replace(/^@/, '').trim().toLowerCase();
-    // Run copywriter for this specific lead
+
+    // Lê mensagem anterior para passar como contexto de melhoria
+    let previousMessage = null;
     try {
-      const result = spawnSync('node', [path.join(__dirname, '2-copywriter.js'), clean], {
-        stdio: 'pipe', cwd: __dirname, env: process.env, timeout: 60000
-      });
-      if (result.status === 0) {
-        // Re-read the generated message
-        const msg = getLeadMessages(clean);
-        const newText = msg?.revisao?.mensagem_final || msg?.mensagens?.mensagem1?.texto;
-        if (newText) {
-          return json(res, { ok: true, new_message: newText, username: clean });
+      const oldFile = path.join(DATA_DIR, 'mensagens', `${clean}_mensagens.json`);
+      if (fs.existsSync(oldFile)) {
+        const old = loadJSON(oldFile, null);
+        if (old) {
+          const recKey = `mensagem_${old.mensagens?.mensagem_recomendada || '1'}`;
+          previousMessage = old.revisao?.mensagem_final
+            || old.mensagens?.[recKey]?.texto
+            || old.mensagens?.mensagem_1?.texto
+            || null;
         }
-        return json(res, { ok: false, error: 'Copywriter executou mas não gerou mensagem nova' });
+      }
+    } catch {}
+
+    // Passo 1: re-analisa o perfil (1-analyzer.js) para ter análise fresca
+    try {
+      console.log(`[REGEN-DM] ▶ Analisando @${clean}...`);
+      const analyzeResult = spawnSync('node', [path.join(__dirname, '1-analyzer.js'), clean], {
+        stdio: 'pipe', cwd: __dirname, env: process.env, timeout: 120000
+      });
+      if (analyzeResult.status !== 0) {
+        const errOut = (analyzeResult.stderr || analyzeResult.stdout || '').toString().slice(0, 400);
+        return json(res, { ok: false, error: `Análise falhou: ${errOut || 'erro desconhecido. Verifique GROQ_API_KEY'}` });
+      }
+    } catch (e) {
+      return json(res, { ok: false, error: `Timeout na análise (>120s): ${e.message}` });
+    }
+
+    // Passo 2: gera nova mensagem (2-copywriter.js) passando a mensagem anterior como contexto
+    const copyEnv = { ...process.env };
+    if (previousMessage) copyEnv.PREVIOUS_MESSAGE = previousMessage;
+    try {
+      console.log(`[REGEN-DM] ▶ Gerando mensagem para @${clean}...`);
+      const copyResult = spawnSync('node', [path.join(__dirname, '2-copywriter.js'), clean], {
+        stdio: 'pipe', cwd: __dirname, env: copyEnv, timeout: 60000
+      });
+      if (copyResult.status === 0) {
+        // Lê arquivo gerado diretamente (mensagem_1 key, não mensagem1)
+        const raw = loadJSON(path.join(DATA_DIR, 'mensagens', `${clean}_mensagens.json`), null);
+        if (raw) {
+          const recKey = `mensagem_${raw.mensagens?.mensagem_recomendada || '1'}`;
+          const newText = raw.revisao?.mensagem_final
+            || raw.mensagens?.[recKey]?.texto
+            || raw.mensagens?.mensagem_1?.texto;
+          if (newText) return json(res, { ok: true, new_message: newText, username: clean });
+        }
+        return json(res, { ok: false, error: 'Mensagem gerada mas não encontrada no arquivo' });
       } else {
-        const errOut = (result.stderr || result.stdout || '').toString().slice(0, 200);
+        const errOut = (copyResult.stderr || copyResult.stdout || '').toString().slice(0, 300);
         return json(res, { ok: false, error: `Copywriter falhou: ${errOut || 'erro desconhecido'}` });
       }
     } catch (e) {
-      return json(res, { ok: false, error: `Timeout ou erro: ${e.message}` });
+      return json(res, { ok: false, error: `Timeout no copywriter: ${e.message}` });
     }
+  }
+
+  // ── DELETE LEAD ─────────────────────────────────────────────────────────
+  if (req.method === 'DELETE' && pathname.startsWith('/api/lead/')) {
+    const username = decodeURIComponent(pathname.slice('/api/lead/'.length)).replace(/^@/, '').trim().toLowerCase();
+    if (!username) return json(res, { ok: false, error: 'username obrigatório' }, 400);
+    const db = loadJSON(DB_FILE, { leads: [] });
+    const idx = db.leads.findIndex(l => l.username === username);
+    if (idx === -1) return json(res, { ok: false, error: `Lead @${username} não encontrado` }, 404);
+    db.leads.splice(idx, 1);
+    saveJSON(DB_FILE, db);
+    try {
+      const cacheFile = path.join(DATA_DIR, 'crm', 'notion-sync-cache.json');
+      if (fs.existsSync(cacheFile)) {
+        const cache = loadJSON(cacheFile, {});
+        delete cache[username];
+        saveJSON(cacheFile, cache);
+      }
+    } catch {}
+    return json(res, { ok: true, message: `@${username} removido do CRM` });
   }
 
   // ── SEND DM (bridge → DmQueueDB + sender) ───────────────────────────────

@@ -612,6 +612,45 @@ tbody tr:last-child td{border-bottom:none}
 <!-- TOASTS -->
 <div class="toast-container" id="toasts"></div>
 
+<!-- ── INSTAGRAM LOGIN MODAL ── -->
+<div class="cmd-overlay" id="igLoginOverlay" style="z-index:9999">
+  <div class="cmd-palette" style="max-width:420px;padding:28px 28px 24px">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+      <span style="font-size:22px">📸</span>
+      <div>
+        <div style="font-size:15px;font-weight:700;color:var(--t)">Renovar Sessão do Instagram</div>
+        <div style="font-size:11px;color:var(--t3);margin-top:2px">Faça login para renovar a conexão</div>
+      </div>
+    </div>
+    <div style="background:rgba(0,212,255,.06);border:1px solid rgba(0,212,255,.2);border-radius:10px;padding:10px 14px;margin:14px 0;font-size:11px;color:var(--t2);line-height:1.6">
+      🔒 <strong style="color:var(--cyan)">Suas credenciais são usadas apenas uma vez</strong> para criar a sessão e nunca são armazenadas no servidor.
+    </div>
+    <div class="bp-form" style="gap:10px">
+      <div class="bp-field">
+        <label style="font-size:11px">Usuário do Instagram</label>
+        <input type="text" id="igLoginUser" placeholder="@seu_usuario" autocomplete="username"
+          style="background:var(--bg-el);border:1px solid var(--b);border-radius:8px;padding:9px 12px;color:var(--t);font-size:13px;width:100%;outline:none"
+          onkeydown="if(event.key==='Enter')document.getElementById('igLoginPass').focus()">
+      </div>
+      <div class="bp-field" style="position:relative">
+        <label style="font-size:11px">Senha</label>
+        <input type="password" id="igLoginPass" placeholder="••••••••" autocomplete="current-password"
+          style="background:var(--bg-el);border:1px solid var(--b);border-radius:8px;padding:9px 36px 9px 12px;color:var(--t);font-size:13px;width:100%;outline:none"
+          onkeydown="if(event.key==='Enter')submitIgLogin()">
+        <span onclick="const i=document.getElementById('igLoginPass');i.type=i.type==='password'?'text':'password'"
+          style="position:absolute;right:10px;bottom:10px;cursor:pointer;font-size:14px;color:var(--t3)">👁</span>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:16px">
+      <button onclick="closeIgLoginModal()" style="flex:1;padding:9px;background:var(--bg-el);border:1px solid var(--b);border-radius:8px;color:var(--t2);font-size:12px;cursor:pointer">Cancelar</button>
+      <button id="igLoginSubmitBtn" onclick="submitIgLogin()" style="flex:2;padding:9px;background:linear-gradient(135deg,var(--purple),var(--cyan-d));border:none;border-radius:8px;color:#fff;font-size:12px;font-weight:700;cursor:pointer">
+        Fazer Login no Instagram
+      </button>
+    </div>
+    <div id="igLoginStatus" style="margin-top:10px;font-size:11px;color:var(--t3);text-align:center;min-height:16px"></div>
+  </div>
+</div>
+
 <!-- LOGIN -->
 <div class="login-overlay" id="loginOverlay">
   <div class="login-card">
@@ -2123,33 +2162,64 @@ async function fetchData() {
   }
 }
 
-// ── Instagram Session Auto-Renew ──
-async function autoRenewSession() {
+// ── Instagram Session — Modal de Login ──
+function autoRenewSession() {
+  // Abre modal de credenciais em vez de exigir .env
+  document.getElementById('igLoginUser').value = '';
+  document.getElementById('igLoginPass').value = '';
+  document.getElementById('igLoginStatus').textContent = '';
+  document.getElementById('igLoginSubmitBtn').disabled = false;
+  document.getElementById('igLoginSubmitBtn').textContent = 'Fazer Login no Instagram';
+  document.getElementById('igLoginOverlay').classList.add('open');
+  setTimeout(() => document.getElementById('igLoginUser').focus(), 80);
+}
+
+function closeIgLoginModal() {
+  document.getElementById('igLoginOverlay').classList.remove('open');
+}
+
+document.getElementById('igLoginOverlay').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeIgLoginModal();
+});
+
+async function submitIgLogin() {
+  const user = document.getElementById('igLoginUser').value.replace('@','').trim();
+  const pass = document.getElementById('igLoginPass').value;
+  const statusEl = document.getElementById('igLoginStatus');
+  const btn = document.getElementById('igLoginSubmitBtn');
+
+  if (!user || !pass) {
+    statusEl.textContent = '⚠ Preencha usuário e senha';
+    statusEl.style.color = 'var(--amber)';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = '⏳ Fazendo login…';
+  statusEl.textContent = 'Iniciando — o Playwright vai abrir o Instagram…';
+  statusEl.style.color = 'var(--t3)';
+
   const pill = document.getElementById('pill-ig-session');
   const pillStatus = document.getElementById('renew-status');
   const pageStatus = document.getElementById('igRenewalStatus');
 
-  // Disable all renewal buttons while running
-  document.querySelectorAll('[onclick="autoRenewSession()"]').forEach(b => { b.disabled = true; b.style.opacity = '.6'; });
-  if (pill) pill.classList.add('renewing');
-  if (pillStatus) pillStatus.textContent = '• renovando…';
-  if (pageStatus) pageStatus.innerHTML = '⏳ Renovação em andamento — aguarde 1–2 minutos…';
-
-  toast('Iniciando renovação de sessão…', 'info');
-  addLog('SESSION', '▶ Renovação automática de sessão iniciada');
-
   try {
-    const r = await authFetch('/api/instagram/auto-renew', { method: 'POST' });
+    const r = await authFetch('/api/instagram/auto-renew', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: user, password: pass })
+    });
     const d = await r.json();
+
     if (d.ok) {
-      const msg = d.message || 'Renovação iniciada — aguarde 1–2 min';
-      toast('✓ ' + msg, 'success');
-      addLog('SESSION', '✓ ' + msg, 'ok');
-      if (pillStatus) pillStatus.textContent = '• renovando';
-      if (pageStatus) pageStatus.innerHTML = `✓ ${msg}`;
-      // Re-enable and recheck after ~90s
+      closeIgLoginModal();
+      toast('✓ Login iniciado — aguarde 1–2 minutos', 'success');
+      addLog('SESSION', `▶ Renovação iniciada para @${user}`, 'ok');
+      if (pill) pill.classList.add('renewing');
+      if (pillStatus) pillStatus.textContent = '• renovando…';
+      if (pageStatus) pageStatus.innerHTML = '⏳ Login em andamento — aguarde 1–2 minutos…';
+      // Re-checa após 90s
       setTimeout(() => {
-        document.querySelectorAll('[onclick="autoRenewSession()"]').forEach(b => { b.disabled = false; b.style.opacity = ''; });
         if (pill) pill.classList.remove('renewing');
         if (pillStatus) pillStatus.textContent = '';
         if (pageStatus) pageStatus.innerHTML = '';
@@ -2157,22 +2227,16 @@ async function autoRenewSession() {
         checkAPIStatus();
       }, 90000);
     } else {
-      const err = d.error || 'Falha desconhecida';
-      const detail = d.detail || '';
-      toast('Erro: ' + err, 'error');
-      addLog('SESSION', '✗ ' + (detail || err), 'err');
-      if (pageStatus) pageStatus.innerHTML = `⚠ ${err}${detail ? ' — ' + detail : ''}`;
-      document.querySelectorAll('[onclick="autoRenewSession()"]').forEach(b => { b.disabled = false; b.style.opacity = ''; });
-      if (pill) pill.classList.remove('renewing');
-      if (pillStatus) pillStatus.textContent = '';
+      statusEl.textContent = '⚠ ' + (d.error || 'Falha ao iniciar login');
+      statusEl.style.color = 'var(--red)';
+      btn.disabled = false;
+      btn.textContent = 'Fazer Login no Instagram';
     }
   } catch {
-    toast('Servidor offline', 'error');
-    addLog('SESSION', '✗ Servidor não disponível', 'err');
-    if (pageStatus) pageStatus.innerHTML = '⚠ Servidor não disponível';
-    document.querySelectorAll('[onclick="autoRenewSession()"]').forEach(b => { b.disabled = false; b.style.opacity = ''; });
-    if (pill) pill.classList.remove('renewing');
-    if (pillStatus) pillStatus.textContent = '';
+    statusEl.textContent = '⚠ Servidor não disponível';
+    statusEl.style.color = 'var(--red)';
+    btn.disabled = false;
+    btn.textContent = 'Fazer Login no Instagram';
   }
 }
 
@@ -2328,14 +2392,14 @@ function analyzeProfile() {
     .finally(() => { btn.disabled = false; btn.textContent = '🔍 Analisar Perfil'; });
 }
 
-// ── Regenerar DM ──
+// ── Regenerar DM (re-analisa perfil + gera nova mensagem) ──
 function regenDM(idx) {
   const dm = state.dmQueue[idx];
   if (!dm) return;
   const btn = document.getElementById('regen-' + idx);
-  if (btn) { btn.disabled = true; btn.textContent = '⏳...'; }
-  toast(`Regenerando DM para @${dm.username}...`, 'info');
-  addLog('COPYWRITER', `▶ Regenerando DM para @${dm.username}`);
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Analisando…'; }
+  toast(`Regenerando @${dm.username} — analisando perfil e gerando mensagem (~1 min)…`, 'info');
+  addLog('COPYWRITER', `▶ Regenerando @${dm.username}: análise + copy`);
   authFetch('/api/regenerate-dm', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ username: dm.username }) })
     .then(r => r.json())
     .then(d => {
