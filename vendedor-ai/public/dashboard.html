@@ -1301,11 +1301,11 @@ tbody tr:last-child td{border-bottom:none}
                   <strong>🔒 Segurança:</strong> Sua sessão é criptografada com AES-256-GCM. Nenhuma senha é armazenada no sistema.
                 </div>
                 <div style="margin-top:14px;padding:10px 12px;background:rgba(124,58,237,.07);border:1px solid rgba(124,58,237,.2);border-radius:8px;font-size:11px;color:var(--purple-l);line-height:1.5">
-                  <strong>💡 Sessão expirou?</strong> Clique no botão abaixo para solicitar a renovação. Nossa equipe resolve em até 24 horas sem que você precise fazer nada técnico.
+                  <strong>💡 Sessão expirou?</strong> Clique no botão abaixo. O sistema faz o login automaticamente em 1–2 minutos, sem precisar de suporte técnico.
                 </div>
               </div>
               <div style="margin-top:16px">
-                <button class="bp-save-btn" onclick="requestSessionRenewal()" style="background:linear-gradient(135deg,var(--cyan-d),var(--cyan))">🔄 Solicitar Renovação de Sessão</button>
+                <button class="bp-save-btn" onclick="autoRenewSession()" style="background:linear-gradient(135deg,var(--cyan-d),var(--cyan))">🔄 Renovar Sessão Automaticamente</button>
                 <div id="igRenewalStatus" class="bp-status" style="margin-top:8px"></div>
               </div>
             </div>
@@ -2125,40 +2125,54 @@ async function fetchData() {
 
 // ── Instagram Session Auto-Renew ──
 async function autoRenewSession() {
-  const btn = document.getElementById('pill-ig-session');
-  const statusEl = document.getElementById('renew-status');
-  if (!btn) return;
-  btn.classList.add('renewing');
-  btn.disabled = true;
-  if (statusEl) statusEl.textContent = '• renovando…';
+  const pill = document.getElementById('pill-ig-session');
+  const pillStatus = document.getElementById('renew-status');
+  const pageStatus = document.getElementById('igRenewalStatus');
+
+  // Disable all renewal buttons while running
+  document.querySelectorAll('[onclick="autoRenewSession()"]').forEach(b => { b.disabled = true; b.style.opacity = '.6'; });
+  if (pill) pill.classList.add('renewing');
+  if (pillStatus) pillStatus.textContent = '• renovando…';
+  if (pageStatus) pageStatus.innerHTML = '⏳ Renovação em andamento — aguarde 1–2 minutos…';
+
   toast('Iniciando renovação de sessão…', 'info');
-  addLog('SESSION', '▶ Solicitando renovação automática de sessão do Instagram');
+  addLog('SESSION', '▶ Renovação automática de sessão iniciada');
+
   try {
     const r = await authFetch('/api/instagram/auto-renew', { method: 'POST' });
     const d = await r.json();
     if (d.ok) {
-      toast('✓ ' + (d.message || 'Renovação iniciada — aguarde 1–2 min'), 'success');
-      addLog('SESSION', '✓ ' + (d.message || 'Renovação iniciada'), 'ok');
-      if (statusEl) statusEl.textContent = '• renovando';
+      const msg = d.message || 'Renovação iniciada — aguarde 1–2 min';
+      toast('✓ ' + msg, 'success');
+      addLog('SESSION', '✓ ' + msg, 'ok');
+      if (pillStatus) pillStatus.textContent = '• renovando';
+      if (pageStatus) pageStatus.innerHTML = `✓ ${msg}`;
+      // Re-enable and recheck after ~90s
       setTimeout(() => {
-        btn.classList.remove('renewing');
-        btn.disabled = false;
-        if (statusEl) statusEl.textContent = '';
+        document.querySelectorAll('[onclick="autoRenewSession()"]').forEach(b => { b.disabled = false; b.style.opacity = ''; });
+        if (pill) pill.classList.remove('renewing');
+        if (pillStatus) pillStatus.textContent = '';
+        if (pageStatus) pageStatus.innerHTML = '';
+        loadInstagramStatus();
         checkAPIStatus();
       }, 90000);
     } else {
-      toast('Erro: ' + (d.error || 'falha desconhecida'), 'error');
-      addLog('SESSION', '✗ ' + (d.detail || d.error || 'erro'), 'err');
-      btn.classList.remove('renewing');
-      btn.disabled = false;
-      if (statusEl) statusEl.textContent = '';
+      const err = d.error || 'Falha desconhecida';
+      const detail = d.detail || '';
+      toast('Erro: ' + err, 'error');
+      addLog('SESSION', '✗ ' + (detail || err), 'err');
+      if (pageStatus) pageStatus.innerHTML = `⚠ ${err}${detail ? ' — ' + detail : ''}`;
+      document.querySelectorAll('[onclick="autoRenewSession()"]').forEach(b => { b.disabled = false; b.style.opacity = ''; });
+      if (pill) pill.classList.remove('renewing');
+      if (pillStatus) pillStatus.textContent = '';
     }
   } catch {
     toast('Servidor offline', 'error');
     addLog('SESSION', '✗ Servidor não disponível', 'err');
-    btn.classList.remove('renewing');
-    btn.disabled = false;
-    if (statusEl) statusEl.textContent = '';
+    if (pageStatus) pageStatus.innerHTML = '⚠ Servidor não disponível';
+    document.querySelectorAll('[onclick="autoRenewSession()"]').forEach(b => { b.disabled = false; b.style.opacity = ''; });
+    if (pill) pill.classList.remove('renewing');
+    if (pillStatus) pillStatus.textContent = '';
   }
 }
 
@@ -2584,36 +2598,59 @@ function requestSessionRenewal() {
   const tip = document.createElement('div');
   tip.id = 'tip-overlay';
   document.body.appendChild(tip);
-  
+  let activeBtn = null;
+
   function showTip(btn) {
     const src = btn.querySelector('.detail-tooltip');
     if (!src) return;
+    activeBtn = btn;
     tip.textContent = src.textContent;
     tip.style.display = 'block';
     const r = btn.getBoundingClientRect();
     const w = Math.min(280, window.innerWidth - 16);
     tip.style.maxWidth = w + 'px';
-    requestAnimationFrame(() => {
-      const h = tip.offsetHeight;
-      const tw = tip.offsetWidth;
-      let left = r.left + r.width/2 - tw/2;
-      let top = r.top - h - 10;
-      if (left < 8) left = 8;
-      if (left + tw > window.innerWidth - 8) left = window.innerWidth - tw - 8;
-      if (top < 8) top = r.bottom + 10;
-      tip.style.left = left + 'px';
-      tip.style.top = top + 'px';
-    });
+    const h = tip.offsetHeight;
+    const tw = tip.offsetWidth;
+    let left = r.left + r.width / 2 - tw / 2;
+    let top = r.top - h - 10;
+    if (left < 8) left = 8;
+    if (left + tw > window.innerWidth - 8) left = window.innerWidth - tw - 8;
+    if (top < 8) top = r.bottom + 10;
+    tip.style.left = left + 'px';
+    tip.style.top = top + 'px';
   }
-  
+
+  function hideTip() {
+    tip.style.display = 'none';
+    activeBtn = null;
+  }
+
+  // Hover: show on enter, hide only when leaving the button boundary
   document.addEventListener('mouseover', e => {
     const btn = e.target.closest('.detail-btn');
-    if (btn) showTip(btn);
+    if (btn) { showTip(btn); return; }
+    // Mouse moved away from any detail-btn
+    if (activeBtn) hideTip();
   });
   document.addEventListener('mouseout', e => {
-    if (e.target.closest('.detail-btn')) tip.style.display = 'none';
+    const from = e.target.closest('.detail-btn');
+    if (!from) return;
+    const to = e.relatedTarget;
+    // Only hide if mouse is leaving the button entirely (not moving within it)
+    if (!to || !from.contains(to)) hideTip();
   });
-  document.addEventListener('scroll', () => { tip.style.display = 'none'; }, true);
+
+  // Click toggle: tap on ? shows/hides tooltip (mobile + quick clicks)
+  document.addEventListener('click', e => {
+    const btn = e.target.closest('.detail-btn');
+    if (!btn) { if (activeBtn) hideTip(); return; }
+    e.stopPropagation();
+    if (tip.style.display === 'block' && activeBtn === btn) { hideTip(); return; }
+    showTip(btn);
+  });
+
+  document.addEventListener('scroll', hideTip, true);
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') hideTip(); });
 })();
 
 // ── Init ──
