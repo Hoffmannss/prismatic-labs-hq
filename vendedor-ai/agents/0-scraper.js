@@ -80,16 +80,26 @@ function extractPostsData(u, limit = 6) {
 async function launchBrowser(headless = true) {
   const browser = await chromium.launch({
     headless,
-    args: ['--no-sandbox','--disable-setuid-sandbox','--disable-dev-shm-usage',
-           '--disable-accelerated-2d-canvas','--no-first-run','--no-zygote','--disable-gpu']
+    args: [
+      '--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage',
+      '--disable-accelerated-2d-canvas', '--no-first-run', '--no-zygote', '--disable-gpu',
+      '--disable-blink-features=AutomationControlled',
+      '--disable-features=IsolateOrigins,site-per-process',
+    ]
   });
 
   const context = await browser.newContext({
-    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+    userAgent: 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
     viewport: { width: 1280, height: 800 },
     locale: 'pt-BR',
     timezoneId: 'America/Sao_Paulo',
     extraHTTPHeaders: { 'Accept-Language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7' }
+  });
+
+  // Remove flag navigator.webdriver que delata o Playwright para o Instagram
+  await context.addInitScript(() => {
+    Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
+    window.chrome = { runtime: {} };
   });
 
   const cookies = security.loadEncrypted(SESSION_FILE);
@@ -127,9 +137,18 @@ async function doAutoLogin() {
   const { browser, context } = await launchBrowser(true);
   const page = await context.newPage();
   try {
-    await page.goto('https://www.instagram.com/accounts/login/', { waitUntil: 'networkidle', timeout: 30000 });
-    await page.waitForSelector('input[name="username"]', { timeout: 15000 });
-    await sleep(2000);
+    // Navega para a homepage primeiro (mais orgânico que ir direto para /accounts/login)
+    console.log(`${C.cyan}[SCRAPER] Abrindo Instagram...${C.reset}`);
+    await page.goto('https://www.instagram.com/', { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await sleep(rand(1500, 2500));
+    await page.goto('https://www.instagram.com/accounts/login/', { waitUntil: 'domcontentloaded', timeout: 30000 });
+    // Aceita cookie banner se aparecer (Europa/Brasil compliance)
+    try {
+      const cookieBtn = page.locator('button:has-text("Allow"), button:has-text("Accept"), button:has-text("Aceitar")');
+      if (await cookieBtn.first().isVisible({ timeout: 3000 })) await cookieBtn.first().click();
+    } catch {}
+    await page.waitForSelector('input[name="username"]', { timeout: 25000 });
+    await sleep(rand(1000, 2000));
     await page.fill('input[name="username"]', username);
     await sleep(rand(400, 900));
     await page.fill('input[name="password"]', password);
