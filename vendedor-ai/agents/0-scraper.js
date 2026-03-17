@@ -19,7 +19,7 @@
 //   node 0-scraper.js profile n8nautomation
 // =============================================================
 
-require('dotenv').config();
+require('dotenv').config({ path: require('path').join(__dirname, '..', '.env') });
 const { chromium } = require('playwright');
 const fs   = require('fs');
 const path = require('path');
