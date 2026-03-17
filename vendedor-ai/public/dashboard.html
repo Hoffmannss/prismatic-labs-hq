@@ -614,40 +614,79 @@ tbody tr:last-child td{border-bottom:none}
 
 <!-- ── INSTAGRAM LOGIN MODAL ── -->
 <div class="cmd-overlay" id="igLoginOverlay" style="z-index:9999">
-  <div class="cmd-palette" style="max-width:420px;padding:28px 28px 24px">
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+  <div class="cmd-palette" style="max-width:460px;padding:28px 28px 24px">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
       <span style="font-size:22px">📸</span>
       <div>
-        <div style="font-size:15px;font-weight:700;color:var(--t)">Renovar Sessão do Instagram</div>
-        <div style="font-size:11px;color:var(--t3);margin-top:2px">Faça login para renovar a conexão</div>
+        <div style="font-size:15px;font-weight:700;color:var(--t)">Conectar Instagram</div>
+        <div style="font-size:11px;color:var(--t3);margin-top:2px">Vincule sua conta para enviar DMs</div>
       </div>
     </div>
-    <div style="background:rgba(0,212,255,.06);border:1px solid rgba(0,212,255,.2);border-radius:10px;padding:10px 14px;margin:14px 0;font-size:11px;color:var(--t2);line-height:1.6">
-      🔒 <strong style="color:var(--cyan)">Suas credenciais são usadas apenas uma vez</strong> para criar a sessão e nunca são armazenadas no servidor.
-    </div>
-    <div class="bp-form" style="gap:10px">
-      <div class="bp-field">
-        <label style="font-size:11px">Usuário do Instagram</label>
-        <input type="text" id="igLoginUser" placeholder="@seu_usuario" autocomplete="username"
-          style="background:var(--bg-el);border:1px solid var(--b);border-radius:8px;padding:9px 12px;color:var(--t);font-size:13px;width:100%;outline:none"
-          onkeydown="if(event.key==='Enter')document.getElementById('igLoginPass').focus()">
-      </div>
-      <div class="bp-field" style="position:relative">
-        <label style="font-size:11px">Senha</label>
-        <input type="password" id="igLoginPass" placeholder="••••••••" autocomplete="current-password"
-          style="background:var(--bg-el);border:1px solid var(--b);border-radius:8px;padding:9px 36px 9px 12px;color:var(--t);font-size:13px;width:100%;outline:none"
-          onkeydown="if(event.key==='Enter')submitIgLogin()">
-        <span onclick="const i=document.getElementById('igLoginPass');i.type=i.type==='password'?'text':'password'"
-          style="position:absolute;right:10px;bottom:10px;cursor:pointer;font-size:14px;color:var(--t3)">👁</span>
-      </div>
-    </div>
-    <div style="display:flex;gap:8px;margin-top:16px">
-      <button onclick="closeIgLoginModal()" style="flex:1;padding:9px;background:var(--bg-el);border:1px solid var(--b);border-radius:8px;color:var(--t2);font-size:12px;cursor:pointer">Cancelar</button>
-      <button id="igLoginSubmitBtn" onclick="submitIgLogin()" style="flex:2;padding:9px;background:linear-gradient(135deg,var(--purple),var(--cyan-d));border:none;border-radius:8px;color:#fff;font-size:12px;font-weight:700;cursor:pointer">
-        Fazer Login no Instagram
+    <!-- Abas -->
+    <div style="display:flex;gap:0;border:1px solid var(--b);border-radius:10px;overflow:hidden;margin-bottom:18px">
+      <button id="igTabSessionBtn" onclick="igSwitchTab('session')"
+        style="flex:1;padding:9px 0;font-size:12px;font-weight:600;cursor:pointer;border:none;background:var(--purple);color:#fff;transition:all .2s">
+        Colar Session ID
+      </button>
+      <button id="igTabAutoBtn" onclick="igSwitchTab('auto')"
+        style="flex:1;padding:9px 0;font-size:12px;font-weight:600;cursor:pointer;border:none;background:var(--bg-el);color:var(--t2);transition:all .2s">
+        Login Automático
       </button>
     </div>
-    <div id="igLoginStatus" style="margin-top:10px;font-size:11px;color:var(--t3);text-align:center;min-height:16px"></div>
+
+    <!-- ABA: Session ID (padrão) -->
+    <div id="igTabSession">
+      <div style="background:rgba(124,58,237,.07);border:1px solid rgba(124,58,237,.2);border-radius:10px;padding:12px 14px;margin-bottom:14px;font-size:11px;color:var(--t2);line-height:1.7">
+        <strong style="color:var(--purple-l)">Como obter seu Session ID:</strong><br>
+        1. Abra <strong>instagram.com</strong> no Chrome e faça login<br>
+        2. Pressione <kbd style="background:var(--bg-el);padding:1px 5px;border-radius:4px;font-size:10px">F12</kbd> → aba <strong>Application</strong><br>
+        3. No menu lateral: <strong>Storage → Cookies → https://www.instagram.com</strong><br>
+        4. Encontre a linha <strong>sessionid</strong> e copie o <strong>Value</strong>
+      </div>
+      <div class="bp-field">
+        <label style="font-size:11px">Session ID</label>
+        <input type="text" id="igSessionIdInput" placeholder="Cole aqui o valor do sessionid..."
+          style="background:var(--bg-el);border:1px solid var(--b);border-radius:8px;padding:9px 12px;color:var(--t);font-size:12px;width:100%;outline:none;font-family:monospace"
+          onkeydown="if(event.key==='Enter')submitIgSession()">
+      </div>
+      <div style="display:flex;gap:8px;margin-top:14px">
+        <button onclick="closeIgLoginModal()" style="flex:1;padding:9px;background:var(--bg-el);border:1px solid var(--b);border-radius:8px;color:var(--t2);font-size:12px;cursor:pointer">Cancelar</button>
+        <button id="igSessionSubmitBtn" onclick="submitIgSession()" style="flex:2;padding:9px;background:linear-gradient(135deg,var(--purple),var(--cyan-d));border:none;border-radius:8px;color:#fff;font-size:12px;font-weight:700;cursor:pointer">
+          ✓ Importar Sessão
+        </button>
+      </div>
+      <div id="igSessionStatus" style="margin-top:10px;font-size:11px;color:var(--t3);text-align:center;min-height:16px"></div>
+    </div>
+
+    <!-- ABA: Login Automático -->
+    <div id="igTabAuto" style="display:none">
+      <div style="background:rgba(0,212,255,.06);border:1px solid rgba(0,212,255,.2);border-radius:10px;padding:10px 14px;margin-bottom:14px;font-size:11px;color:var(--t2);line-height:1.6">
+        🔒 <strong style="color:var(--cyan)">Credenciais usadas apenas uma vez</strong> — nunca armazenadas no servidor.
+      </div>
+      <div class="bp-form" style="gap:10px">
+        <div class="bp-field">
+          <label style="font-size:11px">Usuário do Instagram</label>
+          <input type="text" id="igLoginUser" placeholder="@seu_usuario" autocomplete="username"
+            style="background:var(--bg-el);border:1px solid var(--b);border-radius:8px;padding:9px 12px;color:var(--t);font-size:13px;width:100%;outline:none"
+            onkeydown="if(event.key==='Enter')document.getElementById('igLoginPass').focus()">
+        </div>
+        <div class="bp-field" style="position:relative">
+          <label style="font-size:11px">Senha</label>
+          <input type="password" id="igLoginPass" placeholder="••••••••" autocomplete="current-password"
+            style="background:var(--bg-el);border:1px solid var(--b);border-radius:8px;padding:9px 36px 9px 12px;color:var(--t);font-size:13px;width:100%;outline:none"
+            onkeydown="if(event.key==='Enter')submitIgLogin()">
+          <span onclick="const i=document.getElementById('igLoginPass');i.type=i.type==='password'?'text':'password'"
+            style="position:absolute;right:10px;bottom:10px;cursor:pointer;font-size:14px;color:var(--t3)">👁</span>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:16px">
+        <button onclick="closeIgLoginModal()" style="flex:1;padding:9px;background:var(--bg-el);border:1px solid var(--b);border-radius:8px;color:var(--t2);font-size:12px;cursor:pointer">Cancelar</button>
+        <button id="igLoginSubmitBtn" onclick="submitIgLogin()" style="flex:2;padding:9px;background:linear-gradient(135deg,var(--purple),var(--cyan-d));border:none;border-radius:8px;color:#fff;font-size:12px;font-weight:700;cursor:pointer">
+          Fazer Login
+        </button>
+      </div>
+      <div id="igLoginStatus" style="margin-top:10px;font-size:11px;color:var(--t3);text-align:center;min-height:16px"></div>
+    </div>
   </div>
 </div>
 
@@ -2162,16 +2201,73 @@ async function fetchData() {
   }
 }
 
-// ── Instagram Session — Modal de Login ──
+// ── Instagram Session — Modal ──
+function igSwitchTab(tab) {
+  const isSession = tab === 'session';
+  document.getElementById('igTabSession').style.display = isSession ? '' : 'none';
+  document.getElementById('igTabAuto').style.display    = isSession ? 'none' : '';
+  document.getElementById('igTabSessionBtn').style.background = isSession ? 'var(--purple)' : 'var(--bg-el)';
+  document.getElementById('igTabSessionBtn').style.color      = isSession ? '#fff' : 'var(--t2)';
+  document.getElementById('igTabAutoBtn').style.background    = isSession ? 'var(--bg-el)' : 'var(--purple)';
+  document.getElementById('igTabAutoBtn').style.color         = isSession ? 'var(--t2)' : '#fff';
+  if (isSession) setTimeout(() => document.getElementById('igSessionIdInput').focus(), 80);
+  else           setTimeout(() => document.getElementById('igLoginUser').focus(), 80);
+}
+
 function autoRenewSession() {
-  // Abre modal de credenciais em vez de exigir .env
+  document.getElementById('igSessionIdInput').value = '';
+  document.getElementById('igSessionStatus').textContent = '';
   document.getElementById('igLoginUser').value = '';
   document.getElementById('igLoginPass').value = '';
   document.getElementById('igLoginStatus').textContent = '';
   document.getElementById('igLoginSubmitBtn').disabled = false;
-  document.getElementById('igLoginSubmitBtn').textContent = 'Fazer Login no Instagram';
+  document.getElementById('igLoginSubmitBtn').textContent = 'Fazer Login';
   document.getElementById('igLoginOverlay').classList.add('open');
-  setTimeout(() => document.getElementById('igLoginUser').focus(), 80);
+  igSwitchTab('session'); // abre na aba Session ID por padrão
+}
+
+async function submitIgSession() {
+  const sessionid = document.getElementById('igSessionIdInput').value.trim();
+  const statusEl  = document.getElementById('igSessionStatus');
+  const btn       = document.getElementById('igSessionSubmitBtn');
+  if (!sessionid || sessionid.length < 10) {
+    statusEl.textContent = '⚠ Cole um sessionid válido';
+    statusEl.style.color = 'var(--amber)';
+    return;
+  }
+  btn.disabled = true;
+  btn.textContent = '⏳ Importando…';
+  statusEl.textContent = '';
+  const pill       = document.getElementById('pill-ig-session');
+  const pillStatus = document.getElementById('renew-status');
+  const pageStatus = document.getElementById('igRenewalStatus');
+  try {
+    const r = await authFetch('/api/instagram/import-session', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sessionid })
+    });
+    const d = await r.json();
+    if (d.ok) {
+      closeIgLoginModal();
+      toast('✓ Sessão do Instagram importada com sucesso!', 'success');
+      addLog('SESSION', '✓ Sessão importada via Session ID', 'ok');
+      if (pill) pill.classList.remove('renewing');
+      if (pillStatus) pillStatus.textContent = '';
+      if (pageStatus) pageStatus.innerHTML = '<span style="color:var(--green)">✓ Sessão ativa</span>';
+      setTimeout(() => { loadInstagramStatus(); checkAPIStatus(); }, 1000);
+    } else {
+      statusEl.textContent = '⚠ ' + (d.error || 'Erro ao importar');
+      statusEl.style.color = 'var(--red)';
+      btn.disabled = false;
+      btn.textContent = '✓ Importar Sessão';
+    }
+  } catch {
+    statusEl.textContent = '⚠ Servidor não disponível';
+    statusEl.style.color = 'var(--red)';
+    btn.disabled = false;
+    btn.textContent = '✓ Importar Sessão';
+  }
 }
 
 function closeIgLoginModal() {

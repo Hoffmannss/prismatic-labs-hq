@@ -11,6 +11,7 @@ const path   = require('path');
 const url    = require('url');
 const { spawnSync, spawn } = require('child_process');
 const { AutopilotDB, DmQueueDB } = require('../config/database');
+const SessionSecurity = require('../config/session-security');
 
 const PORT          = parseInt(process.argv[2]) || 3131;
 const DATA_DIR      = path.join(__dirname, '..', 'data');
@@ -662,6 +663,33 @@ const server = http.createServer(async (req, res) => {
       message = 'Sessão renovada com sucesso!';
     }
     return json(res, { status, message, tail: log.slice(-600) });
+  }
+
+  // ── INSTAGRAM IMPORT SESSION (cola sessionid do browser) ──────────────
+  if (req.method === 'POST' && pathname === '/api/instagram/import-session') {
+    const body = await bodyJSON(req);
+    const sessionid = (body.sessionid || '').trim();
+    if (!sessionid || sessionid.length < 10) {
+      return json(res, { ok: false, error: 'sessionid inválido ou muito curto' }, 400);
+    }
+    try {
+      const sessionSec = new SessionSecurity();
+      const SESSION_DIR = path.join(DATA_DIR, 'session');
+      const SESSION_FILE = path.join(SESSION_DIR, 'instagram-session.json');
+      if (!fs.existsSync(SESSION_DIR)) fs.mkdirSync(SESSION_DIR, { recursive: true });
+      // Monta objeto de cookie mínimo válido para o Playwright
+      const expires = Math.floor(Date.now() / 1000) + (30 * 24 * 60 * 60); // 30 dias
+      const cookies = [
+        { name: 'sessionid', value: sessionid, domain: '.instagram.com', path: '/', httpOnly: true, secure: true, sameSite: 'Lax', expires },
+        { name: 'ds_user_id', value: body.ds_user_id || '', domain: '.instagram.com', path: '/', httpOnly: true, secure: true, sameSite: 'Lax', expires },
+      ].filter(c => c.value); // remove cookies sem valor
+      sessionSec.saveEncrypted(SESSION_FILE, cookies);
+      // Loga sem expor o token
+      console.log(`[SESSION] ✅ Sessão importada via sessionid (${sessionid.slice(0,8)}...)`);
+      return json(res, { ok: true, message: 'Sessão importada com sucesso! O sistema já pode usar sua conta do Instagram.' });
+    } catch (e) {
+      return json(res, { ok: false, error: `Erro ao salvar sessão: ${e.message}` });
+    }
   }
 
   // ── REGENERATE DM (re-analyzes profile, then regenerates message with old as context) ──
