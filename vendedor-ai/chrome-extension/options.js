@@ -42,7 +42,7 @@ async function saveAndConnect() {
     const res = await fetch(`${vpsUrl}/api/auth/login`, {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ username: authUser, password: authPass }),
+      body:    JSON.stringify({ email: authUser, password: authPass }),
       signal:  AbortSignal.timeout(10000)
     });
 

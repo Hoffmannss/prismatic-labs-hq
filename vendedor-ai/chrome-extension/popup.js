@@ -5,6 +5,8 @@
 document.addEventListener('DOMContentLoaded', async () => {
   await renderIgCard();
   await renderMonitor();
+  document.getElementById('settingsBtn').addEventListener('click', openOptions);
+  document.getElementById('monitorToggle').addEventListener('click', toggleMonitor);
 });
 
 // ── Configurações ────────────────────────────────────────────
@@ -27,8 +29,9 @@ async function renderIgCard() {
     card.innerHTML = `
       <div class="not-configured">
         Configure sua VPS para começar.<br>
-        <span class="config-link" onclick="openOptions()">Abrir Configurações →</span>
+        <span class="config-link" id="openOptionsLink">Abrir Configurações →</span>
       </div>`;
+    document.getElementById('openOptionsLink').addEventListener('click', openOptions);
     return;
   }
 
@@ -46,11 +49,12 @@ async function renderIgCard() {
         </div>
         <span class="ig-status-badge ${badgeCls}">${badgeTxt}</span>
       </div>
-      <button class="sync-btn" id="syncBtn" onclick="syncSession()">
+      <button class="sync-btn" id="syncBtn">
         🔄 Sincronizar Sessão com VPS
       </button>
       <div class="status-msg" id="syncStatus"></div>
     </div>`;
+  document.getElementById('syncBtn').addEventListener('click', syncSession);
 }
 
 async function syncSession() {
