@@ -1,169 +1,190 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vendedor IA Monitor</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            width: 320px;
-            min-height: 400px;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #0a0e27;
-            color: #e2e8f0;
-            padding: 20px;
-        }
-        
-        .header {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        
-        .logo {
-            font-size: 1.5em;
-            font-weight: 700;
-            background: linear-gradient(135deg, #667eea, #06b6d4);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 5px;
-        }
-        
-        .subtitle {
-            font-size: 0.85em;
-            color: #94a3b8;
-        }
-        
-        .status {
-            background: #1a1f3a;
-            border: 1px solid #2d3748;
-            border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 15px;
-        }
-        
-        .status-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-        }
-        
-        .status-row:last-child {
-            margin-bottom: 0;
-        }
-        
-        .status-label {
-            color: #94a3b8;
-            font-size: 0.9em;
-        }
-        
-        .status-value {
-            font-weight: 600;
-            color: #06b6d4;
-        }
-        
-        .status-value.active {
-            color: #10b981;
-        }
-        
-        .status-value.inactive {
-            color: #ef4444;
-        }
-        
-        .toggle-btn {
-            width: 100%;
-            padding: 12px;
-            border: none;
-            border-radius: 8px;
-            font-size: 1em;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-            margin-bottom: 10px;
-        }
-        
-        .toggle-btn.active {
-            background: linear-gradient(135deg, #10b981, #059669);
-            color: white;
-        }
-        
-        .toggle-btn.inactive {
-            background: linear-gradient(135deg, #ef4444, #dc2626);
-            color: white;
-        }
-        
-        .toggle-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-        }
-        
-        .recent-list {
-            margin-top: 15px;
-        }
-        
-        .recent-title {
-            font-size: 0.9em;
-            color: #94a3b8;
-            margin-bottom: 10px;
-        }
-        
-        .recent-item {
-            background: #131834;
-            padding: 10px;
-            border-radius: 6px;
-            margin-bottom: 8px;
-            font-size: 0.85em;
-        }
-        
-        .recent-username {
-            font-weight: 600;
-            color: #667eea;
-        }
-        
-        .recent-time {
-            color: #64748b;
-            font-size: 0.8em;
-            margin-top: 4px;
-        }
-        
-        .empty-state {
-            text-align: center;
-            color: #64748b;
-            padding: 20px;
-            font-size: 0.85em;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <title>Prismatic Connect</title>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+      width: 320px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #0d0f1a;
+      color: #e2e8f0;
+    }
+
+    /* Header */
+    .header {
+      padding: 16px 18px 14px;
+      background: linear-gradient(135deg, rgba(124,58,237,.15), rgba(0,212,255,.08));
+      border-bottom: 1px solid rgba(255,255,255,.07);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .header-brand { display:flex; align-items:center; gap:9px; }
+    .header-logo {
+      width: 30px; height: 30px; border-radius: 8px;
+      background: linear-gradient(135deg, #7c3aed, #06b6d4);
+      display: flex; align-items:center; justify-content:center;
+      font-size: 14px; font-weight: 800; color: #fff;
+    }
+    .header-name { font-size: 13px; font-weight: 700; color: #fff; }
+    .header-sub  { font-size: 10px; color: #64748b; margin-top: 1px; }
+    .settings-btn {
+      background: none; border: none; cursor: pointer;
+      color: #475569; font-size: 16px; padding: 4px;
+      border-radius: 6px; transition: color .2s;
+    }
+    .settings-btn:hover { color: #94a3b8; }
+
+    /* Section */
+    .section { padding: 14px 16px; border-bottom: 1px solid rgba(255,255,255,.06); }
+    .section-title {
+      font-size: 10px; font-weight: 700; color: #475569;
+      text-transform: uppercase; letter-spacing: .06em;
+      margin-bottom: 10px;
+    }
+
+    /* Instagram Session Card */
+    .ig-card {
+      background: rgba(255,255,255,.04);
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 10px;
+      padding: 12px 14px;
+    }
+    .ig-status-row { display:flex; align-items:center; gap:8px; margin-bottom:10px; }
+    .ig-avatar {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: linear-gradient(135deg, #833ab4, #fd1d1d, #fcb045);
+      display: flex; align-items:center; justify-content:center;
+      font-size: 14px; flex-shrink:0;
+    }
+    .ig-info { flex:1; min-width:0; }
+    .ig-account { font-size: 12px; font-weight: 600; color: #e2e8f0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .ig-status-badge {
+      font-size: 10px; font-weight: 600; padding: 2px 8px;
+      border-radius: 20px; flex-shrink:0;
+    }
+    .badge-ok    { background: rgba(16,185,129,.15); color: #10b981; border: 1px solid rgba(16,185,129,.3); }
+    .badge-warn  { background: rgba(245,158,11,.12);  color: #f59e0b; border: 1px solid rgba(245,158,11,.3); }
+    .badge-none  { background: rgba(100,116,139,.12); color: #64748b; border: 1px solid rgba(100,116,139,.2); }
+
+    .sync-btn {
+      width: 100%; padding: 9px;
+      background: linear-gradient(135deg, #7c3aed, #06b6d4);
+      border: none; border-radius: 8px;
+      color: #fff; font-size: 12px; font-weight: 700;
+      cursor: pointer; transition: opacity .2s, transform .1s;
+    }
+    .sync-btn:hover:not(:disabled) { opacity: .9; transform: translateY(-1px); }
+    .sync-btn:disabled { opacity: .5; cursor: not-allowed; }
+
+    .not-configured {
+      text-align: center; padding: 10px 0;
+      font-size: 11px; color: #64748b; line-height: 1.5;
+    }
+    .config-link {
+      color: #7c3aed; cursor: pointer; font-weight: 600;
+      text-decoration: underline;
+    }
+
+    /* Status message */
+    .status-msg {
+      font-size: 11px; text-align: center;
+      margin-top: 8px; min-height: 14px;
+      color: #64748b; line-height: 1.4;
+    }
+    .status-msg.ok   { color: #10b981; }
+    .status-msg.err  { color: #ef4444; }
+    .status-msg.warn { color: #f59e0b; }
+
+    /* Monitor section */
+    .monitor-row {
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .monitor-info { font-size: 12px; color: #94a3b8; }
+    .monitor-count {
+      font-size: 18px; font-weight: 700;
+      background: linear-gradient(135deg, #7c3aed, #06b6d4);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .toggle-pill {
+      display: flex; align-items:center; gap:7px;
+      background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.09);
+      border-radius: 20px; padding: 5px 12px;
+      cursor: pointer; font-size: 11px; font-weight: 600;
+      transition: all .2s;
+    }
+    .toggle-pill:hover { background: rgba(255,255,255,.09); }
+    .toggle-pill.on  { border-color: rgba(16,185,129,.4); color: #10b981; }
+    .toggle-pill.off { color: #64748b; }
+    .toggle-dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: currentColor; flex-shrink:0;
+    }
+
+    /* Recent detections */
+    .recent-list { margin-top: 10px; display: flex; flex-direction: column; gap: 6px; }
+    .recent-item {
+      display: flex; justify-content:space-between; align-items:center;
+      background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.06);
+      border-radius: 7px; padding: 7px 10px;
+    }
+    .recent-user { font-size: 12px; font-weight: 600; color: #7c3aed; }
+    .recent-time { font-size: 10px; color: #475569; }
+    .empty { text-align:center; color: #374151; font-size:11px; padding: 12px 0; }
+
+    /* Footer */
+    .footer {
+      padding: 10px 16px;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .footer-brand { font-size: 10px; color: #1e293b; font-weight: 600; }
+    .footer-version { font-size: 10px; color: #1e293b; }
+  </style>
 </head>
 <body>
-    <div class="header">
-        <div class="logo">🤖 Vendedor IA</div>
-        <div class="subtitle">Monitor Instagram</div>
+
+  <div class="header">
+    <div class="header-brand">
+      <div class="header-logo">P</div>
+      <div>
+        <div class="header-name">Prismatic Connect</div>
+        <div class="header-sub">Vendedor AI · Prismatic Labs</div>
+      </div>
     </div>
-    
-    <div class="status">
-        <div class="status-row">
-            <span class="status-label">Status</span>
-            <span class="status-value" id="statusText">Carregando...</span>
-        </div>
-        <div class="status-row">
-            <span class="status-label">Respostas Detectadas</span>
-            <span class="status-value" id="totalDetected">0</span>
-        </div>
+    <button class="settings-btn" onclick="openOptions()" title="Configurações">⚙</button>
+  </div>
+
+  <!-- Sessão Instagram -->
+  <div class="section">
+    <div class="section-title">Sessão Instagram</div>
+    <div id="igCard"></div>
+  </div>
+
+  <!-- Monitor de Respostas -->
+  <div class="section">
+    <div class="section-title">Monitor de Respostas</div>
+    <div class="monitor-row">
+      <div>
+        <div class="monitor-info">Respostas detectadas</div>
+        <div class="monitor-count" id="totalDetected">0</div>
+      </div>
+      <div class="toggle-pill off" id="monitorToggle" onclick="toggleMonitor()">
+        <div class="toggle-dot"></div>
+        <span id="monitorLabel">Inativo</span>
+      </div>
     </div>
-    
-    <button class="toggle-btn" id="toggleBtn">Carregando...</button>
-    
-    <div class="recent-list">
-        <div class="recent-title">⌛ Últimas Detecções</div>
-        <div id="recentList"></div>
+    <div class="recent-list" id="recentList">
+      <div class="empty">Nenhuma resposta ainda</div>
     </div>
-    
-    <script src="popup.js"></script>
+  </div>
+
+  <div class="footer">
+    <span class="footer-brand">Prismatic Labs</span>
+    <span class="footer-version">v1.1.0</span>
+  </div>
+
+  <script src="popup.js"></script>
 </body>
 </html>

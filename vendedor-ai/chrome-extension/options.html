@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Prismatic Connect — Configurações</title>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #0d0f1a; color: #e2e8f0;
+      min-height: 100vh; display: flex; align-items: flex-start;
+      justify-content: center; padding: 40px 20px;
+    }
+    .card {
+      width: 100%; max-width: 440px;
+      background: #131829; border: 1px solid rgba(255,255,255,.08);
+      border-radius: 16px; overflow: hidden;
+    }
+    .card-header {
+      padding: 24px 28px 20px;
+      background: linear-gradient(135deg, rgba(124,58,237,.15), rgba(0,212,255,.06));
+      border-bottom: 1px solid rgba(255,255,255,.07);
+      display: flex; align-items: center; gap: 12px;
+    }
+    .logo {
+      width: 40px; height: 40px; border-radius: 10px;
+      background: linear-gradient(135deg, #7c3aed, #06b6d4);
+      display: flex; align-items:center; justify-content:center;
+      font-size: 18px; font-weight: 800; color: #fff;
+    }
+    .card-header h1 { font-size: 16px; font-weight: 700; }
+    .card-header p  { font-size: 11px; color: #64748b; margin-top: 2px; }
+    .card-body { padding: 24px 28px; display: flex; flex-direction: column; gap: 18px; }
+
+    .field label {
+      display: block; font-size: 11px; font-weight: 700;
+      color: #64748b; text-transform: uppercase;
+      letter-spacing: .05em; margin-bottom: 7px;
+    }
+    .field input {
+      width: 100%; padding: 10px 14px;
+      background: rgba(255,255,255,.05);
+      border: 1px solid rgba(255,255,255,.1);
+      border-radius: 8px; color: #e2e8f0;
+      font-size: 13px; outline: none; transition: border-color .2s;
+    }
+    .field input:focus { border-color: rgba(124,58,237,.6); }
+    .field input::placeholder { color: #374151; }
+    .field-hint { font-size: 11px; color: #374151; margin-top: 5px; }
+
+    .divider {
+      height: 1px; background: rgba(255,255,255,.06);
+      margin: 2px 0;
+    }
+    .section-label {
+      font-size: 11px; font-weight: 700; color: #475569;
+      text-transform: uppercase; letter-spacing: .06em;
+    }
+
+    .btn-primary {
+      width: 100%; padding: 12px;
+      background: linear-gradient(135deg, #7c3aed, #06b6d4);
+      border: none; border-radius: 10px;
+      color: #fff; font-size: 14px; font-weight: 700;
+      cursor: pointer; transition: opacity .2s;
+    }
+    .btn-primary:hover:not(:disabled) { opacity: .9; }
+    .btn-primary:disabled { opacity: .5; cursor: not-allowed; }
+    .btn-secondary {
+      width: 100%; padding: 10px;
+      background: transparent; border: 1px solid rgba(255,255,255,.1);
+      border-radius: 10px; color: #64748b;
+      font-size: 13px; cursor: pointer; transition: all .2s;
+    }
+    .btn-secondary:hover { border-color: rgba(255,255,255,.2); color: #94a3b8; }
+
+    #statusMsg {
+      font-size: 12px; text-align: center;
+      padding: 10px; border-radius: 8px; display: none;
+    }
+    #statusMsg.ok  { background: rgba(16,185,129,.1); color: #10b981; display:block; }
+    #statusMsg.err { background: rgba(239,68,68,.1);  color: #ef4444; display:block; }
+
+    .ig-status-box {
+      background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.07);
+      border-radius: 8px; padding: 12px 14px;
+      display: flex; align-items:center; gap:10px;
+    }
+    .ig-dot { width:8px; height:8px; border-radius:50%; background:#374151; flex-shrink:0; }
+    .ig-dot.ok { background: #10b981; box-shadow: 0 0 6px rgba(16,185,129,.5); }
+    .ig-text { font-size:12px; color:#94a3b8; }
+  </style>
+</head>
+<body>
+<div class="card">
+  <div class="card-header">
+    <div class="logo">P</div>
+    <div>
+      <h1>Prismatic Connect</h1>
+      <p>Configurações da extensão</p>
+    </div>
+  </div>
+  <div class="card-body">
+
+    <!-- VPS -->
+    <div class="section-label">Servidor Vendedor AI</div>
+    <div class="field">
+      <label>URL da VPS</label>
+      <input type="url" id="vpsUrl" placeholder="http://IP_DA_VPS:3131">
+      <div class="field-hint">Ex: http://72.61.33.60:3131</div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Auth -->
+    <div class="section-label">Autenticação</div>
+    <div class="field">
+      <label>Usuário do Dashboard</label>
+      <input type="text" id="authUser" placeholder="seu_usuario">
+    </div>
+    <div class="field">
+      <label>Senha</label>
+      <input type="password" id="authPass" placeholder="••••••••">
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Status Instagram -->
+    <div class="section-label">Status da Sessão</div>
+    <div class="ig-status-box">
+      <div class="ig-dot" id="igDot"></div>
+      <div class="ig-text" id="igStatusText">Não configurado</div>
+    </div>
+
+    <div id="statusMsg"></div>
+
+    <button class="btn-primary" id="saveBtn" onclick="saveAndConnect()">
+      Salvar e Conectar
+    </button>
+    <button class="btn-secondary" onclick="clearSession()">
+      Desconectar / Limpar Dados
+    </button>
+  </div>
+</div>
+<script src="options.js"></script>
+</body>
+</html>
