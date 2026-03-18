@@ -6,6 +6,8 @@
 document.addEventListener('DOMContentLoaded', async () => {
   await loadSavedSettings();
   await refreshIgStatus();
+  document.getElementById('saveBtn').addEventListener('click', saveAndConnect);
+  document.getElementById('clearBtn').addEventListener('click', clearSession);
 });
 
 async function loadSavedSettings() {
