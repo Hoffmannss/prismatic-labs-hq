@@ -12,8 +12,13 @@ chrome.runtime.onInstalled.addListener(() => {
     lastSyncAt:      null
   });
   console.log('[Prismatic Connect] Extensão instalada.');
-  // Tenta sincronizar a sessão atual logo na instalação
   autoSyncSession('install');
+});
+
+// Toda vez que o Chrome abre, re-sincroniza a sessão existente
+chrome.runtime.onStartup.addListener(() => {
+  console.log('[Prismatic Connect] Chrome iniciou — verificando sessão...');
+  autoSyncSession('startup');
 });
 
 // ── Auto-sync via cookie change ───────────────────────────────
