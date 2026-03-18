@@ -1,42 +1,108 @@
 // =============================================================
-// VENDEDOR IA - CHROME EXTENSION BACKGROUND SERVICE WORKER
-// Processa notificações de mensagens e dispara webhooks
+// PRISMATIC CONNECT — BACKGROUND SERVICE WORKER
+// Auto-sync de sessão Instagram + monitor de respostas
 // =============================================================
 
-const WEBHOOK_URL = 'http://localhost:3131/api/tracker';
-const CHECK_INTERVAL = 10000; // 10 segundos
-
-let lastCheckedMessages = new Set();
-let isMonitoring = false;
-
-// Configurações padrão
+// ── Instalação ────────────────────────────────────────────────
 chrome.runtime.onInstalled.addListener(() => {
   chrome.storage.local.set({
-    webhookUrl: WEBHOOK_URL,
-    checkInterval: CHECK_INTERVAL,
-    isEnabled: true,
-    detectedReplies: []
+    isEnabled:       true,
+    detectedReplies: [],
+    sessionSynced:   false,
+    lastSyncAt:      null
   });
-  console.log('[Vendedor IA] Extension installed');
+  console.log('[Prismatic Connect] Extensão instalada.');
+  // Tenta sincronizar a sessão atual logo na instalação
+  autoSyncSession('install');
 });
 
-// Recebe mensagens do content script
+// ── Auto-sync via cookie change ───────────────────────────────
+// Dispara automaticamente sempre que o sessionid do Instagram muda
+// (login, renovação de token, etc.) — sem nenhuma ação do usuário
+chrome.cookies.onChanged.addListener((changeInfo) => {
+  const { cookie, removed } = changeInfo;
+  if (removed) return;
+  if (cookie.domain !== '.instagram.com' && cookie.domain !== 'instagram.com') return;
+  if (cookie.name !== 'sessionid') return;
+
+  console.log('[Prismatic Connect] sessionid detectado — sincronizando...');
+  autoSyncSession('cookie_change');
+});
+
+// ── Função de sync ────────────────────────────────────────────
+async function autoSyncSession(source) {
+  const cfg = await storageGet(['vpsUrl', 'authToken']);
+  if (!cfg.vpsUrl || !cfg.authToken) return; // extensão não configurada ainda
+
+  // Lê sessionid atual do browser
+  const sessionCookie = await getCookie('https://www.instagram.com', 'sessionid');
+  if (!sessionCookie) return; // usuário não está logado no Instagram
+
+  // Lê ds_user_id se disponível (identifica a conta)
+  const dsCookie = await getCookie('https://www.instagram.com', 'ds_user_id');
+
+  try {
+    const body = { sessionid: sessionCookie.value, source };
+    if (dsCookie?.value) body.ds_user_id = dsCookie.value;
+
+    const res = await fetch(`${cfg.vpsUrl}/api/instagram/import-session`, {
+      method:  'POST',
+      headers: {
+        'Content-Type':  'application/json',
+        'Authorization': `Bearer ${cfg.authToken}`
+      },
+      body: JSON.stringify(body)
+    });
+
+    const data = await res.json().catch(() => ({}));
+
+    if (res.ok && data.ok) {
+      const now = new Date().toISOString();
+      await storageSet({ sessionSynced: true, lastSyncAt: now });
+      console.log(`[Prismatic Connect] Sessão sincronizada automaticamente (${source})`);
+
+      // Notificação discreta só no primeiro sync (não em cada renovação)
+      if (source === 'install' || source === 'cookie_change') {
+        chrome.notifications.create({
+          type:    'basic',
+          iconUrl: 'icons/icon48.png',
+          title:   'Prismatic Connect',
+          message: 'Sessão Instagram sincronizada com o Vendedor AI ✓'
+        });
+      }
+    } else {
+      console.warn('[Prismatic Connect] Sync falhou:', data.error || res.status);
+      // Token expirado — limpa sessão para forçar relogin no options
+      if (res.status === 401) {
+        await storageSet({ authToken: '', sessionSynced: false });
+      }
+    }
+  } catch (e) {
+    console.error('[Prismatic Connect] Erro no auto-sync:', e.message);
+  }
+}
+
+// ── Monitor de Respostas ──────────────────────────────────────
+const lastCheckedMessages = new Set();
+
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === 'NEW_MESSAGE_DETECTED') {
     handleNewMessage(message.data);
     sendResponse({ ok: true });
   }
-  
+
   if (message.type === 'GET_STATUS') {
-    chrome.storage.local.get(['isEnabled', 'detectedReplies'], (data) => {
-      sendResponse({ 
-        isEnabled: data.isEnabled, 
-        totalDetected: (data.detectedReplies || []).length 
+    chrome.storage.local.get(['isEnabled', 'detectedReplies', 'sessionSynced', 'lastSyncAt'], (data) => {
+      sendResponse({
+        isEnabled:      data.isEnabled,
+        totalDetected:  (data.detectedReplies || []).length,
+        sessionSynced:  data.sessionSynced,
+        lastSyncAt:     data.lastSyncAt
       });
     });
-    return true; // Will respond asynchronously
+    return true;
   }
-  
+
   if (message.type === 'TOGGLE_MONITORING') {
     chrome.storage.local.get(['isEnabled'], (data) => {
       const newState = !data.isEnabled;
@@ -45,77 +111,72 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     });
     return true;
   }
+
+  if (message.type === 'MANUAL_SYNC') {
+    autoSyncSession('manual').then(() => sendResponse({ ok: true })).catch(() => sendResponse({ ok: false }));
+    return true;
+  }
 });
 
-// Processa nova mensagem detectada
 async function handleNewMessage(data) {
   const { username, messageText, timestamp } = data;
-  
-  // Evita duplicatas
   const messageId = `${username}_${timestamp}`;
-  if (lastCheckedMessages.has(messageId)) {
-    return;
-  }
+  if (lastCheckedMessages.has(messageId)) return;
   lastCheckedMessages.add(messageId);
-  
-  // Limita tamanho do Set
   if (lastCheckedMessages.size > 100) {
-    const firstItem = lastCheckedMessages.values().next().value;
-    lastCheckedMessages.delete(firstItem);
+    lastCheckedMessages.delete(lastCheckedMessages.values().next().value);
   }
-  
-  console.log(`[Vendedor IA] Nova resposta detectada: @${username}`);
-  
-  // Salva no storage
+
+  console.log(`[Prismatic Connect] Resposta detectada: @${username}`);
+
+  // Salva localmente
   chrome.storage.local.get(['detectedReplies'], (result) => {
     const replies = result.detectedReplies || [];
     replies.push({ username, messageText, timestamp, detected_at: Date.now() });
-    
-    // Mantém apenas últimas 50
     if (replies.length > 50) replies.shift();
-    
     chrome.storage.local.set({ detectedReplies: replies });
   });
-  
-  // Dispara webhook
-  chrome.storage.local.get(['webhookUrl', 'isEnabled'], async (config) => {
-    if (!config.isEnabled) return;
-    
-    try {
-      const response = await fetch(config.webhookUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          username: username.replace('@', ''),
-          action: 'respondeu',
-          extra: `Auto-detectado: ${messageText.substring(0, 50)}...`
-        })
+
+  // Envia para VPS (usa vpsUrl do storage, não localhost hardcoded)
+  const cfg = await storageGet(['vpsUrl', 'authToken', 'isEnabled']);
+  if (!cfg.isEnabled || !cfg.vpsUrl || !cfg.authToken) return;
+
+  try {
+    const res = await fetch(`${cfg.vpsUrl}/api/tracker`, {
+      method:  'POST',
+      headers: {
+        'Content-Type':  'application/json',
+        'Authorization': `Bearer ${cfg.authToken}`
+      },
+      body: JSON.stringify({
+        username:  username.replace('@', ''),
+        action:    'respondeu',
+        extra:     `Auto-detectado: ${messageText.substring(0, 50)}`
+      })
+    });
+
+    if (res.ok) {
+      chrome.notifications.create({
+        type:    'basic',
+        iconUrl: 'icons/icon48.png',
+        title:   'Prismatic Connect',
+        message: `@${username} respondeu! Registrado no Vendedor AI.`
       });
-      
-      if (response.ok) {
-        console.log(`[Vendedor IA] Webhook enviado com sucesso para @${username}`);
-        
-        // Notificação
-        chrome.notifications.create({
-          type: 'basic',
-          iconUrl: 'icons/icon48.png',
-          title: 'Vendedor IA - Resposta Detectada',
-          message: `@${username} respondeu! Tracker atualizado automaticamente.`
-        });
-      } else {
-        console.error('[Vendedor IA] Erro ao enviar webhook:', response.status);
-      }
-    } catch (error) {
-      console.error('[Vendedor IA] Erro na requisição webhook:', error);
     }
-  });
+  } catch (e) {
+    console.error('[Prismatic Connect] Erro ao enviar tracker:', e.message);
+  }
 }
 
-// Health check periódico
-setInterval(() => {
-  chrome.storage.local.get(['isEnabled'], (data) => {
-    if (data.isEnabled) {
-      console.log('[Vendedor IA] Monitoring active');
-    }
-  });
-}, 60000); // A cada 1 minuto
+// ── Helpers ───────────────────────────────────────────────────
+function getCookie(url, name) {
+  return new Promise(resolve => chrome.cookies.get({ url, name }, resolve));
+}
+
+function storageGet(keys) {
+  return new Promise(resolve => chrome.storage.local.get(keys, resolve));
+}
+
+function storageSet(obj) {
+  return new Promise(resolve => chrome.storage.local.set(obj, resolve));
+}

@@ -22,7 +22,7 @@ async function getConfig() {
 
 // ── Instagram Session ─────────────────────────────────────────
 async function renderIgCard() {
-  const cfg = await getConfig();
+  const cfg  = await getConfig();
   const card = document.getElementById('igCard');
 
   if (!cfg.vpsUrl || !cfg.authToken) {
@@ -35,95 +35,51 @@ async function renderIgCard() {
     return;
   }
 
-  const account  = cfg.igAccount || '@sua_conta';
   const synced   = cfg.sessionSynced;
   const badgeCls = synced ? 'badge-ok' : 'badge-warn';
   const badgeTxt = synced ? 'Ativa' : 'Pendente';
+  const syncTime = cfg.lastSyncAt
+    ? new Date(cfg.lastSyncAt).toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' })
+    : null;
 
   card.innerHTML = `
     <div class="ig-card">
       <div class="ig-status-row">
         <div class="ig-avatar">📸</div>
         <div class="ig-info">
-          <div class="ig-account">${account}</div>
+          <div class="ig-account">Instagram</div>
+          <div class="ig-sub">${synced && syncTime ? 'Sync ' + syncTime : 'Aguardando login no Instagram'}</div>
         </div>
         <span class="ig-status-badge ${badgeCls}">${badgeTxt}</span>
       </div>
-      <button class="sync-btn" id="syncBtn">
-        🔄 Sincronizar Sessão com VPS
-      </button>
+      <div class="auto-sync-info">⚡ Sincronização automática ativa</div>
+      <button class="sync-btn secondary" id="syncBtn">↻ Forçar sync agora</button>
       <div class="status-msg" id="syncStatus"></div>
     </div>`;
-  document.getElementById('syncBtn').addEventListener('click', syncSession);
+  document.getElementById('syncBtn').addEventListener('click', manualSync);
 }
 
-async function syncSession() {
+async function manualSync() {
   const btn    = document.getElementById('syncBtn');
   const status = document.getElementById('syncStatus');
-  const cfg    = await getConfig();
-
-  if (!cfg.vpsUrl || !cfg.authToken) {
-    status.textContent = '⚠ Configure a VPS primeiro.';
-    status.className = 'status-msg warn';
-    return;
-  }
-
-  btn.disabled    = true;
-  btn.textContent = '⏳ Lendo sessão…';
+  btn.disabled = true;
+  btn.textContent = '⏳ Sincronizando…';
   status.textContent = '';
-  status.className = 'status-msg';
 
-  // Lê sessionid cookie do instagram.com
-  chrome.cookies.get({ url: 'https://www.instagram.com', name: 'sessionid' }, async (cookie) => {
-    if (!cookie || !cookie.value) {
-      btn.disabled    = false;
-      btn.textContent = '🔄 Sincronizar Sessão com VPS';
-      status.textContent = '⚠ Faça login no Instagram primeiro e tente novamente.';
+  chrome.runtime.sendMessage({ type: 'MANUAL_SYNC' }, (resp) => {
+    btn.disabled = false;
+    btn.textContent = '↻ Forçar sync agora';
+    if (resp?.ok) {
+      status.textContent = '✅ Sincronizado com sucesso!';
+      status.className = 'status-msg ok';
+      renderIgCard();
+    } else {
+      status.textContent = '⚠ Falha — verifique se está logado no Instagram.';
       status.className = 'status-msg warn';
-      return;
     }
-
-    btn.textContent = '⏳ Enviando para VPS…';
-
-    // Lê também ds_user_id se disponível
-    chrome.cookies.get({ url: 'https://www.instagram.com', name: 'ds_user_id' }, async (dsCookie) => {
-      try {
-        const body = { sessionid: cookie.value };
-        if (dsCookie?.value) body.ds_user_id = dsCookie.value;
-
-        const res = await fetch(`${cfg.vpsUrl}/api/instagram/import-session`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${cfg.authToken}`
-          },
-          body: JSON.stringify(body)
-        });
-
-        const data = await res.json();
-
-        if (data.ok) {
-          chrome.storage.local.set({ sessionSynced: true });
-          btn.disabled    = false;
-          btn.textContent = '✓ Sessão Sincronizada';
-          status.textContent = '✅ Sessão enviada com sucesso! O Vendedor AI já pode enviar DMs.';
-          status.className = 'status-msg ok';
-          // Atualiza badge
-          const badge = document.querySelector('.ig-status-badge');
-          if (badge) { badge.className = 'ig-status-badge badge-ok'; badge.textContent = 'Ativa'; }
-          setTimeout(() => { btn.textContent = '🔄 Sincronizar Sessão com VPS'; }, 3000);
-        } else {
-          throw new Error(data.error || 'Erro desconhecido');
-        }
-      } catch (e) {
-        btn.disabled    = false;
-        btn.textContent = '🔄 Sincronizar Sessão com VPS';
-        status.textContent = `⚠ ${e.message}`;
-        status.className = 'status-msg err';
-      }
-    });
   });
 }
+
 
 // ── Monitor de Respostas ──────────────────────────────────────
 async function renderMonitor() {
