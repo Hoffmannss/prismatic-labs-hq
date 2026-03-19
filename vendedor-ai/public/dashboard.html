@@ -1088,8 +1088,8 @@ tbody tr:last-child td{border-bottom:none}
       <!-- ══ LOGS ══ -->
       <section class="section" id="section-logs">
         <div class="page-header">
-          <h1>Últimas Ações</h1>
-          <p>Log em tempo real dos agentes</p>
+          <h1>Registro de Atividades</h1>
+          <p>O que o sistema está fazendo agora</p>
         </div>
         <div style="display:flex;gap:7px;margin-bottom:10px;flex-wrap:wrap">
           <button class="filter-btn active" onclick="setLogFilter('all',this)">Todos</button>
@@ -1108,7 +1108,7 @@ tbody tr:last-child td{border-bottom:none}
               <div class="term-dot amb"></div>
               <div class="term-dot grn"></div>
             </div>
-            <div class="term-title">vendedor-ai — pm2 logs</div>
+            <div class="term-title">Atividade em tempo real</div>
           </div>
           <div class="terminal-body" id="logTerminal">
             <div class="log-line">
@@ -1310,45 +1310,83 @@ tbody tr:last-child td{border-bottom:none}
       <section class="section" id="section-instagram">
         <div class="page-header">
           <h1>Conta Instagram</h1>
-          <p>Conecte sua conta do Instagram para o sistema buscar leads e enviar mensagens</p>
+          <p>Conecte sua conta para que o sistema possa buscar clientes e enviar mensagens</p>
         </div>
+
+        <!-- STATUS CARD -->
+        <div class="card" style="margin-bottom:16px">
+          <div style="display:flex;align-items:center;gap:16px;padding:4px 0">
+            <div id="ig-status-icon" style="font-size:40px;line-height:1">📷</div>
+            <div style="flex:1">
+              <div id="ig-conn-label" style="font-size:16px;font-weight:700;color:var(--t);margin-bottom:3px">Verificando...</div>
+              <div id="ig-conn-detail" style="font-size:12px;color:var(--t2)">Checando conexão com o Instagram</div>
+            </div>
+            <span class="setting-val" id="ig-connected-account" style="font-size:13px"></span>
+          </div>
+        </div>
+
         <div class="grid-2">
+          <!-- COLUNA 1: O QUE FAZER -->
           <div class="card">
-            <div class="settings-group">
-              <div class="settings-group-title">Status da Conexão</div>
-              <div id="ig-connection-status" style="padding:20px;text-align:center">
-                <div style="font-size:36px;margin-bottom:10px">📷</div>
-                <div id="ig-conn-label" style="font-size:14px;font-weight:700;color:var(--t);margin-bottom:4px">Verificando...</div>
-                <div id="ig-conn-detail" style="font-size:12px;color:var(--t2)">Checando sessão do Instagram</div>
+            <div class="settings-group-title" style="margin-bottom:14px">Como conectar sua conta</div>
+
+            <!-- OPÇÃO A — Com extensão (recomendado) -->
+            <div style="background:rgba(16,185,129,.06);border:1px solid rgba(16,185,129,.2);border-radius:12px;padding:16px;margin-bottom:12px">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+                <span style="font-size:16px">⚡</span>
+                <div style="font-size:13px;font-weight:700;color:#10b981">Opção 1 — Extensão Prismatic Connect (recomendado)</div>
               </div>
-              <div class="setting-row">
-                <div class="setting-info"><h4>Conta conectada</h4><p>Perfil usado para prospecção</p></div>
-                <span class="setting-val" id="ig-connected-account">—</span>
+              <div style="font-size:12px;color:var(--t2);line-height:1.7">
+                <strong style="color:var(--t)">Automático.</strong> Depois de instalar a extensão, você não precisa fazer mais nada. A conexão se renova sozinha sempre que você usar o Instagram no Chrome.
               </div>
-              <div class="setting-row">
-                <div class="setting-info"><h4>Sessão</h4><p>Status da autenticação</p></div>
-                <span class="setting-val" id="ig-session-status">—</span>
+              <div style="margin-top:12px;display:flex;flex-direction:column;gap:7px;font-size:12px;color:var(--t2)">
+                <div style="display:flex;gap:8px;align-items:flex-start"><span style="background:var(--purple);color:#fff;border-radius:50%;width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0">1</span><span>Instale a extensão <strong style="color:var(--t)">Prismatic Connect</strong> no Chrome</span></div>
+                <div style="display:flex;gap:8px;align-items:flex-start"><span style="background:var(--purple);color:#fff;border-radius:50%;width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0">2</span><span>Abra o Instagram no Chrome e faça login normalmente</span></div>
+                <div style="display:flex;gap:8px;align-items:flex-start"><span style="background:var(--purple);color:#fff;border-radius:50%;width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0">3</span><span>Pronto — a extensão conecta automaticamente em segundos</span></div>
               </div>
+            </div>
+
+            <!-- OPÇÃO B — Manual (fallback) -->
+            <div style="background:rgba(255,255,255,.03);border:1px solid var(--b);border-radius:12px;padding:16px">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+                <span style="font-size:16px">🔑</span>
+                <div style="font-size:13px;font-weight:700;color:var(--t2)">Opção 2 — Sem extensão (manual)</div>
+              </div>
+              <div style="font-size:12px;color:var(--t2);line-height:1.7;margin-bottom:12px">
+                Se não tiver a extensão instalada, você conecta colando um código que o Instagram guarda no navegador.
+              </div>
+              <div style="display:flex;flex-direction:column;gap:7px;font-size:12px;color:var(--t2);margin-bottom:14px">
+                <div style="display:flex;gap:8px;align-items:flex-start"><span style="background:var(--bg-el);border:1px solid var(--b);border-radius:50%;width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0">1</span><span>Abra o <strong style="color:var(--t)">instagram.com</strong> no Chrome e faça login</span></div>
+                <div style="display:flex;gap:8px;align-items:flex-start"><span style="background:var(--bg-el);border:1px solid var(--b);border-radius:50%;width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0">2</span><span>Aperte <kbd style="background:var(--bg-el);padding:1px 5px;border-radius:4px;border:1px solid var(--b)">F12</kbd> → clique na aba <strong style="color:var(--t)">Application</strong></span></div>
+                <div style="display:flex;gap:8px;align-items:flex-start"><span style="background:var(--bg-el);border:1px solid var(--b);border-radius:50%;width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0">3</span><span>No menu lateral: <strong style="color:var(--t)">Cookies → https://www.instagram.com</strong></span></div>
+                <div style="display:flex;gap:8px;align-items:flex-start"><span style="background:var(--bg-el);border:1px solid var(--b);border-radius:50%;width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0">4</span><span>Encontre a linha <strong style="color:var(--t)">sessionid</strong> e copie o valor</span></div>
+              </div>
+              <button class="bp-save-btn" onclick="openIgLoginModal()" style="background:var(--bg-el);border:1px solid var(--b);color:var(--t2);font-size:12px">🔑 Colar código de conexão</button>
             </div>
           </div>
+
+          <!-- COLUNA 2: QUANDO EXPIRA + SEGURANÇA -->
           <div class="card">
-            <div class="settings-group">
-              <div class="settings-group-title">Sobre a Conexão</div>
-              <div style="font-size:12px;color:var(--t2);line-height:1.7">
-                <p style="margin-bottom:10px">O Vendedor AI precisa de uma <strong style="color:var(--t)">sessão ativa do Instagram</strong> para funcionar. Essa sessão permite ao sistema buscar perfis e enviar mensagens em seu nome.</p>
-                <p style="margin-bottom:10px">A sessão pode expirar periodicamente por segurança do Instagram. Quando isso acontecer, você verá um aviso no painel e precisará renovar a conexão.</p>
-                <div style="padding:10px 12px;background:rgba(16,185,129,.07);border:1px solid rgba(16,185,129,.2);border-radius:8px;font-size:11px;color:var(--green);line-height:1.5;margin-top:10px">
-                  <strong>🔒 Segurança:</strong> Sua sessão é criptografada com AES-256-GCM. Nenhuma senha é armazenada no sistema.
-                </div>
-                <div style="margin-top:14px;padding:10px 12px;background:rgba(124,58,237,.07);border:1px solid rgba(124,58,237,.2);border-radius:8px;font-size:11px;color:var(--purple-l);line-height:1.5">
-                  <strong>💡 Sessão expirou?</strong> Clique no botão abaixo. O sistema faz o login automaticamente em 1–2 minutos, sem precisar de suporte técnico.
-                </div>
-              </div>
-              <div style="margin-top:16px">
-                <button class="bp-save-btn" onclick="autoRenewSession()" style="background:linear-gradient(135deg,var(--cyan-d),var(--cyan))">🔄 Renovar Sessão Automaticamente</button>
-                <div id="igRenewalStatus" class="bp-status" style="margin-top:8px"></div>
-              </div>
+            <div class="settings-group-title" style="margin-bottom:14px">Quando a sessão expira?</div>
+            <div style="font-size:12px;color:var(--t2);line-height:1.8;margin-bottom:16px">
+              O Instagram expira a sessão quando você:
+              <ul style="margin:8px 0 0 16px;display:flex;flex-direction:column;gap:4px">
+                <li>Fica mais de 30 dias sem usar o Instagram</li>
+                <li>Troca a senha da conta</li>
+                <li>Sai do Instagram (logout) no celular ou computador</li>
+                <li>O Instagram detecta acesso suspeito</li>
+              </ul>
             </div>
+            <div style="font-size:12px;color:var(--t2);line-height:1.7;margin-bottom:16px">
+              <strong style="color:var(--t)">Com a extensão instalada:</strong> a renovação é automática. Você só precisa usar o Instagram normalmente pelo menos uma vez por semana.
+            </div>
+            <div style="padding:12px 14px;background:rgba(16,185,129,.07);border:1px solid rgba(16,185,129,.2);border-radius:10px;font-size:11px;color:#10b981;line-height:1.6;margin-bottom:10px">
+              🔒 <strong>Seus dados estão seguros.</strong> O sistema nunca armazena sua senha. Apenas um código temporário que o Instagram cria, criptografado com padrão bancário.
+            </div>
+            <div style="padding:12px 14px;background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.25);border-radius:10px;font-size:11px;color:var(--amber);line-height:1.6">
+              ⚠️ <strong>Importante:</strong> Use a conta do Instagram normalmente enquanto usa o sistema. Não faça logout. Isso mantém a sessão ativa.
+            </div>
+            <div style="margin-top:16px" id="igRenewalStatus"></div>
           </div>
         </div>
       </section>
@@ -2188,7 +2226,6 @@ async function fetchData() {
     renderDMQueue();
     const now = new Date().toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
     document.getElementById('lastUpdate').textContent = `atualizado às ${now}`;
-    addLog('DASHBOARD', `✓ ${state.leads.length} leads carregados`, 'ok');
   } catch (e) {
     document.getElementById('lastUpdate').textContent = 'erro ao carregar';
     addLog('DASHBOARD', `✗ Erro: ${e.message || 'API indisponível'}`, 'err');
@@ -2747,20 +2784,21 @@ function loadInstagramStatus() {
       const session = document.getElementById('ig-session-status');
       const account = document.getElementById('ig-connected-account');
       const pill = document.getElementById('pill-ig-session');
+      const icon = document.getElementById('ig-status-icon');
       if (d.instagram) {
-        if (label) label.textContent = '✓ Instagram Conectado';
-        if (label) label.style.color = 'var(--green)';
-        if (detail) detail.textContent = 'Sessão ativa — sistema pronto para operar';
+        if (icon)   icon.textContent = '✅';
+        if (label)  { label.textContent = 'Conta conectada'; label.style.color = 'var(--green)'; }
+        if (detail) detail.textContent = 'Tudo certo! O sistema pode buscar clientes e enviar mensagens.';
         if (session) { session.textContent = '✓ Ativa'; session.style.color = 'var(--green)'; }
-        if (pill) { pill.className = 'pill green'; pill.innerHTML = '<span class="dot"></span>Instagram'; }
+        if (pill)   { pill.className = 'pill green'; pill.innerHTML = '<span class="dot"></span>Instagram'; }
       } else {
-        if (label) label.textContent = '⚠ Sessão Expirada';
-        if (label) label.style.color = 'var(--amber)';
-        if (detail) detail.textContent = 'A sessão precisa ser renovada para o sistema funcionar';
-        if (session) { session.textContent = '⚠ Expirada'; session.style.color = 'var(--amber)'; }
-        if (pill) { pill.className = 'pill amber'; pill.innerHTML = '<span class="dot"></span>Instagram'; }
+        if (icon)   icon.textContent = '⚠️';
+        if (label)  { label.textContent = 'Conta desconectada'; label.style.color = 'var(--amber)'; }
+        if (detail) detail.textContent = 'Siga um dos métodos abaixo para conectar sua conta.';
+        if (session) { session.textContent = '⚠ Inativa'; session.style.color = 'var(--amber)'; }
+        if (pill)   { pill.className = 'pill amber'; pill.innerHTML = '<span class="dot"></span>Instagram'; }
       }
-      if (account) account.textContent = '@' + (d.instagram_username || 'não configurado');
+      if (account) account.textContent = d.instagram_username ? '@' + d.instagram_username : '';
     })
     .catch(() => {});
 }
