@@ -2290,12 +2290,13 @@ async function submitIgSession() {
     const d = await r.json();
     if (d.ok) {
       closeIgLoginModal();
+      _setInstagramConnected(true);
       toast('✓ Sessão do Instagram importada com sucesso!', 'success');
       addLog('SESSION', '✓ Sessão importada via Session ID', 'ok');
       if (pill) pill.classList.remove('renewing');
       if (pillStatus) pillStatus.textContent = '';
       if (pageStatus) pageStatus.innerHTML = '<span style="color:var(--green)">✓ Sessão ativa</span>';
-      setTimeout(() => { loadInstagramStatus(); checkAPIStatus(); }, 1000);
+      setTimeout(() => { loadInstagramStatus(); checkAPIStatus(); }, 1500);
     } else {
       statusEl.textContent = '⚠ ' + (d.error || 'Erro ao importar');
       statusEl.style.color = 'var(--red)';
@@ -2316,9 +2317,9 @@ function closeIgLoginModal() {
 
 // ── Inline session submit (Opção 2 na página Conta Instagram) ──
 async function submitIgSessionInline() {
-  const input  = document.getElementById('igSessionIdInline');
+  const input    = document.getElementById('igSessionIdInline');
   const statusEl = document.getElementById('igInlineStatus');
-  const btn    = document.getElementById('igInlineSubmitBtn');
+  const btn      = document.getElementById('igInlineSubmitBtn');
   const sessionid = (input ? input.value.trim() : '');
   if (!sessionid || sessionid.length < 10) {
     statusEl.textContent = '⚠ Cole um código sessionid válido';
@@ -2339,9 +2340,12 @@ async function submitIgSessionInline() {
       input.value = '';
       statusEl.textContent = '✅ Conta conectada!';
       statusEl.style.color = 'var(--green)';
+      // Atualiza status card IMEDIATAMENTE — sem esperar roundtrip ao servidor
+      _setInstagramConnected(true);
       toast('✓ Sessão do Instagram importada com sucesso!', 'success');
       addLog('SESSION', '✓ Sessão importada via Session ID', 'ok');
-      setTimeout(() => { loadInstagramStatus(); checkAPIStatus(); }, 800);
+      // Confirma com o servidor após 1.5s para manter sincronizado
+      setTimeout(() => loadInstagramStatus(), 1500);
     } else {
       statusEl.textContent = '⚠ ' + (d.error || 'Erro ao conectar');
       statusEl.style.color = 'var(--red)';
@@ -2352,6 +2356,28 @@ async function submitIgSessionInline() {
   } finally {
     btn.disabled = false;
     btn.textContent = 'Conectar';
+  }
+}
+
+// ── Helper: atualiza todos os elementos de status do Instagram de uma vez ──
+function _setInstagramConnected(connected) {
+  const icon    = document.getElementById('ig-status-icon');
+  const label   = document.getElementById('ig-conn-label');
+  const detail  = document.getElementById('ig-conn-detail');
+  const session = document.getElementById('ig-session-status');
+  const pill    = document.getElementById('pill-ig-session');
+  if (connected) {
+    if (icon)    icon.textContent   = '✅';
+    if (label)   { label.textContent  = 'Conta conectada'; label.style.color = 'var(--green)'; }
+    if (detail)  detail.textContent  = 'Tudo certo! O sistema pode buscar clientes e enviar mensagens.';
+    if (session) { session.textContent = '✓ Ativa'; session.style.color = 'var(--green)'; }
+    if (pill)    { pill.className = 'pill green'; pill.innerHTML = '<span class="dot"></span>Instagram'; }
+  } else {
+    if (icon)    icon.textContent   = '⚠️';
+    if (label)   { label.textContent  = 'Conta desconectada'; label.style.color = 'var(--amber)'; }
+    if (detail)  detail.textContent  = 'Siga um dos métodos abaixo para conectar sua conta.';
+    if (session) { session.textContent = '⚠ Inativa'; session.style.color = 'var(--amber)'; }
+    if (pill)    { pill.className = 'pill amber'; pill.innerHTML = '<span class="dot"></span>Instagram'; }
   }
 }
 
@@ -2829,25 +2855,8 @@ function loadInstagramStatus() {
   authFetch('/api/status')
     .then(r => r.json())
     .then(d => {
-      const label = document.getElementById('ig-conn-label');
-      const detail = document.getElementById('ig-conn-detail');
-      const session = document.getElementById('ig-session-status');
+      _setInstagramConnected(d.instagram);
       const account = document.getElementById('ig-connected-account');
-      const pill = document.getElementById('pill-ig-session');
-      const icon = document.getElementById('ig-status-icon');
-      if (d.instagram) {
-        if (icon)   icon.textContent = '✅';
-        if (label)  { label.textContent = 'Conta conectada'; label.style.color = 'var(--green)'; }
-        if (detail) detail.textContent = 'Tudo certo! O sistema pode buscar clientes e enviar mensagens.';
-        if (session) { session.textContent = '✓ Ativa'; session.style.color = 'var(--green)'; }
-        if (pill)   { pill.className = 'pill green'; pill.innerHTML = '<span class="dot"></span>Instagram'; }
-      } else {
-        if (icon)   icon.textContent = '⚠️';
-        if (label)  { label.textContent = 'Conta desconectada'; label.style.color = 'var(--amber)'; }
-        if (detail) detail.textContent = 'Siga um dos métodos abaixo para conectar sua conta.';
-        if (session) { session.textContent = '⚠ Inativa'; session.style.color = 'var(--amber)'; }
-        if (pill)   { pill.className = 'pill amber'; pill.innerHTML = '<span class="dot"></span>Instagram'; }
-      }
       if (account) account.textContent = d.instagram_username ? '@' + d.instagram_username : '';
     })
     .catch(() => {});
