@@ -104,6 +104,27 @@ function hashPassword(password) {
   return crypto.createHash('sha256').update(password).digest('hex');
 }
 
+// ── Instagram connection status: flag in-memory + persiste em disco ──
+const IG_STATUS_FILE  = path.join(__dirname, '..', 'data', 'session', 'connection-status.json');
+let   igConnectedFlag = false;
+(function loadIgStatus() {
+  try {
+    if (fs.existsSync(IG_STATUS_FILE)) {
+      const s = JSON.parse(fs.readFileSync(IG_STATUS_FILE, 'utf8'));
+      igConnectedFlag = s.connected === true;
+      if (igConnectedFlag) console.log('[SESSION] ✅ Flag de sessão carregada do disco');
+    }
+  } catch {}
+})();
+
+function setIgConnected(val) {
+  igConnectedFlag = val;
+  try {
+    fs.mkdirSync(path.dirname(IG_STATUS_FILE), { recursive: true });
+    fs.writeFileSync(IG_STATUS_FILE, JSON.stringify({ connected: val, updatedAt: new Date().toISOString() }));
+  } catch {}
+}
+
 // ── Auth sessions: persiste em disco para sobreviver reinicializações do PM2 ──
 const SESSIONS_FILE = path.join(__dirname, '..', 'config', 'auth-sessions.json');
 const SESSION_TTL_MS = 90 * 24 * 60 * 60 * 1000; // 90 dias
@@ -234,7 +255,11 @@ const server = http.createServer(async (req, res) => {
       return json(res, { ok: false, error: 'Nenhum nicho configurado' }, 400);
     }
 
-    // Iniciar autopilot em processo separado
+    // Limpa status anterior e inicia autopilot em processo separado
+    try {
+      const apStatusFile = path.join(DATA_DIR, 'autopilot-status.json');
+      fs.writeFileSync(apStatusFile, JSON.stringify({ status: 'running', startedAt: new Date().toISOString() }));
+    } catch {}
     setTimeout(() => {
       const child = spawn('node', [path.join(__dirname, '10-autopilot.js')], {
         detached: true,
@@ -260,6 +285,17 @@ const server = http.createServer(async (req, res) => {
     const { active } = await bodyJSON(req);
     autopilotDB.updateConfig({ active: active === true });
     return json(res, { ok: true, active: autopilotDB.loadConfig().active });
+  }
+
+  if (req.method === 'GET' && pathname === '/api/autopilot/status') {
+    const apStatusFile = path.join(DATA_DIR, 'autopilot-status.json');
+    if (!fs.existsSync(apStatusFile)) return json(res, { status: 'idle' });
+    try {
+      const s = JSON.parse(fs.readFileSync(apStatusFile, 'utf8'));
+      return json(res, s);
+    } catch {
+      return json(res, { status: 'idle' });
+    }
   }
 
   // ====== DM QUEUE API ======
@@ -497,15 +533,19 @@ const server = http.createServer(async (req, res) => {
 
   // ── STATUS DAS APIs ──────────────────────────────────────────────────────
   if (req.method === 'GET' && pathname === '/api/status') {
-    // Resolve caminho da sessão Instagram (suporta env var customizada)
     const sessionPath = process.env.INSTAGRAM_SESSION_FILE
       ? path.join(__dirname, '..', process.env.INSTAGRAM_SESSION_FILE)
       : path.join(DATA_DIR, 'session', 'instagram-session.json');
+    const fileExists = fs.existsSync(sessionPath);
+    // Flag in-memory OU arquivo em disco — qualquer um válido indica sessão ativa
+    const igOk = igConnectedFlag || fileExists;
+    // Sincroniza a flag se o arquivo existe mas a flag estava apagada (ex: restart)
+    if (fileExists && !igConnectedFlag) setIgConnected(true);
     return json(res, {
       groq:      !!process.env.GROQ_API_KEY,
       gemini:    !!(process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_API_KEY || process.env.GOOGLE_API_KEY),
       notion:    !!process.env.NOTION_API_KEY,
-      instagram: fs.existsSync(sessionPath),
+      instagram: igOk,
       instagram_username: process.env.INSTAGRAM_USERNAME || null,
     });
   }
@@ -523,6 +563,13 @@ const server = http.createServer(async (req, res) => {
     };
     const args = agentMap[agentKey];
     if (!args) return json(res, { ok: false, error: `Agente '${agentKey}' não encontrado` }, 404);
+    // Se for autopilot, escreve status 'running' antes de spawnar
+    if (agentKey === 'autopilot') {
+      try {
+        fs.writeFileSync(path.join(DATA_DIR, 'autopilot-status.json'),
+          JSON.stringify({ status: 'running', startedAt: new Date().toISOString() }));
+      } catch {}
+    }
     setTimeout(() => {
       const child = spawn('node', [path.join(__dirname, ...args)], {
         detached: true, stdio: 'ignore', cwd: __dirname, env: process.env
@@ -710,8 +757,9 @@ const server = http.createServer(async (req, res) => {
         { name: 'ds_user_id', value: body.ds_user_id || '', domain: '.instagram.com', path: '/', httpOnly: true, secure: true, sameSite: 'Lax', expires },
       ].filter(c => c.value); // remove cookies sem valor
       sessionSec.saveEncrypted(SESSION_FILE, cookies);
-      // Loga sem expor o token
-      console.log(`[SESSION] ✅ Sessão importada via sessionid (${sessionid.slice(0,8)}...)`);
+      setIgConnected(true);
+      console.log(`[SESSION] ✅ Sessão importada via sessionid (${sessionid.slice(0,8)}...) → ${SESSION_FILE}`);
+      console.log(`[SESSION] 📁 Arquivo existe: ${fs.existsSync(SESSION_FILE)}`);
       return json(res, { ok: true, message: 'Sessão importada com sucesso! O sistema já pode usar sua conta do Instagram.' });
     } catch (e) {
       return json(res, { ok: false, error: `Erro ao salvar sessão: ${e.message}` });

@@ -246,7 +246,7 @@ async function main() {
   }
 
   // ---- RESUMO ----
-  const totalLeads    = resultados.reduce((s, r) => s + r.leads, 0);
+  const totalLeads      = resultados.reduce((s, r) => s + r.leads, 0);
   const totalAnalisados = resultados.reduce((s, r) => s + r.analisados, 0);
 
   console.log(`\n${C.magenta}${'='.repeat(70)}${C.reset}`);
@@ -261,9 +261,30 @@ async function main() {
   console.log(`\n  ${C.bright}TOTAL: ${totalLeads} leads | ${totalAnalisados} analisados${C.reset}`);
   console.log(`  Dashboard: http://localhost:3131`);
   console.log(`${C.magenta}${'='.repeat(70)}${C.reset}\n`);
+
+  // ---- ARQUIVO DE STATUS (lido pelo dashboard para saber que concluiu) ----
+  try {
+    const statusFile = path.join(DATA_DIR, 'autopilot-status.json');
+    fs.writeFileSync(statusFile, JSON.stringify({
+      status: 'completed',
+      completedAt: new Date().toISOString(),
+      totalLeads,
+      totalAnalisados,
+      nichos: resultados.map(r => r.nichoId)
+    }));
+  } catch {}
 }
 
 main().catch(e => {
   console.error(`\n${C.red}[AUTOPILOT ERROR]${C.reset}`, e.message);
+  // Escreve status de erro para o dashboard
+  try {
+    const statusFile = path.join(DATA_DIR, 'autopilot-status.json');
+    fs.writeFileSync(statusFile, JSON.stringify({
+      status: 'error',
+      errorAt: new Date().toISOString(),
+      error: e.message
+    }));
+  } catch {}
   process.exit(1);
 });

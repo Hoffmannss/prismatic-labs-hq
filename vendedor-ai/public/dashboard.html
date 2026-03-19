@@ -2506,6 +2506,8 @@ function refreshData() {
 }
 
 // ── Autopilot Hero ──
+let _autopilotPollTimer = null;
+
 function triggerAutopilot() {
   const btn = document.getElementById('ahBtn');
   const statusEl = document.getElementById('ahStatus');
@@ -2524,8 +2526,36 @@ function triggerAutopilot() {
         statusEl.innerHTML = '<span class="ah-dot running"></span>&nbsp;Executando — aguarde 5–15 min';
         document.getElementById('systemStatus').textContent = 'Autopilot ativo';
         toast('✓ Autopilot iniciado — acompanhe nos Logs', 'success');
-        addLog('AUTOPILOT', '✓ Pipeline em andamento', 'ok');
-        setTimeout(resetAutopilotHero, 15 * 60 * 1000);
+        addLog('AUTOPILOT', '▶ Pipeline em andamento…', 'ok');
+        // Polling real: verifica status a cada 15s (até 30 min)
+        let polls = 0;
+        if (_autopilotPollTimer) clearInterval(_autopilotPollTimer);
+        _autopilotPollTimer = setInterval(() => {
+          polls++;
+          authFetch('/api/autopilot/status')
+            .then(r => r.json())
+            .then(s => {
+              if (s.status === 'completed') {
+                clearInterval(_autopilotPollTimer);
+                const total = s.totalLeads || 0;
+                const analisados = s.totalAnalisados || 0;
+                addLog('AUTOPILOT', `✓ Concluído — ${total} leads coletados, ${analisados} analisados`, 'ok');
+                toast(`✓ Autopilot concluído — ${total} leads coletados`, 'success');
+                resetAutopilotHero();
+                fetchData();
+              } else if (s.status === 'error') {
+                clearInterval(_autopilotPollTimer);
+                addLog('AUTOPILOT', `✗ Erro: ${s.error || 'desconhecido'}`, 'err');
+                toast('Autopilot terminou com erro — verifique os Logs', 'error');
+                resetAutopilotHero();
+              } else if (polls >= 120) { // 30 min timeout
+                clearInterval(_autopilotPollTimer);
+                addLog('AUTOPILOT', '⚠ Timeout — pipeline demorou mais que 30 min', 'warn');
+                resetAutopilotHero();
+              }
+            })
+            .catch(() => {});
+        }, 15000);
       } else {
         resetAutopilotHero();
         toast(d.error || 'Erro ao iniciar autopilot', 'error');
@@ -2548,7 +2578,6 @@ function resetAutopilotHero() {
   if (statusEl) statusEl.innerHTML = '<span class="ah-dot done"></span>&nbsp;Último run concluído';
   const sysStatus = document.getElementById('systemStatus');
   if (sysStatus) sysStatus.textContent = 'Sistema operacional';
-  fetchData();
 }
 
 // ── Settings ──
