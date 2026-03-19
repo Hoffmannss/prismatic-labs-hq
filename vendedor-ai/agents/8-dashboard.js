@@ -61,6 +61,51 @@ function getLeadMessages(username) {
   return loadJSON(f, null);
 }
 
+// Arquiva página de lead no Notion (soft-delete)
+async function archiveNotionPage(username) {
+  const NOTION_TOKEN = process.env.NOTION_API_KEY || process.env.NOTION_TOKEN;
+  const NOTION_DB    = process.env.NOTION_DATABASE_ID;
+  if (!NOTION_TOKEN || !NOTION_DB) return;
+  const https = require('https');
+  // 1) Buscar página pelo username
+  const queryBody = JSON.stringify({
+    filter: { property: 'Nome', title: { equals: '@' + username } }
+  });
+  const searchRes = await new Promise((resolve, reject) => {
+    const req = https.request({
+      hostname: 'api.notion.com', path: `/v1/databases/${NOTION_DB}/query`,
+      method: 'POST', headers: {
+        'Authorization': `Bearer ${NOTION_TOKEN}`, 'Notion-Version': '2022-06-28',
+        'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(queryBody)
+      }
+    }, res => {
+      let d = ''; res.on('data', c => d += c);
+      res.on('end', () => { try { resolve(JSON.parse(d)); } catch { resolve(null); } });
+    });
+    req.on('error', reject);
+    req.write(queryBody); req.end();
+  });
+  if (!searchRes?.results?.length) return;
+  // 2) Arquivar a página
+  const pageId = searchRes.results[0].id;
+  const archiveBody = JSON.stringify({ archived: true });
+  await new Promise((resolve, reject) => {
+    const req = https.request({
+      hostname: 'api.notion.com', path: `/v1/pages/${pageId}`,
+      method: 'PATCH', headers: {
+        'Authorization': `Bearer ${NOTION_TOKEN}`, 'Notion-Version': '2022-06-28',
+        'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(archiveBody)
+      }
+    }, res => {
+      let d = ''; res.on('data', c => d += c);
+      res.on('end', () => resolve(d));
+    });
+    req.on('error', reject);
+    req.write(archiveBody); req.end();
+  });
+  console.log(`[NOTION] Página de @${username} arquivada`);
+}
+
 function getTracker(username) {
   const f = path.join(TRACKER_DIR, `${username}_tracker.json`);
   return loadJSON(f, null);
@@ -830,8 +875,8 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
-  // ── DELETE LEAD ─────────────────────────────────────────────────────────
-  if (req.method === 'DELETE' && pathname.startsWith('/api/lead/')) {
+  // ── DELETE LEAD (individual) ────────────────────────────────────────────
+  if (req.method === 'DELETE' && pathname.startsWith('/api/lead/') && !pathname.includes('/bulk')) {
     const username = decodeURIComponent(pathname.slice('/api/lead/'.length)).replace(/^@/, '').trim().toLowerCase();
     if (!username) return json(res, { ok: false, error: 'username obrigatório' }, 400);
     const db = loadJSON(DB_FILE, { leads: [] });
@@ -839,6 +884,7 @@ const server = http.createServer(async (req, res) => {
     if (idx === -1) return json(res, { ok: false, error: `Lead @${username} não encontrado` }, 404);
     db.leads.splice(idx, 1);
     saveJSON(DB_FILE, db);
+    // Limpar cache Notion + arquivar página no Notion
     try {
       const cacheFile = path.join(DATA_DIR, 'crm', 'notion-sync-cache.json');
       if (fs.existsSync(cacheFile)) {
@@ -847,7 +893,35 @@ const server = http.createServer(async (req, res) => {
         saveJSON(cacheFile, cache);
       }
     } catch {}
+    // Arquivar no Notion (async, não bloqueia resposta)
+    archiveNotionPage(username).catch(() => {});
     return json(res, { ok: true, message: `@${username} removido do CRM` });
+  }
+
+  // ── DELETE LEADS (bulk) ───────────────────────────────────────────────
+  if (req.method === 'POST' && pathname === '/api/leads/bulk-delete') {
+    const body = await bodyJSON(req);
+    const usernames = (body.usernames || []).map(u => u.replace(/^@/, '').trim().toLowerCase()).filter(Boolean);
+    if (!usernames.length) return json(res, { ok: false, error: 'Nenhum username fornecido' }, 400);
+    const db = loadJSON(DB_FILE, { leads: [] });
+    let removed = 0;
+    for (const uname of usernames) {
+      const idx = db.leads.findIndex(l => l.username === uname);
+      if (idx !== -1) { db.leads.splice(idx, 1); removed++; }
+    }
+    saveJSON(DB_FILE, db);
+    // Limpar cache Notion
+    try {
+      const cacheFile = path.join(DATA_DIR, 'crm', 'notion-sync-cache.json');
+      if (fs.existsSync(cacheFile)) {
+        const cache = loadJSON(cacheFile, {});
+        for (const uname of usernames) delete cache[uname];
+        saveJSON(cacheFile, cache);
+      }
+    } catch {}
+    // Arquivar no Notion (async)
+    for (const uname of usernames) archiveNotionPage(uname).catch(() => {});
+    return json(res, { ok: true, removed, message: `${removed} lead(s) removido(s) do CRM` });
   }
 
   // ── SEND DM (bridge → DmQueueDB + sender) ───────────────────────────────

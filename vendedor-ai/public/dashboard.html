@@ -59,6 +59,7 @@ html,body{height:100%;font-family:'Inter',system-ui,-apple-system,sans-serif;bac
 .sidebar-status{padding:8px 16px;background:rgba(16,185,129,.06);border-bottom:1px solid var(--b);display:flex;align-items:center;gap:6px;font-size:11px;color:var(--green);font-weight:500}
 .status-dot{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);animation:pulse-dot 2s infinite;flex-shrink:0}
 @keyframes pulse-dot{0%,100%{opacity:1}50%{opacity:.35}}
+@keyframes fadeIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
 .sidebar-nav{flex:1;overflow-y:auto;padding:6px 0}
 .nav-section-label{font-size:9px;font-weight:700;letter-spacing:1.3px;text-transform:uppercase;color:var(--t3);padding:14px 18px 4px}
 .nav-item{display:flex;align-items:center;gap:9px;padding:8px 14px;margin:1px 8px;border-radius:8px;cursor:pointer;transition:all .15s;color:var(--t2);font-size:12.5px;font-weight:500;text-decoration:none}
@@ -594,7 +595,7 @@ tbody tr:last-child td{border-bottom:none}
       <div class="cmd-item" onclick="navigate('crm');closePalette()"><div class="cmd-item-icon">◈</div><span class="cmd-item-name">CRM — Leads</span><span class="cmd-item-key">G C</span></div>
       <div class="cmd-item" onclick="navigate('dmqueue');closePalette()"><div class="cmd-item-icon">◎</div><span class="cmd-item-name">Fila de DMs</span><span class="cmd-item-key">G D</span></div>
       <div class="cmd-item" onclick="navigate('analytics');closePalette()"><div class="cmd-item-icon">◈</div><span class="cmd-item-name">Relatórios</span><span class="cmd-item-key">G N</span></div>
-      <div class="cmd-item" onclick="navigate('logs');closePalette()"><div class="cmd-item-icon">≡</div><span class="cmd-item-name">Registro de Atividades</span><span class="cmd-item-key">G L</span></div>
+      <div class="cmd-item" onclick="navigate('logs');closePalette()"><div class="cmd-item-icon">≡</div><span class="cmd-item-name">Histórico</span><span class="cmd-item-key">G L</span></div>
       <div class="cmd-group-label">Ações Rápidas</div>
       <div class="cmd-item" onclick="runAgent('autopilot');closePalette()"><div class="cmd-item-icon">⚡</div><span class="cmd-item-name">Iniciar Autopilot</span><span class="cmd-item-key">⌘ P</span></div>
       <div class="cmd-item" onclick="runAgent('scraper');closePalette()"><div class="cmd-item-icon">🔍</div><span class="cmd-item-name">Buscar Novos Leads</span></div>
@@ -699,7 +700,7 @@ tbody tr:last-child td{border-bottom:none}
       <div class="nav-item active" onclick="navigate('overview')" id="nav-overview">
         <span class="nav-icon">⊞</span><span>Painel Principal</span>
       </div>
-      <div class="nav-item" onclick="navigate('agents')" id="nav-agents">
+      <div class="nav-item" onclick="navigate('agents')" id="nav-agents" style="display:none" data-advanced="true">
         <span class="nav-icon">⬡</span><span>Módulos de IA</span>
         <span class="nav-badge" id="badge-running">0</span>
       </div>
@@ -716,23 +717,29 @@ tbody tr:last-child td{border-bottom:none}
         <span class="nav-icon">▦</span><span>Relatórios</span>
       </div>
       <div class="nav-item" onclick="navigate('logs')" id="nav-logs">
-        <span class="nav-icon">≡</span><span>Registro de Atividades</span>
+        <span class="nav-icon">≡</span><span>Histórico</span>
       </div>
-      <div class="nav-section-label">Meu Negócio</div>
+      <div class="nav-section-label">Configurações</div>
       <div class="nav-item" onclick="navigate('profile')" id="nav-profile">
         <span class="nav-icon">◆</span><span>Perfil do Negócio</span>
       </div>
-      <div class="nav-item" onclick="navigate('schedule')" id="nav-schedule">
-        <span class="nav-icon">⏰</span><span>Agendamento</span>
-      </div>
-      <div class="nav-item" onclick="navigate('instagram')" id="nav-instagram">
+      <div class="nav-item" onclick="navigate('instagram')" id="nav-instagram" style="display:none" data-advanced="true">
         <span class="nav-icon">📷</span><span>Conta Instagram</span>
+      </div>
+      <div class="nav-item" onclick="navigate('schedule')" id="nav-schedule" style="display:none" data-advanced="true">
+        <span class="nav-icon">⏰</span><span>Agendamento</span>
       </div>
       <div class="nav-section-label">Ajuda</div>
       <div class="nav-item" onclick="navigate('guide')" id="nav-guide">
         <span class="nav-icon">?</span><span>Como Usar</span>
       </div>
     </nav>
+    <!-- Modo Avançado toggle -->
+    <div style="padding:6px 12px;border-top:1px solid var(--b)">
+      <button onclick="toggleAdvancedMode()" id="advancedModeBtn" style="width:100%;background:transparent;border:1px solid var(--b);border-radius:7px;padding:6px 10px;color:var(--t3);font-size:10.5px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:6px;transition:.15s" onmouseenter="this.style.color='var(--t2)'" onmouseleave="this.style.color='var(--t3)'">
+        <span id="advancedModeIcon">⚙</span><span id="advancedModeLabel">Modo Avançado</span>
+      </button>
+    </div>
     <div class="sidebar-footer">
       <div class="footer-avatar">PL</div>
       <div style="flex:1;min-width:0">
@@ -753,7 +760,7 @@ tbody tr:last-child td{border-bottom:none}
       <div class="topbar-spacer"></div>
       <div class="topbar-pills">
         <div class="pill green" id="pill-system"><span class="dot"></span>Sistema Ativo</div>
-        <button class="pill pill-renew" id="pill-ig-session" onclick="autoRenewSession()" title="Renovar sessão do Instagram"><span class="dot"></span>Instagram<span id="renew-status" style="margin-left:4px;font-size:10px;opacity:.6"></span></button>
+        <button class="pill pill-renew" id="pill-ig-session" onclick="navigate('instagram')" title="Configuração do Instagram" style="display:none"><span class="dot"></span>Instagram<span id="renew-status" style="margin-left:4px;font-size:10px;opacity:.6"></span></button>
       </div>
       <button class="topbar-cmd-btn" onclick="openPalette()">⌕ Buscar <kbd>⌘K</kbd></button>
       <button class="topbar-btn" onclick="refreshData()" title="Atualizar">↻</button>
@@ -970,10 +977,17 @@ tbody tr:last-child td{border-bottom:none}
             </select>
             <div class="table-count" id="crmCount">0 leads</div>
           </div>
+          <!-- Bulk actions bar -->
+          <div id="bulkBar" style="display:none;padding:8px 14px;margin-bottom:8px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.25);border-radius:8px;align-items:center;gap:10px;font-size:12px">
+            <span id="bulkCount" style="font-weight:700;color:var(--red)">0</span> <span style="color:var(--t2)">selecionados</span>
+            <button onclick="bulkDeleteLeads()" style="margin-left:auto;background:rgba(239,68,68,.15);color:var(--red);border:1px solid rgba(239,68,68,.3);border-radius:6px;padding:5px 12px;font-size:11px;font-weight:600;cursor:pointer">🗑 Deletar Selecionados</button>
+            <button onclick="clearSelection()" style="background:transparent;color:var(--t3);border:1px solid var(--b);border-radius:6px;padding:5px 10px;font-size:11px;cursor:pointer">Cancelar</button>
+          </div>
           <div style="overflow-x:auto">
             <table>
               <thead>
                 <tr>
+                  <th style="width:30px"><input type="checkbox" id="selectAllLeads" onchange="toggleSelectAll(this)" style="cursor:pointer"></th>
                   <th>Lead</th>
                   <th>Nicho</th>
                   <th>Score</th>
@@ -984,7 +998,7 @@ tbody tr:last-child td{border-bottom:none}
                 </tr>
               </thead>
               <tbody id="leadsTable">
-                <tr><td colspan="7"><div class="empty-state"><div class="empty-state-icon">👥</div><h3>Nenhum lead</h3><p>Execute o Autopilot para coletar leads</p></div></td></tr>
+                <tr><td colspan="8"><div class="empty-state"><div class="empty-state-icon">👥</div><h3>Nenhum lead</h3><p>Execute o Autopilot para coletar leads</p></div></td></tr>
               </tbody>
             </table>
           </div>
@@ -1085,36 +1099,45 @@ tbody tr:last-child td{border-bottom:none}
         </div>
       </section>
 
-      <!-- ══ LOGS ══ -->
+      <!-- ══ HISTÓRICO ══ -->
       <section class="section" id="section-logs">
         <div class="page-header">
-          <h1>Registro de Atividades</h1>
-          <p>O que o sistema está fazendo agora</p>
+          <h1>Histórico</h1>
+          <p>Acompanhe o que o sistema fez e está fazendo</p>
         </div>
         <div style="display:flex;gap:7px;margin-bottom:10px;flex-wrap:wrap">
-          <button class="filter-btn active" onclick="setLogFilter('all',this)">Todos</button>
-          <button class="filter-btn" onclick="setLogFilter('scraper',this)">🔍 Busca</button>
-          <button class="filter-btn" onclick="setLogFilter('analyzer',this)">🧠 Análise</button>
+          <button class="filter-btn active" onclick="setLogFilter('all',this)">Tudo</button>
+          <button class="filter-btn" onclick="setLogFilter('scraper',this)">🔍 Buscas</button>
+          <button class="filter-btn" onclick="setLogFilter('analyzer',this)">🧠 Análises</button>
           <button class="filter-btn" onclick="setLogFilter('copy',this)">✍️ Mensagens</button>
           <button class="filter-btn" onclick="setLogFilter('autopilot',this)">⚡ Automático</button>
-          <button class="filter-btn" onclick="setLogFilter('err',this)" style="color:var(--red)">⚠ Erros</button>
+          <button class="filter-btn" onclick="setLogFilter('err',this)" style="color:var(--red)">⚠ Problemas</button>
           <div style="flex:1"></div>
           <button class="filter-btn" onclick="clearLogs()">✕ Limpar</button>
         </div>
-        <div class="terminal">
-          <div class="terminal-bar">
-            <div class="term-dots">
-              <div class="term-dot red"></div>
-              <div class="term-dot amb"></div>
-              <div class="term-dot grn"></div>
+        <div id="activityFeed" style="display:flex;flex-direction:column;gap:6px;max-height:500px;overflow-y:auto;padding:4px">
+          <div class="activity-item" style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--bg-el);border-radius:8px;border:1px solid var(--b)">
+            <div style="font-size:16px">✓</div>
+            <div style="flex:1">
+              <div style="font-size:12px;color:var(--t);font-weight:500">Sistema iniciado</div>
+              <div style="font-size:11px;color:var(--t3)">Vendedor AI pronto para uso</div>
             </div>
-            <div class="term-title">Atividade em tempo real</div>
+            <div style="font-size:10px;color:var(--t3)" id="initTime">agora</div>
           </div>
-          <div class="terminal-body" id="logTerminal">
-            <div class="log-line">
-              <span class="log-time" id="initTime">--:--:--</span>
-              <span class="log-module dashboard">DASHBOARD</span>
-              <span class="log-msg ok">✓ Vendedor AI v3.0 iniciado — Prismatic Labs</span>
+        </div>
+        <!-- Terminal técnico oculto (modo avançado) -->
+        <div id="logTerminalWrap" style="display:none;margin-top:12px">
+          <div class="terminal">
+            <div class="terminal-bar">
+              <div class="term-dots"><div class="term-dot red"></div><div class="term-dot amb"></div><div class="term-dot grn"></div></div>
+              <div class="term-title">Log técnico</div>
+            </div>
+            <div class="terminal-body" id="logTerminal">
+              <div class="log-line">
+                <span class="log-time">--:--:--</span>
+                <span class="log-module dashboard">DASHBOARD</span>
+                <span class="log-msg ok">✓ Vendedor AI v3.0 iniciado</span>
+              </div>
             </div>
           </div>
         </div>
@@ -1310,7 +1333,11 @@ tbody tr:last-child td{border-bottom:none}
       <section class="section" id="section-instagram">
         <div class="page-header">
           <h1>Conta Instagram</h1>
-          <p>Conecte sua conta para que o sistema possa buscar clientes e enviar mensagens</p>
+          <p>Opcional — melhora o acesso a perfis privados. Para perfis públicos, o sistema funciona sem conexão.</p>
+        </div>
+        <div style="padding:12px 16px;background:rgba(16,185,129,.07);border:1px solid rgba(16,185,129,.2);border-radius:10px;font-size:12px;color:#10b981;margin-bottom:16px;display:flex;align-items:center;gap:10px">
+          <span style="font-size:18px">✓</span>
+          <span><strong>O sistema já está funcionando.</strong> Conectar o Instagram é opcional e só necessário se você quiser analisar contas privadas. Para prospecção normal em perfis públicos, pode pular esta etapa.</span>
         </div>
 
         <!-- STATUS CARD -->
@@ -1714,6 +1741,31 @@ const state = {
   ]
 };
 
+// ── Modo Avançado ──
+let _advancedMode = false;
+function toggleAdvancedMode() {
+  _advancedMode = !_advancedMode;
+  // Mostrar/esconder itens avançados na sidebar
+  document.querySelectorAll('[data-advanced="true"]').forEach(el => {
+    el.style.display = _advancedMode ? 'flex' : 'none';
+  });
+  // Atualizar botão
+  const btn   = document.getElementById('advancedModeBtn');
+  const icon  = document.getElementById('advancedModeIcon');
+  const label = document.getElementById('advancedModeLabel');
+  if (_advancedMode) {
+    btn.style.borderColor = 'rgba(124,58,237,.4)';
+    btn.style.color = 'var(--purple-l)';
+    icon.textContent  = '⚙';
+    label.textContent = 'Modo Avançado: Ativo';
+  } else {
+    btn.style.borderColor = 'var(--b)';
+    btn.style.color = 'var(--t3)';
+    icon.textContent  = '⚙';
+    label.textContent = 'Modo Avançado';
+  }
+}
+
 // ── Sidebar Mobile ──
 function toggleSidebar() {
   const sb = document.querySelector('.sidebar');
@@ -1731,11 +1783,11 @@ function closeSidebar() {
 // ── Navigation ──
 const SECTION_TITLES = {
   overview:  ['Painel Principal', 'Visão Geral'],
-  agents:    ['Módulos de IA', 'Automação'],
+  agents:    ['Módulos de IA', 'Avançado'],
   crm:       ['Meus Leads', 'Prospecção'],
   dmqueue:   ['Fila de Mensagens', 'Envio'],
   analytics: ['Relatórios', 'Desempenho'],
-  logs:      ['Registro de Atividades', 'Monitor'],
+  logs:      ['Histórico', 'Atividades'],
   profile:   ['Perfil do Negócio', 'Identidade'],
   schedule:  ['Agendamento', 'Automático'],
   instagram: ['Conta Instagram', 'Conexão'],
@@ -1800,10 +1852,40 @@ function toast(msg, type = 'info') {
 }
 
 // ── Logging ──
+const LOG_ICONS = { scraper: '🔍', analyzer: '🧠', copywriter: '✍️', autopilot: '⚡', sender: '📤', notion: '📋', dashboard: '✓', error: '⚠' };
+const LOG_LABELS = { scraper: 'Busca de leads', analyzer: 'Análise de perfis', copywriter: 'Criação de mensagens', autopilot: 'Automático', sender: 'Envio de DMs', 'notion-sync': 'Sincronização', notion: 'Sincronização', dashboard: 'Sistema' };
+function humanizeLog(module, msg) {
+  // Transforma logs técnicos em linguagem humana
+  const m = msg.toLowerCase();
+  if (m.includes('scraping') || m.includes('buscando')) return 'Buscando novos leads...';
+  if (m.includes('found') || m.includes('encontr')) { const n = msg.match(/(\d+)/); return n ? `${n[1]} leads encontrados` : 'Leads encontrados'; }
+  if (m.includes('analis') || m.includes('scoring')) return 'Analisando perfis...';
+  if (m.includes('copywr') || m.includes('mensag') || m.includes('gerando dm')) return 'Criando mensagens personalizadas...';
+  if (m.includes('completo') || m.includes('complete') || m.includes('finaliz')) return 'Concluído com sucesso';
+  if (m.includes('erro') || m.includes('error') || m.includes('falh')) return 'Ocorreu um problema — verifique os detalhes';
+  if (m.includes('sync') || m.includes('notion')) return 'Sincronizando com Notion...';
+  if (m.includes('enviando') || m.includes('send')) return 'Enviando mensagens...';
+  return msg.length > 60 ? msg.slice(0, 57) + '...' : msg;
+}
 function addLog(module, msg, type = '') {
   const time = new Date().toTimeString().slice(0, 8);
   state.logs.unshift({ time, module, msg, type });
   if (state.logs.length > 300) state.logs.pop();
+  // Feed humanizado
+  const feed = document.getElementById('activityFeed');
+  if (feed) {
+    const icon = type === 'err' ? '⚠' : (LOG_ICONS[module.toLowerCase()] || '•');
+    const label = LOG_LABELS[module.toLowerCase()] || module;
+    const human = humanizeLog(module, msg);
+    const color = type === 'err' ? 'var(--red)' : type === 'ok' ? 'var(--green)' : 'var(--t)';
+    const item = document.createElement('div');
+    item.className = 'activity-item';
+    item.style.cssText = 'display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--bg-el);border-radius:8px;border:1px solid var(--b);animation:fadeIn .3s';
+    item.innerHTML = `<div style="font-size:16px">${icon}</div><div style="flex:1"><div style="font-size:12px;color:${color};font-weight:500">${human}</div><div style="font-size:10px;color:var(--t3)">${label}</div></div><div style="font-size:10px;color:var(--t3)">${time}</div>`;
+    feed.prepend(item);
+    // Manter no máximo 30 items no feed
+    while (feed.children.length > 30) feed.lastChild.remove();
+  }
   if (document.getElementById('section-logs').classList.contains('active')) renderLogs();
 }
 function renderLogs() {
@@ -1814,10 +1896,16 @@ function renderLogs() {
     .map(l => `<div class="log-line"><span class="log-time">${l.time}</span><span class="log-module ${l.module.toLowerCase()}">${l.module}</span><span class="log-msg ${l.type}">${l.msg}</span></div>`)
     .join('');
   const term = document.getElementById('logTerminal');
-  const init = term.querySelector('#initTime') ? `<div class="log-line"><span class="log-time" id="initTime">${document.getElementById('initTime') ? document.getElementById('initTime').textContent : '--:--:--'}</span><span class="log-module dashboard">DASHBOARD</span><span class="log-msg ok">✓ Vendedor AI v3.0 iniciado — Prismatic Labs</span></div>` : '';
+  if (!term) return;
+  const init = `<div class="log-line"><span class="log-time">--:--:--</span><span class="log-module dashboard">DASHBOARD</span><span class="log-msg ok">✓ Vendedor AI v3.0 iniciado</span></div>`;
   term.innerHTML = lines || init;
 }
-function clearLogs() { state.logs = []; renderLogs(); toast('Logs limpos', 'info'); }
+function clearLogs() {
+  state.logs = []; renderLogs();
+  const feed = document.getElementById('activityFeed');
+  if (feed) feed.innerHTML = '<div class="activity-item" style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--bg-el);border-radius:8px;border:1px solid var(--b)"><div style="font-size:16px">✓</div><div style="flex:1"><div style="font-size:12px;color:var(--t);font-weight:500">Histórico limpo</div><div style="font-size:11px;color:var(--t3)">Nenhuma atividade recente</div></div></div>';
+  toast('Histórico limpo', 'info');
+}
 function setLogFilter(f, btn) {
   state.logFilter = f;
   document.querySelectorAll('#section-logs .filter-btn').forEach(b => b.classList.remove('active'));
@@ -1957,7 +2045,7 @@ function renderLeads() {
 
   document.getElementById('crmCount').textContent = `${leads.length} leads`;
   if (!leads.length) {
-    document.getElementById('leadsTable').innerHTML = `<tr><td colspan="7"><div class="empty-state"><div class="empty-state-icon">👥</div><h3>Nenhum lead</h3><p>Ajuste os filtros ou execute o Autopilot</p></div></td></tr>`;
+    document.getElementById('leadsTable').innerHTML = `<tr><td colspan="8"><div class="empty-state"><div class="empty-state-icon">👥</div><h3>Nenhum lead</h3><p>Ajuste os filtros ou execute o Autopilot</p></div></td></tr>`;
     return;
   }
   document.getElementById('leadsTable').innerHTML = leads.slice(0, 150).map(l => {
@@ -1968,6 +2056,7 @@ function renderLeads() {
     const st = l.status || 'new';
     const date = l.scraped_at ? new Date(l.scraped_at).toLocaleDateString('pt-BR') : '—';
     return `<tr>
+      <td><input type="checkbox" class="lead-check" data-username="${l.username}" onchange="updateBulkBar()" style="cursor:pointer"></td>
       <td><div class="td-lead"><div class="lead-avatar">${initials}</div><div><div class="lead-name">${l.full_name || l.username || '—'}</div><div class="lead-handle">@${l.username || '—'}${l.followers_count ? ' · ' + l.followers_count.toLocaleString('pt-BR') + ' seg' : ''}</div></div></div></td>
       <td style="color:var(--t)">${l.niche || '—'}</td>
       <td><div class="score-bar"><span class="score-num">${score}</span><div class="score-track"><div class="score-fill ${sc}" style="width:${score}%"></div></div></div></td>
@@ -1977,6 +2066,7 @@ function renderLeads() {
       <td><div class="td-actions">
         <button class="icon-btn" title="Ver DM" onclick="event.stopPropagation();previewDM('${l.username}')">💬</button>
         <button class="icon-btn" title="Instagram" onclick="event.stopPropagation();window.open('https://instagram.com/${l.username}','_blank')">↗</button>
+        <button class="icon-btn" title="Deletar" onclick="event.stopPropagation();deleteLead('${l.username}')" style="color:var(--red);opacity:.5;transition:opacity .15s" onmouseenter="this.style.opacity=1" onmouseleave="this.style.opacity=.5">🗑</button>
       </div></td>
     </tr>`;
   }).join('');
@@ -1986,6 +2076,55 @@ function previewDM(username) {
   const dm = lead.mensagem_final || lead.dm_message;
   if (!lead || !dm) { toast('Nenhuma DM gerada para @' + username, 'info'); return; }
   toast(`DM: ${dm.slice(0, 80)}...`, 'info');
+}
+
+// ── Delete Leads ──
+function deleteLead(username) {
+  if (!confirm(`Tem certeza que deseja remover @${username} do CRM?\n\nEssa ação também remove do Notion.`)) return;
+  authFetch('/api/lead/' + encodeURIComponent(username), { method: 'DELETE' })
+    .then(r => r.json()).then(d => {
+      if (d.ok) {
+        state.leads = state.leads.filter(l => l.username !== username);
+        renderLeads();
+        toast(`@${username} removido`, 'ok');
+      } else { toast(d.error || 'Erro ao remover', 'error'); }
+    }).catch(() => toast('Erro de conexão', 'error'));
+}
+function toggleSelectAll(el) {
+  document.querySelectorAll('.lead-check').forEach(c => c.checked = el.checked);
+  updateBulkBar();
+}
+function updateBulkBar() {
+  const checked = document.querySelectorAll('.lead-check:checked');
+  const bar = document.getElementById('bulkBar');
+  if (checked.length > 0) {
+    bar.style.display = 'flex';
+    document.getElementById('bulkCount').textContent = checked.length;
+  } else {
+    bar.style.display = 'none';
+  }
+}
+function clearSelection() {
+  document.querySelectorAll('.lead-check').forEach(c => c.checked = false);
+  document.getElementById('selectAllLeads').checked = false;
+  updateBulkBar();
+}
+function bulkDeleteLeads() {
+  const checked = document.querySelectorAll('.lead-check:checked');
+  const usernames = Array.from(checked).map(c => c.dataset.username);
+  if (!usernames.length) return;
+  if (!confirm(`Remover ${usernames.length} lead(s) do CRM e do Notion?\n\nEssa ação não pode ser desfeita.`)) return;
+  authFetch('/api/leads/bulk-delete', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ usernames })
+  }).then(r => r.json()).then(d => {
+    if (d.ok) {
+      state.leads = state.leads.filter(l => !usernames.includes(l.username));
+      renderLeads();
+      clearSelection();
+      toast(`${d.removed} lead(s) removido(s)`, 'ok');
+    } else { toast(d.error || 'Erro ao remover', 'error'); }
+  }).catch(() => toast('Erro de conexão', 'error'));
 }
 
 // ── DM Queue ──
