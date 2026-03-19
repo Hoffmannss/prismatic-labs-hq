@@ -30,6 +30,18 @@ const LOGS_DIR  = path.join(__dirname, '..', 'logs');
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const db = new AutopilotDB();
 
+const STATUS_FILE = path.join(DATA_DIR, 'autopilot-status.json');
+function writeProgress(extra = {}) {
+  try {
+    fs.mkdirSync(path.dirname(STATUS_FILE), { recursive: true });
+    fs.writeFileSync(STATUS_FILE, JSON.stringify({
+      status: 'running',
+      updatedAt: new Date().toISOString(),
+      ...extra
+    }));
+  } catch {}
+}
+
 function loadCRMUsernames() {
   if (!fs.existsSync(DB_FILE)) return new Set();
   const dbData = JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
@@ -82,6 +94,7 @@ async function processNicho(nichoDesc, qtd, maxAnalyze) {
   // ---- FASE 1+2: SCRAPING INTELIGENTE via scrapeNicho ----
   // scrapeNicho já tenta: hashtag → smart seed (topsearch+score+followers) → seeds manuais
   console.log(`\n${C.cyan}[1/4] Scraping inteligente (hashtag → smart seed → followers)...${C.reset}`);
+  writeProgress({ step: 1, stepLabel: 'Buscando leads', detail: `Procurando perfis em "${nichoDesc}"` });
   const rawProfiles = await scrapeNicho(config, qtd * 2);
 
   // Deduplicação contra o CRM existente
@@ -95,6 +108,7 @@ async function processNicho(nichoDesc, qtd, maxAnalyze) {
   });
 
   console.log(`\n${C.cyan}[2/4] Deduplicação CRM: ${filtered.length}/${rawProfiles.length} novos${C.reset}`);
+  writeProgress({ step: 2, stepLabel: 'Filtrando duplicados', detail: `${filtered.length} leads novos encontrados` });
 
   if (filtered.length === 0) {
     console.log(`${C.yellow}  Nenhum candidato novo após deduplicação. Pulando.${C.reset}`);
@@ -121,12 +135,14 @@ async function processNicho(nichoDesc, qtd, maxAnalyze) {
 
   // ---- FASE 3: ANALYZE (IA) ----
   console.log(`\n${C.cyan}[3/4] Analyze IA em ${Math.min(queue.length, maxAnalyze)} leads...${C.reset}`);
+  writeProgress({ step: 3, stepLabel: 'Analisando com IA', detail: `Pontuando ${Math.min(queue.length, maxAnalyze)} perfis` });
   const toAnalyze = queue.slice(0, maxAnalyze);
   let okCount = 0;
 
   for (let i = 0; i < toAnalyze.length; i++) {
     const l = toAnalyze[i];
     console.log(`\n  ${C.bright}[${i+1}/${toAnalyze.length}] @${l.username}${C.reset} | ${l.followers} followers`);
+    writeProgress({ step: 3, stepLabel: 'Analisando com IA', detail: `Analisando @${l.username} (${i+1}/${toAnalyze.length})`, analyzed: i+1, total: toAnalyze.length });
     const ok = runAnalyze(l.username, l.bio, l.followers, l.posts, l.postsDesc, nichoId, l.imageUrls);
     if (ok) okCount++;
     await sleep(400);
@@ -223,6 +239,7 @@ async function main() {
 
   // ---- NOTION SYNC ----
   if (syncNotion) {
+    writeProgress({ step: 4, stepLabel: 'Criando mensagens', detail: 'Gerando DMs personalizadas com IA' });
     console.log(`\n${C.cyan}[4/5] Sincronizando com Notion...${C.reset}`);
     const r = spawnSync(
       'node', [path.join(__dirname, '9-notion-sync.js'), 'sync'],
@@ -264,10 +281,11 @@ async function main() {
 
   // ---- ARQUIVO DE STATUS (lido pelo dashboard para saber que concluiu) ----
   try {
-    const statusFile = path.join(DATA_DIR, 'autopilot-status.json');
-    fs.writeFileSync(statusFile, JSON.stringify({
+    fs.writeFileSync(STATUS_FILE, JSON.stringify({
       status: 'completed',
       completedAt: new Date().toISOString(),
+      step: 4, stepLabel: 'Concluído',
+      detail: `${totalLeads} leads encontrados · ${totalAnalisados} analisados`,
       totalLeads,
       totalAnalisados,
       nichos: resultados.map(r => r.nichoId)
@@ -279,10 +297,11 @@ main().catch(e => {
   console.error(`\n${C.red}[AUTOPILOT ERROR]${C.reset}`, e.message);
   // Escreve status de erro para o dashboard
   try {
-    const statusFile = path.join(DATA_DIR, 'autopilot-status.json');
-    fs.writeFileSync(statusFile, JSON.stringify({
+    fs.writeFileSync(STATUS_FILE, JSON.stringify({
       status: 'error',
       errorAt: new Date().toISOString(),
+      stepLabel: 'Erro',
+      detail: e.message,
       error: e.message
     }));
   } catch {}

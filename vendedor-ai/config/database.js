@@ -194,6 +194,11 @@ class DmQueueDB {
     return true;
   }
 
+  clearQueue() {
+    this._saveQueue([]);
+    return true;
+  }
+
   getStats() {
     const queue = this.loadQueue();
     return {

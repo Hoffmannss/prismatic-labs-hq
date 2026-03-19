@@ -377,6 +377,12 @@ const server = http.createServer(async (req, res) => {
     return json(res, { ok });
   }
 
+  // Clear entire DM queue
+  if (req.method === 'DELETE' && pathname === '/api/dm-queue') {
+    dmQueueDB.clearQueue();
+    return json(res, { ok: true, message: 'Fila limpa' });
+  }
+
   if (req.method === 'DELETE' && pathname.startsWith('/api/dm-queue/')) {
     const id = pathname.split('/').pop();
     dmQueueDB.removeItem(id);
