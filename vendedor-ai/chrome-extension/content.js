@@ -1,205 +1,172 @@
 // =============================================================
-// VENDEDOR IA - CHROME EXTENSION CONTENT SCRIPT
-// Monitora a página do Instagram Direct e detecta novas mensagens
+// PRISMATIC CONNECT — CONTENT SCRIPT
+// Detecta respostas reais a DMs na conversa ABERTA no Instagram
+// Só ativa em instagram.com/direct/t/* (conversa específica)
 // =============================================================
 
-const PRISMATIC_PREFIX = '[Vendedor IA]';
-let observedUsers = new Set();
-let isInitialized = false;
+const PRISMATIC_PREFIX = '[Prismatic Connect]';
+const seenMessages = new Set(); // IDs de mensagens já processadas
+let currentObserver = null;
+let lastUrl = location.href;
 
 console.log(`${PRISMATIC_PREFIX} Content script carregado`);
 
-// Aguarda a página carregar completamente
+// Aguarda DOM pronto
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', init);
+  document.addEventListener('DOMContentLoaded', bootstrap);
 } else {
-  init();
+  bootstrap();
 }
 
-function init() {
-  if (isInitialized) return;
-  isInitialized = true;
-  
-  console.log(`${PRISMATIC_PREFIX} Inicializando monitor...`);
-  
-  // Verifica se está na página de Direct
-  if (window.location.pathname.includes('/direct')) {
-    startMonitoring();
-  }
-  
-  // Monitora mudanças de URL (SPA)
-  let lastUrl = location.href;
+function bootstrap() {
+  maybeStartMonitor();
+
+  // Monitora navegação SPA (Instagram não recarrega a página)
   new MutationObserver(() => {
-    const url = location.href;
-    if (url !== lastUrl) {
-      lastUrl = url;
-      if (url.includes('/direct')) {
-        console.log(`${PRISMATIC_PREFIX} Navegou para Direct, reiniciando monitor`);
-        startMonitoring();
-      }
+    if (location.href !== lastUrl) {
+      lastUrl = location.href;
+      maybeStartMonitor();
     }
-  }).observe(document, { subtree: true, childList: true });
+  }).observe(document.body, { childList: true, subtree: true });
 }
 
-function startMonitoring() {
-  console.log(`${PRISMATIC_PREFIX} Monitor ativo na página Direct`);
-  
-  // Observer para detectar novas mensagens
-  const observer = new MutationObserver((mutations) => {
-    mutations.forEach((mutation) => {
-      mutation.addedNodes.forEach((node) => {
-        if (node.nodeType === 1) { // Element node
-          checkForNewMessages(node);
-        }
-      });
-    });
-  });
-  
-  // Observa o container principal de mensagens
-  const messageContainer = document.querySelector('[role="main"]');
-  if (messageContainer) {
-    observer.observe(messageContainer, {
-      childList: true,
-      subtree: true
-    });
-    console.log(`${PRISMATIC_PREFIX} Observer configurado no container de mensagens`);
-  } else {
-    console.warn(`${PRISMATIC_PREFIX} Container de mensagens não encontrado, tentando novamente em 2s`);
-    setTimeout(startMonitoring, 2000);
+function maybeStartMonitor() {
+  // Só monitora quando está dentro de uma conversa aberta
+  // URL padrão: instagram.com/direct/t/THREAD_ID/
+  if (!location.pathname.match(/^\/direct\/t\/.+/)) {
+    stopObserver();
+    return;
   }
-  
-  // Verifica mensagens existentes ao carregar
-  setTimeout(() => {
-    const existingMessages = document.querySelectorAll('[role="main"] [data-testid="message-container"]');
-    console.log(`${PRISMATIC_PREFIX} Encontradas ${existingMessages.length} mensagens existentes`);
-  }, 1000);
+  console.log(`${PRISMATIC_PREFIX} Conversa aberta — iniciando monitor`);
+  waitForContainer();
 }
 
-function checkForNewMessages(element) {
-  // Detecta elementos de mensagem do Instagram
-  // Instagram usa estrutura dinâmica, então verificamos múltiplos seletores
-  
-  const messageSelectors = [
-    '[data-testid="message-container"]',
-    '[role="listitem"]',
-    '.x1n2onr6' // Classe genérica de mensagem (pode mudar)
-  ];
-  
-  messageSelectors.forEach(selector => {
-    const messages = element.matches ? 
-      (element.matches(selector) ? [element] : element.querySelectorAll(selector)) :
-      element.querySelectorAll(selector);
-    
-    messages.forEach(msg => processMessage(msg));
+function waitForContainer(attempt = 0) {
+  if (attempt > 15) {
+    console.warn(`${PRISMATIC_PREFIX} Container não encontrado após 15 tentativas`);
+    return;
+  }
+  const container = document.querySelector('[role="main"]');
+  if (!container) {
+    setTimeout(() => waitForContainer(attempt + 1), 1000);
+    return;
+  }
+  startObserver(container);
+}
+
+function startObserver(container) {
+  stopObserver(); // garante que não há observer duplicado
+
+  currentObserver = new MutationObserver(() => {
+    scanConversation(container);
   });
+
+  currentObserver.observe(container, { childList: true, subtree: true });
+
+  // Escaneia mensagens já visíveis na abertura
+  scanConversation(container);
+  console.log(`${PRISMATIC_PREFIX} Observer ativo na conversa`);
 }
 
-function processMessage(messageElement) {
-  try {
-    // Extrai username da conversa atual
-    const username = extractUsername();
-    if (!username) return;
-    
-    // Extrai texto da mensagem
-    const messageText = extractMessageText(messageElement);
-    if (!messageText) return;
-    
-    // Verifica se é mensagem RECEBIDA (não enviada por você)
-    const isReceived = isReceivedMessage(messageElement);
-    if (!isReceived) return;
-    
-    // Cria ID único para evitar duplicatas
-    const messageId = `${username}_${messageText.substring(0, 30)}`;
-    
-    if (observedUsers.has(messageId)) return;
-    observedUsers.add(messageId);
-    
-    // Limita tamanho do Set
-    if (observedUsers.size > 200) {
-      const firstItem = observedUsers.values().next().value;
-      observedUsers.delete(firstItem);
+function stopObserver() {
+  if (currentObserver) {
+    currentObserver.disconnect();
+    currentObserver = null;
+  }
+}
+
+function scanConversation(container) {
+  // Username da pessoa com quem você está conversando
+  // Vem do header da conversa: elemento com aria-label ou link de perfil no topo
+  const partner = getConversationPartner();
+  if (!partner) return;
+
+  // Pega TODAS as mensagens visíveis na tela
+  // Instagram: mensagens são <div role="row"> dentro do listbox de mensagens
+  const messageRows = container.querySelectorAll('[role="row"]');
+
+  messageRows.forEach(row => {
+    // Só processa mensagens RECEBIDAS (lado esquerdo / flex-start)
+    if (!isReceivedMessage(row)) return;
+
+    const text = extractText(row);
+    if (!text || text.length < 2) return;
+
+    // ID estável: partner + primeiros 50 chars do texto
+    const msgId = `${partner}::${text.substring(0, 50)}`;
+    if (seenMessages.has(msgId)) return;
+    seenMessages.add(msgId);
+
+    // Limpa Set para não crescer indefinidamente
+    if (seenMessages.size > 300) {
+      seenMessages.delete(seenMessages.values().next().value);
     }
-    
-    console.log(`${PRISMATIC_PREFIX} Nova mensagem de @${username}: "${messageText.substring(0, 50)}..."`);
-    
-    // Envia para background script
+
+    console.log(`${PRISMATIC_PREFIX} Resposta de @${partner}: "${text.substring(0, 60)}"`);
+
     chrome.runtime.sendMessage({
       type: 'NEW_MESSAGE_DETECTED',
-      data: {
-        username,
-        messageText,
-        timestamp: Date.now()
-      }
+      data: { username: partner, messageText: text, timestamp: Date.now() }
     });
-    
-  } catch (error) {
-    console.error(`${PRISMATIC_PREFIX} Erro ao processar mensagem:`, error);
-  }
+  });
 }
 
-function extractUsername() {
-  // Tenta extrair username do header da conversa
-  const headerSelectors = [
-    'header a[href*="/"]',
-    '[role="button"] a[href*="/"]',
-    'a[role="link"][href*="/"]'
-  ];
-  
-  for (const selector of headerSelectors) {
-    const link = document.querySelector(selector);
-    if (link && link.href) {
-      const match = link.href.match(/instagram\.com\/([^\/\?]+)/);
-      if (match && match[1] && match[1] !== 'direct') {
-        return match[1];
-      }
+function getConversationPartner() {
+  // Tenta 1: link de perfil no header da conversa
+  // Instagram coloca o username na URL do perfil no topo da conversa
+  const headerLinks = document.querySelectorAll('header a[href], [role="banner"] a[href]');
+  for (const link of headerLinks) {
+    const match = link.href.match(/instagram\.com\/([a-zA-Z0-9._]+)\/?($|\?)/);
+    if (match && match[1] && !['direct', 'explore', 'reels', 'stories'].includes(match[1])) {
+      return match[1];
     }
   }
-  
+
+  // Tenta 2: span com o username no topo da conversa (fallback)
+  const spans = document.querySelectorAll('header span, [role="banner"] span');
+  for (const span of spans) {
+    const text = span.textContent.trim();
+    if (text.startsWith('@') && text.length > 1) return text.slice(1);
+    if (/^[a-zA-Z0-9._]{3,30}$/.test(text) && !['Direct', 'Messages', 'Mensagens'].includes(text)) {
+      return text;
+    }
+  }
+
   return null;
 }
 
-function extractMessageText(element) {
-  // Tenta extrair texto da mensagem
-  const textElements = element.querySelectorAll('[dir="auto"]');
-  if (textElements.length > 0) {
-    const text = Array.from(textElements)
-      .map(el => el.textContent.trim())
+function isReceivedMessage(row) {
+  // Mensagens recebidas têm alinhamento flex-start no Instagram
+  // Mensagens enviadas têm flex-end
+  const style = window.getComputedStyle(row);
+  if (style.justifyContent === 'flex-end') return false;
+  if (style.justifyContent === 'flex-start') return true;
+
+  // Fallback: posição horizontal na tela
+  const rect = row.getBoundingClientRect();
+  return rect.width > 0 && rect.left < window.innerWidth * 0.45;
+}
+
+function extractText(element) {
+  const textNodes = element.querySelectorAll('[dir="auto"]');
+  if (textNodes.length > 0) {
+    return Array.from(textNodes)
+      .map(n => n.textContent.trim())
       .filter(t => t.length > 0)
-      .join(' ');
-    return text.substring(0, 200); // Limita tamanho
+      .join(' ')
+      .substring(0, 300);
   }
-  
-  return element.textContent.trim().substring(0, 200);
+  return element.textContent.trim().substring(0, 300);
 }
 
-function isReceivedMessage(element) {
-  // Mensagens recebidas normalmente estão à esquerda
-  // Mensagens enviadas à direita
-  // Instagram usa flex-direction ou justify-content pra isso
-  
-  const style = window.getComputedStyle(element);
-  const parent = element.parentElement;
-  const parentStyle = parent ? window.getComputedStyle(parent) : null;
-  
-  // Verifica alinhamento (mensagens recebidas geralmente flex-start)
-  if (parentStyle?.justifyContent === 'flex-start') return true;
-  if (parentStyle?.justifyContent === 'flex-end') return false;
-  
-  // Fallback: verifica posição horizontal
-  const rect = element.getBoundingClientRect();
-  const windowWidth = window.innerWidth;
-  
-  // Se mensagem está no lado esquerdo da tela (< 50% da largura)
-  return rect.left < windowWidth * 0.5;
-}
-
-// Listener para comandos externos
+// Listener para ping do popup
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === 'checkStatus') {
-    sendResponse({ 
-      active: isInitialized, 
-      observedCount: observedUsers.size,
-      currentUrl: window.location.href
+    sendResponse({
+      active:        !!currentObserver,
+      seenCount:     seenMessages.size,
+      currentUrl:    location.href,
+      inConversation: !!location.pathname.match(/^\/direct\/t\/.+/)
     });
   }
 });

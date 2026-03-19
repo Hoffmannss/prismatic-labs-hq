@@ -622,22 +622,13 @@ tbody tr:last-child td{border-bottom:none}
         <div style="font-size:11px;color:var(--t3);margin-top:2px">Vincule sua conta para enviar DMs</div>
       </div>
     </div>
-    <!-- Abas -->
-    <div style="display:flex;gap:0;border:1px solid var(--b);border-radius:10px;overflow:hidden;margin-bottom:18px">
-      <button id="igTabSessionBtn" onclick="igSwitchTab('session')"
-        style="flex:1;padding:9px 0;font-size:12px;font-weight:600;cursor:pointer;border:none;background:var(--purple);color:#fff;transition:all .2s">
-        Colar Session ID
-      </button>
-      <button id="igTabAutoBtn" onclick="igSwitchTab('auto')"
-        style="flex:1;padding:9px 0;font-size:12px;font-weight:600;cursor:pointer;border:none;background:var(--bg-el);color:var(--t2);transition:all .2s">
-        Login Automático
-      </button>
-    </div>
-
-    <!-- ABA: Session ID (padrão) -->
+    <!-- ABA: Session ID (único método suportado) -->
     <div id="igTabSession">
+      <div style="background:rgba(16,185,129,.07);border:1px solid rgba(16,185,129,.25);border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:11px;color:var(--t2);line-height:1.6">
+        ⚡ <strong style="color:#10b981">Tem a extensão Prismatic Connect instalada?</strong> Ela sincroniza a sessão automaticamente — você não precisa fazer nada. Só use o Instagram normalmente.
+      </div>
       <div style="background:rgba(124,58,237,.07);border:1px solid rgba(124,58,237,.2);border-radius:10px;padding:12px 14px;margin-bottom:14px;font-size:11px;color:var(--t2);line-height:1.7">
-        <strong style="color:var(--purple-l)">Como obter seu Session ID:</strong><br>
+        <strong style="color:var(--purple-l)">Sem a extensão — como obter seu Session ID:</strong><br>
         1. Abra <strong>instagram.com</strong> no Chrome e faça login<br>
         2. Pressione <kbd style="background:var(--bg-el);padding:1px 5px;border-radius:4px;font-size:10px">F12</kbd> → aba <strong>Application</strong><br>
         3. No menu lateral: <strong>Storage → Cookies → https://www.instagram.com</strong><br>
@@ -658,35 +649,6 @@ tbody tr:last-child td{border-bottom:none}
       <div id="igSessionStatus" style="margin-top:10px;font-size:11px;color:var(--t3);text-align:center;min-height:16px"></div>
     </div>
 
-    <!-- ABA: Login Automático -->
-    <div id="igTabAuto" style="display:none">
-      <div style="background:rgba(0,212,255,.06);border:1px solid rgba(0,212,255,.2);border-radius:10px;padding:10px 14px;margin-bottom:14px;font-size:11px;color:var(--t2);line-height:1.6">
-        🔒 <strong style="color:var(--cyan)">Credenciais usadas apenas uma vez</strong> — nunca armazenadas no servidor.
-      </div>
-      <div class="bp-form" style="gap:10px">
-        <div class="bp-field">
-          <label style="font-size:11px">Usuário do Instagram</label>
-          <input type="text" id="igLoginUser" placeholder="@seu_usuario" autocomplete="username"
-            style="background:var(--bg-el);border:1px solid var(--b);border-radius:8px;padding:9px 12px;color:var(--t);font-size:13px;width:100%;outline:none"
-            onkeydown="if(event.key==='Enter')document.getElementById('igLoginPass').focus()">
-        </div>
-        <div class="bp-field" style="position:relative">
-          <label style="font-size:11px">Senha</label>
-          <input type="password" id="igLoginPass" placeholder="••••••••" autocomplete="current-password"
-            style="background:var(--bg-el);border:1px solid var(--b);border-radius:8px;padding:9px 36px 9px 12px;color:var(--t);font-size:13px;width:100%;outline:none"
-            onkeydown="if(event.key==='Enter')submitIgLogin()">
-          <span onclick="const i=document.getElementById('igLoginPass');i.type=i.type==='password'?'text':'password'"
-            style="position:absolute;right:10px;bottom:10px;cursor:pointer;font-size:14px;color:var(--t3)">👁</span>
-        </div>
-      </div>
-      <div style="display:flex;gap:8px;margin-top:16px">
-        <button onclick="closeIgLoginModal()" style="flex:1;padding:9px;background:var(--bg-el);border:1px solid var(--b);border-radius:8px;color:var(--t2);font-size:12px;cursor:pointer">Cancelar</button>
-        <button id="igLoginSubmitBtn" onclick="submitIgLogin()" style="flex:2;padding:9px;background:linear-gradient(135deg,var(--purple),var(--cyan-d));border:none;border-radius:8px;color:#fff;font-size:12px;font-weight:700;cursor:pointer">
-          Fazer Login
-        </button>
-      </div>
-      <div id="igLoginStatus" style="margin-top:10px;font-size:11px;color:var(--t3);text-align:center;min-height:16px"></div>
-    </div>
   </div>
 </div>
 

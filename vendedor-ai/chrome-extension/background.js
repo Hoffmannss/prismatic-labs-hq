@@ -125,7 +125,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
 async function handleNewMessage(data) {
   const { username, messageText, timestamp } = data;
-  const messageId = `${username}_${timestamp}`;
+  const messageId = `${username}_${messageText.substring(0, 40)}`;
   if (lastCheckedMessages.has(messageId)) return;
   lastCheckedMessages.add(messageId);
   if (lastCheckedMessages.size > 100) {
