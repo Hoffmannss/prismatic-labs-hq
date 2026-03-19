@@ -104,7 +104,32 @@ function hashPassword(password) {
   return crypto.createHash('sha256').update(password).digest('hex');
 }
 
-const activeSessions = {};
+// ── Auth sessions: persiste em disco para sobreviver reinicializações do PM2 ──
+const SESSIONS_FILE = path.join(__dirname, '..', 'config', 'auth-sessions.json');
+const SESSION_TTL_MS = 90 * 24 * 60 * 60 * 1000; // 90 dias
+
+let activeSessions = {};
+(function loadPersistedSessions() {
+  try {
+    if (fs.existsSync(SESSIONS_FILE)) {
+      const raw = JSON.parse(fs.readFileSync(SESSIONS_FILE, 'utf8'));
+      const now = Date.now();
+      for (const [tok, sess] of Object.entries(raw)) {
+        if (sess && sess.createdAt && (now - sess.createdAt) < SESSION_TTL_MS) {
+          activeSessions[tok] = sess;
+        }
+      }
+    }
+  } catch {}
+})();
+
+function saveActiveSessions() {
+  try {
+    const dir = path.dirname(SESSIONS_FILE);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(SESSIONS_FILE, JSON.stringify(activeSessions));
+  } catch {}
+}
 
 function verifyToken(req) {
   const auth = req.headers.authorization || '';
@@ -516,7 +541,8 @@ const server = http.createServer(async (req, res) => {
     const user = usersData.users.find(u => u.email === email && u.password === hashPassword(password));
     if (!user) return json(res, { ok: false, error: 'E-mail ou senha incorretos' }, 401);
     const token = generateToken();
-    activeSessions[token] = { email: user.email, is_admin: user.is_admin, company_name: user.company_name };
+    activeSessions[token] = { email: user.email, is_admin: user.is_admin, company_name: user.company_name, createdAt: Date.now() };
+    saveActiveSessions();
     return json(res, { ok: true, token, user: { email: user.email, is_admin: user.is_admin, company_name: user.company_name } });
   }
 
