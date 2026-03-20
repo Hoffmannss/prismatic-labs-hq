@@ -1,11 +1,13 @@
 // =============================================================
-// MODULO 10: AUTOPILOT - SCOUT -> ENRICH -> ANALYZE -> NOTION -> LEARN
-// Fluxo totalmente automatico SEM APIFY - usa scraper proprio na VPS
+// MODULO 10: AUTOPILOT - GMB -> ENRICH -> ANALYZE -> NOTION -> LEARN
+// Fluxo automatico com duas fontes de leads:
+//   1. GMB (Google Maps) — busca negócios reais por nicho+cidade (PADRÃO)
+//   2. Instagram hashtag — fallback quando GMB não é ideal
 //
 // Uso:
 //   node 10-autopilot.js                          (lê config do dashboard)
-//   node 10-autopilot.js api-automacao 20         (CLI override)
-//   node 10-autopilot.js "personal trainers" 30   (CLI override)
+//   node 10-autopilot.js api-automacao 20         (CLI override - hashtag)
+//   node 10-autopilot.js "personal trainers" 30   (CLI override - hashtag)
 // =============================================================
 
 require('dotenv').config();
@@ -14,6 +16,7 @@ const path = require('path');
 const { spawnSync } = require('child_process');
 const { detectOrCreateNicho } = require('./13-nicho-ai');
 const { scrapeNicho } = require('./0-scraper');
+const { scrapeGMB } = require('./0-gmb-scraper');
 const { AutopilotDB } = require('../config/database');
 
 const C = {
@@ -84,18 +87,27 @@ function buildPostsDesc(profile) {
     .join('\n');
 }
 
-async function processNicho(nichoDesc, qtd, maxAnalyze) {
-  console.log(`\n${C.yellow}>>> Processando nicho: "${nichoDesc}"${C.reset}`);
+async function processNicho(nichoDesc, qtd, maxAnalyze, options = {}) {
+  const { mode = 'gmb', city = 'São Paulo' } = options;
+  console.log(`\n${C.yellow}>>> Processando nicho: "${nichoDesc}" [modo: ${mode.toUpperCase()}]${C.reset}`);
 
   // IA detecta ou cria o nicho automaticamente
   const { id: nichoId, config } = await detectOrCreateNicho(nichoDesc);
   const jaCRM = loadCRMUsernames();
 
-  // ---- FASE 1+2: SCRAPING INTELIGENTE via scrapeNicho ----
-  // scrapeNicho já tenta: hashtag → smart seed (topsearch+score+followers) → seeds manuais
-  console.log(`\n${C.cyan}[1/4] Scraping inteligente (hashtag → smart seed → followers)...${C.reset}`);
-  writeProgress({ step: 1, stepLabel: 'Buscando leads', detail: `Procurando perfis em "${nichoDesc}"` });
-  const rawProfiles = await scrapeNicho(config, qtd * 2);
+  let rawProfiles;
+
+  if (mode === 'gmb') {
+    // ---- MODO GMB: Google Maps → Instagram ----
+    console.log(`\n${C.cyan}[1/4] Buscando negócios no Google Maps (${city})...${C.reset}`);
+    writeProgress({ step: 1, stepLabel: 'Buscando no Google Maps', detail: `Procurando "${nichoDesc}" em ${city}` });
+    rawProfiles = await scrapeGMB(nichoDesc, city, qtd * 2);
+  } else {
+    // ---- MODO HASHTAG: Instagram scraping (legado) ----
+    console.log(`\n${C.cyan}[1/4] Scraping inteligente (hashtag → smart seed → followers)...${C.reset}`);
+    writeProgress({ step: 1, stepLabel: 'Buscando leads', detail: `Procurando perfis em "${nichoDesc}"` });
+    rawProfiles = await scrapeNicho(config, qtd * 2);
+  }
 
   // Deduplicação contra o CRM existente
   const filtered = rawProfiles.filter(p => {
@@ -123,7 +135,9 @@ async function processNicho(nichoDesc, qtd, maxAnalyze) {
     posts:       p.posts,
     postsDesc:   buildPostsDesc(p),   // captions reais ou '' se não disponível
     imageUrls:   (p.recentPosts || []).filter(rp => rp.imageUrl).map(rp => rp.imageUrl).slice(0, 4),
-    nicho:       nichoId
+    nicho:       nichoId,
+    // Dados GMB (enriquecimento extra para leads vindos do Google Maps)
+    gmb:         p.gmb || null,
   }));
 
   // Salvar queue em arquivo
@@ -156,7 +170,7 @@ async function main() {
   const args = process.argv.slice(2);
 
   // ---- MODO 1: LÊ CONFIGURAÇÕES DO DASHBOARD ----
-  let inputNicho, qtdTotal, maxAnalyze, syncNotion;
+  let inputNicho, qtdTotal, maxAnalyze, syncNotion, searchMode, searchCity;
 
   if (args.length === 0) {
     console.log(`\n${C.cyan}>>> Lendo configurações do dashboard...${C.reset}`);
@@ -178,36 +192,63 @@ async function main() {
     qtdTotal    = config.quantidade_leads || 20;
     maxAnalyze  = config.max_analyze || 10;
     syncNotion  = config.sync_notion !== false;
+    searchMode  = config.search_mode || 'gmb';  // 'gmb' ou 'hashtag'
+    searchCity  = config.search_city || 'São Paulo';
 
+    console.log(`${C.green}✓${C.reset} Modo: ${searchMode.toUpperCase()}`);
+    if (searchMode === 'gmb') console.log(`${C.green}✓${C.reset} Cidade: ${searchCity}`);
     console.log(`${C.green}✓${C.reset} Nicho: ${inputNicho}`);
     console.log(`${C.green}✓${C.reset} Quantidade: ${qtdTotal} leads`);
     console.log(`${C.green}✓${C.reset} Max Analyze: ${maxAnalyze}`);
     console.log(`${C.green}✓${C.reset} Sync Notion: ${syncNotion}\n`);
 
   } else if (args[0] === 'help') {
-    console.log(`\n${C.cyan}AUTOPILOT - Sem Apify, roda direto na VPS${C.reset}\n`);
+    console.log(`\n${C.cyan}AUTOPILOT - GMB + Instagram${C.reset}\n`);
     console.log('Uso:');
-    console.log('  node 10-autopilot.js                            (lê config do dashboard)');
-    console.log('  node 10-autopilot.js api-automacao 20           (CLI override)');
-    console.log('  node 10-autopilot.js "personal trainers" 30     (CLI override)');
-    console.log('  node 10-autopilot.js "fitness, nutricionistas" 50  (multiplos nichos)\n');
+    console.log('  node 10-autopilot.js                                        (lê config do dashboard)');
+    console.log('  node 10-autopilot.js --gmb "salão de beleza" "São Paulo" 20  (modo GMB)');
+    console.log('  node 10-autopilot.js --hashtag api-automacao 20              (modo hashtag legado)');
+    console.log('  node 10-autopilot.js "fitness, nutricionistas" 50            (hashtag, backward compat)\n');
     process.exit(0);
 
+  } else if (args[0] === '--gmb') {
+    // ---- MODO GMB CLI ----
+    inputNicho  = args[1] || 'salão de beleza';
+    searchCity  = args[2] || 'São Paulo';
+    qtdTotal    = parseInt(args[3] || '20', 10);
+    maxAnalyze  = parseInt(args[4] || '10', 10);
+    searchMode  = 'gmb';
+    syncNotion  = true;
+    console.log(`\n${C.yellow}>>> Modo CLI GMB: "${inputNicho}" em ${searchCity}${C.reset}\n`);
+
+  } else if (args[0] === '--hashtag') {
+    // ---- MODO HASHTAG CLI ----
+    inputNicho  = args[1] || 'automacao';
+    qtdTotal    = parseInt(args[2] || '20', 10);
+    maxAnalyze  = parseInt(args[3] || '10', 10);
+    searchMode  = 'hashtag';
+    searchCity  = '';
+    syncNotion  = true;
+    console.log(`\n${C.yellow}>>> Modo CLI Hashtag: "${inputNicho}"${C.reset}\n`);
+
   } else {
-    // ---- MODO 2: CLI OVERRIDE (backward compatibility) ----
+    // ---- MODO 2: CLI OVERRIDE (backward compatibility → hashtag) ----
     inputNicho  = args[0];
     qtdTotal    = parseInt(args[1] || '20', 10);
     maxAnalyze  = parseInt(args[2] || '10', 10);
+    searchMode  = 'hashtag';
+    searchCity  = '';
     syncNotion  = true;
-    console.log(`\n${C.yellow}>>> Modo CLI (override do dashboard)${C.reset}\n`);
+    console.log(`\n${C.yellow}>>> Modo CLI legado (hashtag)${C.reset}\n`);
   }
 
   // Detectar multiplos nichos (separados por virgula)
   const nichos = inputNicho.split(',').map(n => n.trim()).filter(Boolean);
 
   console.log(`\n${C.magenta}${'='.repeat(70)}${C.reset}`);
-  console.log(`${C.bright}  AUTOPILOT VPS - ${nichos.length} nicho(s) - SEM APIFY${C.reset}`);
+  console.log(`${C.bright}  AUTOPILOT VPS - ${nichos.length} nicho(s) - ${searchMode === 'gmb' ? 'GOOGLE MAPS' : 'INSTAGRAM HASHTAG'}${C.reset}`);
   console.log(`${C.magenta}${'='.repeat(70)}${C.reset}`);
+  console.log(`  Modo: ${searchMode.toUpperCase()}${searchMode === 'gmb' ? ` | Cidade: ${searchCity}` : ''}`);
   console.log(`  Meta: ${qtdTotal} leads por nicho | Max analyze: ${maxAnalyze}`);
   console.log(`  Nichos: ${nichos.join(' | ')}`);
 
@@ -224,7 +265,10 @@ async function main() {
     console.log(`${C.magenta}${'='.repeat(70)}${C.reset}`);
 
     try {
-      const resultado = await processNicho(nichos[i], qtdTotal, maxAnalyze);
+      const resultado = await processNicho(nichos[i], qtdTotal, maxAnalyze, {
+        mode: searchMode,
+        city: searchCity || 'São Paulo'
+      });
       resultados.push(resultado);
     } catch (e) {
       console.error(`${C.red}[ERRO] Nicho "${nichos[i]}": ${e.message}${C.reset}`);

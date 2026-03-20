@@ -791,13 +791,13 @@ tbody tr:last-child td{border-bottom:none}
           <div class="ah-left">
             <div class="ah-icon" id="ahIcon">⚡</div>
             <div>
-              <div class="ah-title">Prospecção Automática <span class="detail-btn">?<span class="detail-tooltip">Com um clique, o sistema busca potenciais clientes no Instagram, analisa cada perfil com IA (score de 0 a 100) e gera mensagens personalizadas para cada lead. Recomendamos rodar 1 vez por dia.</span></span></div>
-              <div class="ah-desc">Encontra potenciais clientes no Instagram, analisa cada perfil com inteligência artificial e cria mensagens únicas — tudo automaticamente</div>
+              <div class="ah-title">Prospecção Automática <span class="detail-btn">?<span class="detail-tooltip">Com um clique, o sistema busca negócios reais no Google Maps, encontra seus perfis do Instagram, analisa cada um com IA (score de 0 a 100) e gera mensagens personalizadas. Recomendamos rodar 1 vez por dia.</span></span></div>
+              <div class="ah-desc">Encontra negócios reais no Google Maps, analisa seus perfis do Instagram com IA e cria mensagens personalizadas — tudo automaticamente</div>
               <div class="ah-status" id="ahStatus"><span class="ah-dot idle"></span>&nbsp;Aguardando — clique para iniciar</div>
               <!-- Linha do tempo de progresso (visível só quando rodando) -->
               <div id="autopilotTimeline" style="display:none;margin-top:12px;padding-top:10px;border-top:1px solid rgba(255,255,255,.07)">
                 <div style="display:flex;align-items:center;gap:0;font-size:11px">
-                  <div class="tl-step" id="tl-1" data-label="Buscando leads"><div class="tl-dot"></div><div class="tl-label">Buscar</div></div>
+                  <div class="tl-step" id="tl-1" data-label="Buscando no Google Maps"><div class="tl-dot"></div><div class="tl-label">Buscar</div></div>
                   <div class="tl-line" id="tl-line-1"></div>
                   <div class="tl-step" id="tl-2" data-label="Filtrando"><div class="tl-dot"></div><div class="tl-label">Filtrar</div></div>
                   <div class="tl-line" id="tl-line-2"></div>
@@ -810,6 +810,36 @@ tbody tr:last-child td{border-bottom:none}
             </div>
           </div>
           <button class="ah-btn" id="ahBtn" onclick="triggerAutopilot()">⚡ Iniciar Autopilot</button>
+        </div>
+
+        <!-- CONFIGURAÇÃO DE BUSCA GMB -->
+        <div class="card" style="margin-bottom:14px;padding:14px 18px" id="gmbConfigCard">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+            <span style="font-size:16px">📍</span>
+            <div>
+              <div style="font-size:13px;font-weight:700;color:var(--t)">Configuração de Busca</div>
+              <div style="font-size:10.5px;color:var(--t3)">Configure como o Autopilot encontra leads</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+            <div style="flex:1;min-width:140px">
+              <label style="font-size:10.5px;color:var(--t3);display:block;margin-bottom:3px">Modo de Busca</label>
+              <select id="gmb-search-mode" style="width:100%;background:var(--card);border:1px solid var(--b);border-radius:6px;padding:7px 10px;color:var(--t);font-size:12px" onchange="toggleCityField()">
+                <option value="gmb">📍 Google Maps (Recomendado)</option>
+                <option value="hashtag">📸 Instagram Hashtag</option>
+              </select>
+            </div>
+            <div style="flex:1;min-width:140px" id="gmbCityField">
+              <label style="font-size:10.5px;color:var(--t3);display:block;margin-bottom:3px">Cidade</label>
+              <input type="text" id="gmb-city" value="São Paulo" placeholder="Ex: São Paulo" style="width:100%;background:var(--card);border:1px solid var(--b);border-radius:6px;padding:7px 10px;color:var(--t);font-size:12px">
+            </div>
+            <div style="flex:2;min-width:200px">
+              <label style="font-size:10.5px;color:var(--t3);display:block;margin-bottom:3px">Nicho Alvo <span style="color:var(--red)">*</span></label>
+              <input type="text" id="gmb-nicho" placeholder="Ex: salão de beleza, consultório odontológico" style="width:100%;background:var(--card);border:1px solid var(--b);border-radius:6px;padding:7px 10px;color:var(--t);font-size:12px">
+            </div>
+            <button onclick="saveGMBConfig()" style="background:var(--purple);color:#fff;border:none;border-radius:6px;padding:7px 14px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap">💾 Salvar</button>
+          </div>
+          <div id="gmbSaveStatus" style="margin-top:6px;font-size:10.5px;color:var(--t3)"></div>
         </div>
 
         <div class="grid-4" style="margin-bottom:14px">
@@ -2685,6 +2715,63 @@ function refreshData() {
   fetchData();
 }
 
+// ── GMB Config ──
+function toggleCityField() {
+  const mode = document.getElementById('gmb-search-mode').value;
+  document.getElementById('gmbCityField').style.display = mode === 'gmb' ? 'block' : 'none';
+}
+
+async function loadGMBConfig() {
+  try {
+    const cfg = await authFetch('/api/autopilot/config').then(r => r.json());
+    const modeEl = document.getElementById('gmb-search-mode');
+    const cityEl = document.getElementById('gmb-city');
+    const nichoEl = document.getElementById('gmb-nicho');
+    if (modeEl) modeEl.value = cfg.search_mode || 'gmb';
+    if (cityEl) cityEl.value = cfg.search_city || 'São Paulo';
+    if (nichoEl) nichoEl.value = cfg.nicho || '';
+    toggleCityField();
+  } catch {}
+}
+
+function saveGMBConfig() {
+  const mode = document.getElementById('gmb-search-mode').value;
+  const city = document.getElementById('gmb-city').value.trim();
+  const nicho = document.getElementById('gmb-nicho').value.trim();
+  const statusEl = document.getElementById('gmbSaveStatus');
+
+  if (!nicho) {
+    toast('Preencha o nicho alvo', 'error');
+    document.getElementById('gmb-nicho').focus();
+    return;
+  }
+  if (mode === 'gmb' && !city) {
+    toast('Preencha a cidade para busca no Google Maps', 'error');
+    document.getElementById('gmb-city').focus();
+    return;
+  }
+
+  const payload = { search_mode: mode, search_city: city, nicho: nicho, active: true };
+  statusEl.textContent = 'Salvando...';
+  authFetch('/api/autopilot/config', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  })
+    .then(r => r.json())
+    .then(d => {
+      if (d.ok) {
+        toast('✓ Configuração salva', 'success');
+        statusEl.innerHTML = '<span style="color:var(--green)">✓ Salvo</span>';
+        setTimeout(() => { statusEl.textContent = ''; }, 3000);
+      } else {
+        toast('Erro ao salvar', 'error');
+        statusEl.innerHTML = '<span style="color:var(--red)">✗ Erro</span>';
+      }
+    })
+    .catch(() => { toast('Erro de conexão', 'error'); statusEl.textContent = ''; });
+}
+
 // ── Autopilot Hero ──
 let _autopilotPollTimer = null;
 
@@ -3177,6 +3264,7 @@ function init() {
   fetchData();
   checkAPIStatus();
   loadSettings();
+  loadGMBConfig();
   loadBusinessProfile();
   loadSchedule();
   loadInstagramStatus();

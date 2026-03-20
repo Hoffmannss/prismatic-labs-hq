@@ -11,11 +11,13 @@ const CONFIG_FILE = path.join(DATA_DIR, 'autopilot-config.json');
 
 // Schema padrão
 const DEFAULT_CONFIG = {
-  version: '1.0.0',
+  version: '2.0.0',
   active: false,
   nicho: '',
   quantidade_leads: 20,
   max_analyze: 10,
+  search_mode: 'gmb',         // 'gmb' (Google Maps) ou 'hashtag' (Instagram)
+  search_city: 'São Paulo',   // Cidade para busca GMB
   schedule: {
     enabled: false,
     cron: '0 9 * * *', // Todos os dias às 9h
