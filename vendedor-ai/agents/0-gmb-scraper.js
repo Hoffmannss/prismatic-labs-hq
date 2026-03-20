@@ -241,11 +241,32 @@ async function extractBusinessFromURL(placeUrl, nomeFallback = '') {
     }
 
     // ── Telefone ──
+    // Estratégia 1: link tel: no DOM (mais preciso — href="tel:+55...")
     try {
-      // Regex no HTML completo — mais robusto que seletores
-      const phoneMatch = panelHtml.match(/(\+55\s?)?(\(?\d{2}\)?\s?9?\d{4}[-\s]?\d{4})/);
-      if (phoneMatch) business.telefone = phoneMatch[0].trim();
+      const telLink = page.locator('a[href^="tel:"]').first();
+      if (await telLink.isVisible({ timeout: 1500 })) {
+        const href = (await telLink.getAttribute('href') || '').replace('tel:', '').trim();
+        if (href) business.telefone = href;
+      }
     } catch {}
+
+    // Estratégia 2: buscar href="tel:..." no HTML (pega mesmo se não visível)
+    if (!business.telefone) {
+      const telHrefMatch = panelHtml.match(/href="tel:([^"]+)"/);
+      if (telHrefMatch) business.telefone = telHrefMatch[1].trim();
+    }
+
+    // Estratégia 3: aria-label com "Telefone" ou "Ligar para"
+    if (!business.telefone) {
+      try {
+        const phoneEl = page.locator('[aria-label*="Telefone"], [aria-label*="Ligar para"], [data-tooltip*="telefone"]').first();
+        if (await phoneEl.isVisible({ timeout: 1000 })) {
+          const label = await phoneEl.getAttribute('aria-label') || '';
+          const m = label.match(/(\+?[\d\s().-]{8,20})/);
+          if (m) business.telefone = m[0].trim();
+        }
+      } catch {}
+    }
 
     // ── Instagram: link direto na página do Maps ──
     try {
@@ -325,10 +346,17 @@ function extractIGUsername(url) {
   const match = url.match(/instagram\.com\/([a-zA-Z0-9_.]{3,30})\/?/);
   if (!match) return '';
   const u = match[1].toLowerCase();
-  const reserved = ['explore', 'p', 'reel', 'reels', 'stories', 'accounts', 'about',
-                     'directory', 'developer', 'legal', 'api', 'static', 'graphql',
-                     'web', 'tags', 'locations', 'tv', 'direct'];
-  if (reserved.includes(u)) return '';
+  // Caminhos reservados da própria plataforma Instagram
+  const reservedPaths = ['explore', 'p', 'reel', 'reels', 'stories', 'accounts', 'about',
+                          'directory', 'developer', 'legal', 'api', 'static', 'graphql',
+                          'web', 'tags', 'locations', 'tv', 'direct', 'challenge',
+                          'oauth', 'login', 'logout', 'signup'];
+  // Handles de plataformas/marcas globais — nunca são negócios locais
+  const globalBrands = ['whatsapp', 'facebook', 'twitter', 'youtube', 'tiktok', 'linkedin',
+                         'pinterest', 'snapchat', 'telegram', 'instagram', 'google', 'apple',
+                         'meta', 'microsoft', 'amazon', 'netflix', 'spotify', 'uber',
+                         'ifood', 'rappi', 'shopify', 'wordpress'];
+  if (reservedPaths.includes(u) || globalBrands.includes(u)) return '';
   return u;
 }
 
@@ -425,8 +453,15 @@ async function scrapeGMB(query, city, limit = 30) {
   // 3. Enriquecer com dados do Instagram
   const enriched = await enrichWithInstagram(businesses);
 
-  // 4. Filtrar apenas perfis com Instagram válido
-  const validProfiles = enriched.filter(p => p.username && p.username.length > 0);
+  // 4. Filtrar perfis válidos (com username + não são contas globais)
+  const validProfiles = enriched.filter(p => {
+    if (!p.username || p.username.length === 0) return false;
+    if (p.followers > 500000) {
+      console.log(`  ${C.yellow}⚠ Descartado @${p.username} (${p.followers.toLocaleString()} followers — conta global)${C.reset}`);
+      return false;
+    }
+    return true;
+  });
 
   console.log(`\n${C.green}[GMB] Pipeline completo: ${validProfiles.length} perfis enriquecidos de ${businesses.length} negócios${C.reset}`);
 
