@@ -91,8 +91,8 @@ async function runLearner() {
         melhorada:          msgData.revisao.melhorada,
         problemas:          (msgData.revisao.problemas         || []).slice(0, 4),
         pontos_positivos:   (msgData.revisao.pontos_positivos  || []).slice(0, 4),
-        msg_original:       (msgData.revisao.mensagem_original || '').slice(0, 200),
-        msg_final:          (msgData.revisao.mensagem_final    || '').slice(0, 200),
+        msg_original:       (msgData.revisao.mensagem_original || '').slice(0, 120),
+        msg_final:          (msgData.revisao.mensagem_final    || '').slice(0, 120),
         nicho:              analise?.nicho                     || null,
         tipo_negocio:       analise?.tipo_negocio              || null,
         gancho:             (analise?.analise_posts?.gancho_ideal || '').slice(0, 100),
@@ -111,6 +111,17 @@ async function runLearner() {
     console.log(`${C.yellow}[LEARNER] Dados insuficientes apos filtro (${allData.length}).${C.reset}`);
     return null;
   }
+
+  // Limitar a 20 amostras para não estourar limite de tokens do Groq (12k TPM free tier)
+  // Prioriza: com tracking real > melhoradas > mais recentes
+  const trackados = allData.filter(d => d.tracking_outcome && d.tracking_outcome !== 'enviada');
+  const naoTrackados = allData.filter(d => !d.tracking_outcome || d.tracking_outcome === 'enviada');
+  const priorizados = [
+    ...trackados.slice(-10),
+    ...naoTrackados.filter(d => d.melhorada).slice(-5),
+    ...naoTrackados.filter(d => !d.melhorada).slice(-5),
+  ].slice(0, 20);
+  allData.splice(0, allData.length, ...priorizados);
 
   const scores          = allData.map(d => d.score);
   const scoreMedio      = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);

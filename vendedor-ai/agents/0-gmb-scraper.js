@@ -60,142 +60,121 @@ async function launchBrowser(headless = true) {
 }
 
 // ---- GOOGLE MAPS SEARCH ----
+// Fase 1: Coleta os URLs e nomes de todos os resultados do feed
 async function searchGoogleMaps(query, city, limit = 30) {
   const searchTerm = `${query} ${city}`;
   console.log(`\n${C.cyan}[GMB] Buscando: "${searchTerm}" (meta: ${limit} negócios)${C.reset}`);
 
   const { browser, context } = await launchBrowser(true);
-  const businesses = [];
+  const placeEntries = []; // { href, nome }
 
   try {
     const page = await context.newPage();
-
-    // Navegar para Google Maps com a busca
     const encodedQuery = encodeURIComponent(searchTerm);
     await page.goto(`https://www.google.com/maps/search/${encodedQuery}`, {
       waitUntil: 'domcontentloaded',
       timeout: 30000
     });
-
-    // Aguardar resultados carregarem
     await sleep(3000);
 
     // Aceitar cookies se aparecer
     try {
-      const acceptBtn = page.locator('button:has-text("Aceitar"), button:has-text("Accept all")').first();
+      const acceptBtn = page.locator('button:has-text("Aceitar tudo"), button:has-text("Accept all"), button:has-text("Aceitar")').first();
       if (await acceptBtn.isVisible({ timeout: 2000 })) {
         await acceptBtn.click();
         await sleep(1000);
       }
     } catch {}
 
-    // Localizar o container de resultados (feed de resultados do Maps)
     const feedSelector = 'div[role="feed"]';
-    try {
-      await page.waitForSelector(feedSelector, { timeout: 10000 });
-    } catch {
-      console.log(`${C.yellow}[GMB] Feed de resultados não encontrado. Tentando seletor alternativo...${C.reset}`);
-      // Fallback: tentar buscar direto nos links
-    }
+    try { await page.waitForSelector(feedSelector, { timeout: 10000 }); } catch {}
 
-    // Scroll para carregar mais resultados
-    let previousCount = 0;
-    let scrollAttempts = 0;
-    const maxScrollAttempts = Math.ceil(limit / 5) + 5; // ~5 resultados por scroll
+    // Scroll para carregar resultados suficientes
+    let prevCount = 0;
+    let staleRounds = 0;
+    const maxRounds = Math.ceil(limit / 4) + 8;
 
-    while (scrollAttempts < maxScrollAttempts) {
-      // Contar resultados visíveis
-      const items = await page.locator(`${feedSelector} > div > div > a[href*="/maps/place/"]`).all();
-      const currentCount = items.length;
+    for (let round = 0; round < maxRounds; round++) {
+      // Seletores amplos para pegar todos os links de lugares
+      const links = await page.locator('a[href*="/maps/place/"]').all();
+      const count = links.length;
 
-      if (currentCount >= limit) {
-        console.log(`  ${C.green}✓ ${currentCount} resultados carregados${C.reset}`);
-        break;
-      }
+      if (count >= limit) { console.log(`  ${C.green}✓ ${count} links coletados${C.reset}`); break; }
 
-      // Verificar se chegou ao fim dos resultados
-      const endOfList = await page.locator('text="Você chegou ao final da lista"').isVisible().catch(() => false)
-        || await page.locator('text="You\'ve reached the end of the list"').isVisible().catch(() => false)
-        || await page.locator('p.fontBodyMedium span:has-text("final")').isVisible().catch(() => false);
+      const endMsg = await page.locator('text=/chegou ao final|end of the list/i').isVisible().catch(() => false);
+      if (endMsg) { console.log(`  ${C.yellow}Fim da lista (${count} resultados)${C.reset}`); break; }
 
-      if (endOfList) {
-        console.log(`  ${C.yellow}Fim da lista (${currentCount} resultados)${C.reset}`);
-        break;
-      }
-
-      if (currentCount === previousCount) {
-        scrollAttempts++;
-        if (scrollAttempts > 3 && currentCount === 0) {
-          console.log(`${C.red}[GMB] Nenhum resultado encontrado após ${scrollAttempts} tentativas${C.reset}`);
-          break;
-        }
+      if (count === prevCount) {
+        staleRounds++;
+        if (staleRounds >= 4) { console.log(`  ${C.yellow}Sem novos resultados após ${staleRounds} scrolls (${count} total)${C.reset}`); break; }
       } else {
-        scrollAttempts = 0; // Reset se novos resultados apareceram
+        staleRounds = 0;
       }
-      previousCount = currentCount;
+      prevCount = count;
 
-      // Scroll dentro do feed de resultados
-      try {
-        await page.evaluate((sel) => {
-          const feed = document.querySelector(sel);
-          if (feed) feed.scrollTop += 800;
-        }, feedSelector);
-      } catch {
-        // Fallback: scroll na página inteira
-        await page.keyboard.press('End');
-      }
-
-      await sleepRandom(800, 1500);
+      // Scroll no feed ou na página toda
+      await page.evaluate(() => {
+        const feed = document.querySelector('div[role="feed"]');
+        if (feed) feed.scrollTop += 900;
+        else window.scrollBy(0, 900);
+      });
+      await sleepRandom(900, 1600);
     }
 
-    // Extrair links de todos os resultados
-    const resultLinks = await page.locator(`${feedSelector} > div > div > a[href*="/maps/place/"]`).all();
-    console.log(`\n${C.cyan}[GMB] ${resultLinks.length} resultados encontrados. Extraindo dados...${C.reset}`);
-
-    // Processar cada resultado (limitado ao limit)
-    const toProcess = resultLinks.slice(0, limit);
-
-    for (let i = 0; i < toProcess.length; i++) {
+    // Extrair {href, nome} de cada link único
+    const allLinks = await page.locator('a[href*="/maps/place/"]').all();
+    const seen = new Set();
+    for (const link of allLinks.slice(0, limit * 2)) {
       try {
-        const link = toProcess[i];
         const href = await link.getAttribute('href');
-        const ariaLabel = await link.getAttribute('aria-label') || '';
-
-        // Clicar no resultado para abrir painel lateral
-        await link.click();
-        await sleepRandom(1500, 2500);
-
-        // Extrair dados do painel lateral
-        const business = await extractBusinessData(page, ariaLabel, href);
-
-        if (business && business.nome) {
-          businesses.push(business);
-          const igIcon = business.instagram ? '📸' : '  ';
-          console.log(`  ${C.green}[${i+1}/${toProcess.length}]${C.reset} ${igIcon} ${business.nome} | ${business.telefone || 'sem tel'} | ${business.instagram || 'sem IG'}`);
-        }
-
-        // Delay humanizado entre cliques
-        if (i < toProcess.length - 1) {
-          await sleepRandom(500, 1200);
-        }
-      } catch (e) {
-        console.log(`  ${C.dim}[${i+1}] Erro ao extrair: ${e.message}${C.reset}`);
-      }
+        const label = (await link.getAttribute('aria-label') || '').trim();
+        if (!href || !label) continue;
+        // Normalizar URL para evitar duplicatas
+        const baseUrl = href.split('?')[0];
+        if (seen.has(baseUrl)) continue;
+        seen.add(baseUrl);
+        placeEntries.push({ href, nome: label });
+      } catch {}
     }
+    console.log(`\n${C.cyan}[GMB] ${placeEntries.length} lugares únicos identificados${C.reset}`);
   } catch (e) {
-    console.error(`${C.red}[GMB] Erro geral: ${e.message}${C.reset}`);
+    console.error(`${C.red}[GMB] Erro na busca: ${e.message}${C.reset}`);
   } finally {
     await browser.close();
+  }
+
+  if (placeEntries.length === 0) return [];
+
+  // Fase 2: Para cada lugar, navegar diretamente na URL e extrair dados
+  console.log(`${C.cyan}[GMB] Extraindo detalhes de cada lugar (site + Instagram)...${C.reset}`);
+  const businesses = [];
+  const toProcess = placeEntries.slice(0, limit);
+
+  for (let i = 0; i < toProcess.length; i++) {
+    const entry = toProcess[i];
+    try {
+      const biz = await extractBusinessFromURL(entry.href, entry.nome);
+      businesses.push(biz);
+      const igIcon = biz.instagram ? '📸' : '  ';
+      const telStr = biz.telefone || 'sem tel';
+      const igStr  = biz.instagram ? `@${biz.instagram}` : 'sem IG';
+      const siteStr = biz.website ? '🌐' : '  ';
+      console.log(`  ${C.green}[${i+1}/${toProcess.length}]${C.reset} ${igIcon}${siteStr} ${biz.nome.slice(0,40)} | ${telStr} | ${igStr}`);
+    } catch (e) {
+      console.log(`  ${C.dim}[${i+1}] Erro: ${e.message.slice(0, 60)}${C.reset}`);
+      businesses.push({ nome: entry.nome, telefone: '', website: '', instagram: '', mapsUrl: entry.href });
+    }
+    await sleepRandom(600, 1200);
   }
 
   console.log(`\n${C.green}[GMB] ${businesses.length} negócios extraídos${C.reset}`);
   return businesses;
 }
 
-// ---- EXTRAÇÃO DE DADOS DO NEGÓCIO ----
-async function extractBusinessData(page, ariaLabel, href) {
+// ---- EXTRAÇÃO DE DETALHES: navega direto na URL do lugar ----
+async function extractBusinessFromURL(placeUrl, nomeFallback = '') {
   const business = {
-    nome: ariaLabel || '',
+    nome: nomeFallback,
     endereco: '',
     telefone: '',
     website: '',
@@ -203,141 +182,104 @@ async function extractBusinessData(page, ariaLabel, href) {
     rating: 0,
     reviews: 0,
     categoria: '',
-    horario: '',
-    mapsUrl: href || '',
+    mapsUrl: placeUrl,
   };
 
+  const { browser, context } = await launchBrowser(true);
   try {
-    // Nome (do heading principal)
-    const nameEl = page.locator('h1.fontHeadlineLarge, h1[class*="header"]').first();
-    if (await nameEl.isVisible({ timeout: 2000 })) {
-      business.nome = (await nameEl.textContent()).trim();
-    }
-  } catch {}
+    const page = await context.newPage();
+    await page.goto(placeUrl, { waitUntil: 'domcontentloaded', timeout: 20000 });
 
-  try {
-    // Categoria
-    const catEl = page.locator('button[jsaction*="category"]').first();
-    if (await catEl.isVisible({ timeout: 1000 })) {
-      business.categoria = (await catEl.textContent()).trim();
-    }
-  } catch {}
+    // Aguardar o painel do lugar carregar (h1 com o nome)
+    try { await page.waitForSelector('h1', { timeout: 8000 }); } catch {}
+    await sleep(1500);
 
-  try {
-    // Rating e reviews
-    const ratingEl = page.locator('div.fontDisplayLarge, span[role="img"][aria-label*="estrela"], span[role="img"][aria-label*="star"]').first();
-    if (await ratingEl.isVisible({ timeout: 1000 })) {
-      const txt = (await ratingEl.getAttribute('aria-label')) || (await ratingEl.textContent()) || '';
-      const rMatch = txt.match(/([\d,\.]+)/);
-      if (rMatch) business.rating = parseFloat(rMatch[1].replace(',', '.'));
-    }
-  } catch {}
-
-  try {
-    // Reviews count
-    const revEl = page.locator('span[aria-label*="coment"], span[aria-label*="review"]').first();
-    if (await revEl.isVisible({ timeout: 1000 })) {
-      const revTxt = (await revEl.getAttribute('aria-label')) || (await revEl.textContent()) || '';
-      const revMatch = revTxt.match(/([\d.]+)/);
-      if (revMatch) business.reviews = parseInt(revMatch[1].replace('.', ''));
-    }
-  } catch {}
-
-  // Dados dos botões de informação
-  try {
-    const infoButtons = await page.locator('button[data-item-id]').all();
-    for (const btn of infoButtons) {
-      const itemId = await btn.getAttribute('data-item-id') || '';
-      const text = (await btn.textContent()).trim();
-
-      if (itemId.startsWith('address') || itemId === 'address') {
-        business.endereco = text;
-      } else if (itemId.startsWith('phone') || itemId.includes('phone')) {
-        business.telefone = text.replace(/[^\d+()-\s]/g, '').trim();
-      }
-    }
-  } catch {}
-
-  // Alternativa para endereço
-  if (!business.endereco) {
+    // ── Nome ──
     try {
-      const addrEl = page.locator('button[data-item-id="address"] div, [data-item-id*="address"]').first();
-      if (await addrEl.isVisible({ timeout: 800 })) {
-        business.endereco = (await addrEl.textContent()).trim();
+      const h1 = page.locator('h1').first();
+      const txt = (await h1.textContent({ timeout: 2000 })).trim();
+      if (txt) business.nome = txt;
+    } catch {}
+
+    // ── Extrair HTML completo do painel para análise ampla ──
+    let panelHtml = '';
+    try { panelHtml = await page.content(); } catch {}
+
+    // ── Website — múltiplas estratégias ──
+    // Estratégia 1: link com data-item-id="authority"
+    try {
+      const siteLink = page.locator('a[data-item-id="authority"]').first();
+      if (await siteLink.isVisible({ timeout: 1500 })) {
+        business.website = (await siteLink.getAttribute('href') || '').split('?')[0];
       }
     } catch {}
-  }
 
-  // Alternativa para telefone
-  if (!business.telefone) {
+    // Estratégia 2: aria-label contendo "Site" ou "Website"
+    if (!business.website) {
+      try {
+        const siteLink = page.locator('a[aria-label*="Site"], a[aria-label*="Website"], a[aria-label*="Visitar"]').first();
+        if (await siteLink.isVisible({ timeout: 1000 })) {
+          business.website = (await siteLink.getAttribute('href') || '').split('?')[0];
+        }
+      } catch {}
+    }
+
+    // Estratégia 3: qualquer link http externo no painel (exclui google.com)
+    if (!business.website) {
+      try {
+        const links = await page.locator('a[href^="http"]').all();
+        for (const link of links) {
+          const href = (await link.getAttribute('href') || '');
+          if (href && !href.includes('google.com') && !href.includes('goo.gl') &&
+              !href.includes('instagram.com') && !href.includes('facebook.com') &&
+              href.startsWith('http')) {
+            business.website = href.split('?')[0];
+            break;
+          }
+        }
+      } catch {}
+    }
+
+    // ── Telefone ──
     try {
-      const phoneEl = page.locator('button[data-item-id*="phone"] div, [aria-label*="Telefone"], [aria-label*="Phone"]').first();
-      if (await phoneEl.isVisible({ timeout: 800 })) {
-        business.telefone = (await phoneEl.textContent()).trim().replace(/[^\d+()-\s]/g, '');
+      // Regex no HTML completo — mais robusto que seletores
+      const phoneMatch = panelHtml.match(/(\+55\s?)?(\(?\d{2}\)?\s?9?\d{4}[-\s]?\d{4})/);
+      if (phoneMatch) business.telefone = phoneMatch[0].trim();
+    } catch {}
+
+    // ── Instagram: link direto na página do Maps ──
+    try {
+      const igLinks = await page.locator('a[href*="instagram.com"]').all();
+      for (const link of igLinks) {
+        const href = await link.getAttribute('href');
+        const u = extractIGUsername(href);
+        if (u) { business.instagram = u; break; }
       }
     } catch {}
+
+    // ── Instagram: regex no HTML do Maps ──
+    if (!business.instagram) {
+      const igMatch = panelHtml.match(/instagram\.com\/([a-zA-Z0-9_.]{3,30})\/?/);
+      if (igMatch) {
+        const u = extractIGUsername(`https://instagram.com/${igMatch[1]}`);
+        if (u) business.instagram = u;
+      }
+    }
+
+  } catch (e) {
+    // Falha silenciosa — retorna o que conseguiu extrair
+  } finally {
+    await browser.close();
   }
 
-  // Website
-  try {
-    const siteEl = page.locator('a[data-item-id="authority"], a[data-item-id*="website"]').first();
-    if (await siteEl.isVisible({ timeout: 1000 })) {
-      business.website = (await siteEl.getAttribute('href')) || '';
-    }
-  } catch {}
-
-  // Instagram — extrair de múltiplas fontes
-  business.instagram = await findInstagramFromGMB(page, business);
+  // ── Instagram: visitar website se ainda não encontrou ──
+  if (!business.instagram && business.website) {
+    try {
+      business.instagram = await findInstagramFromWebsite(business.website);
+    } catch {}
+  }
 
   return business;
-}
-
-// ---- BUSCA DE INSTAGRAM A PARTIR DO GMB ----
-async function findInstagramFromGMB(page, business) {
-  // Fonte 1: Link direto no perfil GMB (redes sociais)
-  try {
-    const igLinks = await page.locator('a[href*="instagram.com"]').all();
-    for (const link of igLinks) {
-      const href = await link.getAttribute('href');
-      const username = extractIGUsername(href);
-      if (username) {
-        console.log(`    ${C.dim}→ Instagram via GMB link: @${username}${C.reset}`);
-        return username;
-      }
-    }
-  } catch {}
-
-  // Fonte 2: Texto do perfil menciona Instagram
-  try {
-    const bodyText = await page.locator('div[class*="section-scrollbox"], div[role="main"]').first().textContent();
-    const igMatch = bodyText.match(/@([a-zA-Z0-9_.]{3,30})(?:\s|$|\))/);
-    if (igMatch) {
-      const candidate = igMatch[1].toLowerCase();
-      // Filtrar falsos positivos comuns
-      if (!['gmail', 'hotmail', 'yahoo', 'outlook'].some(d => candidate.includes(d))) {
-        console.log(`    ${C.dim}→ Instagram via texto: @${candidate} (candidato)${C.reset}`);
-        return candidate;
-      }
-    }
-  } catch {}
-
-  // Fonte 3: Visitar website e buscar link do Instagram
-  if (business.website) {
-    try {
-      const ig = await findInstagramFromWebsite(business.website);
-      if (ig) {
-        console.log(`    ${C.dim}→ Instagram via website: @${ig}${C.reset}`);
-        return ig;
-      }
-    } catch {}
-  }
-
-  // Fonte 4: Busca direta no Google "nome do negócio" + "instagram"
-  // (opcional — ativa apenas se as fontes anteriores falharam)
-  // Desativada por padrão para evitar rate limiting
-  // TODO: Implementar se necessário
-
-  return '';
 }
 
 // ---- BUSCA INSTAGRAM NO WEBSITE ----
