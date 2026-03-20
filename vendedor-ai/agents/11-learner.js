@@ -4,16 +4,15 @@
 // (respondeu/converteu) para extrair padroes com LLM e gravar
 // uma memoria de aprendizado continuo (style-memory.json)
 // Alimenta copywriter e reviewer nas proximas geracoes
-// Stack: Google Gemini 2.0 Flash - Superior para insights qualitativos
+// Stack: Groq Llama 3.3 70B (migrado do Gemini — quota free esgotada)
 // =============================================================
 
 require('dotenv').config();
-const { GoogleGenerativeAI } = require('@google/generative-ai');
+const Groq   = require('groq-sdk');
 const fs     = require('fs');
 const path   = require('path');
 
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
-const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 const MENSAGENS_DIR = path.join(__dirname, '..', 'data', 'mensagens');
 const LEADS_DIR     = path.join(__dirname, '..', 'data', 'leads');
@@ -215,16 +214,15 @@ RETORNE APENAS O JSON.`;
 
   console.log(`${C.cyan}[LEARNER] Sintetizando com LLM (${allData.length} amostras, ${totalTracked} com tracking real)...${C.reset}`);
 
-  const result = await model.generateContent({
-    contents: [{ role: 'user', parts: [{ text: prompt }] }],
-    generationConfig: {
-      temperature: 0.3,
-      maxOutputTokens: 3000,
-      topP: 0.9,
-    },
+  const result = await groq.chat.completions.create({
+    model: 'llama-3.3-70b-versatile',
+    messages: [{ role: 'user', content: prompt }],
+    temperature: 0.3,
+    max_tokens: 3000,
+    top_p: 0.9,
   });
 
-  const raw = result.response.text().trim();
+  const raw = (result.choices[0]?.message?.content || '').trim();
   const jsonMatch = raw.match(/\{[\s\S]*\}/);
   if (!jsonMatch) throw new Error('LLM nao retornou JSON valido');
 
