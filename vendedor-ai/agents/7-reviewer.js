@@ -11,6 +11,7 @@ const fs   = require('fs');
 const path = require('path');
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+const { loadNegocio, buildContexto } = require('../config/negocio-config');
 
 const username      = process.argv[2] || process.env.LEAD_USERNAME;
 const mensagensFile = path.join(__dirname, '..', 'data', 'mensagens', `${username}_mensagens.json`);
@@ -68,11 +69,19 @@ async function reviewMessage() {
   const msgs = mensagensData.mensagens;
   const recKey      = `mensagem_${msgs.mensagem_recomendada}`;
   const msgOriginal = msgs[recKey]?.texto || '';
-  const isAPI       = mensagensData.produto_detectado === 'lead_normalizer_api';
 
-  const produtoCtx = isAPI
-    ? 'Lead Normalizer API — dev para dev, direto, parece colega que encontrou algo util'
-    : 'Landing Page Premium — aspiracional, focado em resultado, parece conselho de colega';
+  // Contexto do produto: genérico (negocio-config) ou fallback Prismatic
+  const negocio = loadNegocio();
+  const negocioCtx = buildContexto(negocio);
+  let produtoCtx;
+  if (negocio.configurado && negocio.descricao) {
+    produtoCtx = `${negocio.produto_nome || 'Produto do cliente'} — ${negocio.descricao.slice(0, 120)}`;
+  } else {
+    const isAPI = mensagensData.produto_detectado === 'lead_normalizer_api';
+    produtoCtx = isAPI
+      ? 'Lead Normalizer API — dev para dev, direto, parece colega que encontrou algo util'
+      : 'Landing Page Premium — aspiracional, focado em resultado, parece conselho de colega';
+  }
 
   const prompt = `Voce e um ESPECIALISTA em DM outreach no Instagram para produtos tech B2B.
 Avalie a MENSAGEM A REVISAR abaixo com base nos criterios EXATOS a seguir.
@@ -116,12 +125,12 @@ NAO E BATIDA = pergunta especifica sobre dor do nicho: "Seus flows quebram com t
 - Ausencia de bio do lead (nao e falha da mensagem)
 
 EXEMPLOS DE MENSAGENS BOM (score 80+):
-EXEMPLO 1: "Seus flows quebram quando o telefone chega fora do formato?\\n\\nFiz uma API que converte qualquer formato BR pra E.164 em menos de 50ms, pronta pro Make, n8n e Zapier.\\n\\nVale testar?"
-EXEMPLO 2: "Ja perdeu leads por causa de telefones em formato errado?\\n\\nMinha API resolve isso em 1 request — normaliza telefone, limpa email e parseia UTMs.\\n\\nQuer dar uma olhada?"
+EXEMPLO 1: "Percebi que voce trabalha com [nicho especifico do lead].\\n\\nTenho ajudado [tipo de cliente] a [resultado concreto] — um cliente recente [metrica real].\\n\\nFaz sentido conversar?"
+EXEMPLO 2: "[Pergunta especifica sobre dor do nicho]?\\n\\nResolvo isso com [produto/servico] — [prova ou resultado concreto].\\n\\nVale testar?"
 
 EXEMPLOS DE MENSAGENS RUINS (score < 50):
-RUIM 1: "Voce esta tendo problemas com os flows quebrando? Eu encontrei uma solucao que pode ajudar! Criei uma API que converte qualquer formato BR para E.164 em menos de 50ms, pronta para uso em Make, n8n e Zapier. Voce gostaria de testar e ver como pode resolver esse problema?"
-(por que e ruim: usa "solucao", muito longa, pergunta longa no final)
+RUIM 1: "Voce esta tendo problemas? Eu encontrei uma solucao que pode ajudar! Criei um servico incrivel que resolve tudo de forma facil e rapida. Voce gostaria de testar e ver como pode resolver esse problema de uma vez por todas?"
+(por que e ruim: usa "solucao", "incrivel", muito longa, pergunta longa no final, generico demais)
 
 CRITERIOS DE SCORE:
 - Score >= 80: aprovada — NAO gerar versao melhorada

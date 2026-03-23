@@ -14,7 +14,13 @@ const analysisFile = path.join(__dirname, '..', 'data', 'leads', `${username}_an
 const visionFile   = path.join(__dirname, '..', 'data', 'leads', `${username}_vision.json`);
 
 const templates = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'config', 'copywriting-templates.json'), 'utf8'));
-const produtos  = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'data', 'produtos.json'), 'utf8')).produtos;
+const { loadNegocio, buildContexto } = require('../config/negocio-config');
+
+// Produtos hardcoded são FALLBACK — só usados se negocio-config NÃO estiver configurado
+let produtos = [];
+try { produtos = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'data', 'produtos.json'), 'utf8')).produtos; } catch {}
+const negocio = loadNegocio();
+const negocioCtx = buildContexto(negocio);
 
 // ---- AUTO-DETECT LLM PROVIDER ----
 let model, generateFunc, provider;
@@ -38,9 +44,9 @@ if (!provider && process.env.GOOGLE_API_KEY && process.env.GOOGLE_API_KEY.starts
   try {
     const { GoogleGenerativeAI } = require('@google/generative-ai');
     const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
-    model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
     provider = 'gemini';
-    console.log('[COPYWRITER] Using Google Gemini 1.5 Flash (fallback)');
+    console.log('[COPYWRITER] Using Google Gemini 2.5 Flash (fallback)');
   } catch (e) {
     console.error('[COPYWRITER] Nenhum LLM disponível. Configure GROQ_API_KEY ou GOOGLE_API_KEY no .env');
     process.exit(1);
@@ -93,8 +99,10 @@ async function generateMessage() {
   }
 
   const a     = analysisData.analise;
-  const isAPI = a.servico_ideal === 'lead_normalizer_api';
   const ap    = a.analise_posts || {};
+
+  // ---- MODO DE OPERAÇÃO: Negócio configurado (SaaS genérico) vs. Prismatic fallback ----
+  const usaNegocioConfig = negocio.configurado && negocio.descricao;
 
   // ---- CARREGAR DADOS DE VISÃO (1b-vision.js) ----
   let visionSintese = null;
@@ -110,14 +118,24 @@ async function generateMessage() {
 
   // ---- CONTEXTO DO PRODUTO ----
   let contexto_produto;
-  if (isAPI) {
-    const api = produtos.find(p => p.id === 'lead-normalizer-api');
-    const objecoesStr = api.objecoes.map(o => `\"${o.objecao}\" -> \"${o.resposta}\"`).join('\n');
-    contexto_produto = `PRODUTO: Lead Normalizer API\nURL: ${api.url_landing}\nO que faz: ${api.descricao}\nUSPs: ${api.usp.slice(0, 3).join(' | ')}\nObjecoes:\n${objecoesStr}\nTom: dev para dev, direto, parece mensagem de colega\nAVISO: NAO mencione precos, planos, free, gratis ou valores — isso vai para followup, nunca para primeiro contato`;
+  if (usaNegocioConfig) {
+    // === MODO GENÉRICO: negócio do cliente configurado via Dashboard ===
+    const precoCtx = negocio.preco_faixa ? `\nFaixa de preço: ${negocio.preco_faixa}` : '\nAVISO: NAO mencione precos ou valores — isso vai para followup, nunca para primeiro contato';
+    contexto_produto = `NEGÓCIO DO CLIENTE:\n${negocio.descricao}\nPRODUTO/SERVIÇO: ${negocio.produto_nome || 'conforme descrição acima'}${precoCtx}\nTom: profissional, direto, como colega que entende o mercado do lead`;
+    console.log(`[COPYWRITER] Modo: NEGÓCIO CONFIGURADO (${negocio.produto_nome || negocio.descricao.slice(0, 40)})`);
   } else {
-    const lp = produtos.find(p => p.id === 'landing-page-premium');
-    const objecoesStr = lp.objecoes.map(o => `\"${o.objecao}\" -> \"${o.resposta}\"`).join('\n');
-    contexto_produto = `PRODUTO: Landing Page Premium Dark Mode + Neon\nO que faz: ${lp.descricao}\nUSPs: ${lp.usp.slice(0, 3).join(' | ')}\nPrecos: R$1.497 a R$5.997\nObjecoes:\n${objecoesStr}\nTom: aspiracional, focado em resultado`;
+    // === MODO FALLBACK: produtos Prismatic Labs (uso interno) ===
+    const isAPI = a.servico_ideal === 'lead_normalizer_api';
+    if (isAPI) {
+      const api = produtos.find(p => p.id === 'lead-normalizer-api');
+      const objecoesStr = api ? api.objecoes.map(o => `\"${o.objecao}\" -> \"${o.resposta}\"`).join('\n') : '';
+      contexto_produto = `PRODUTO: Lead Normalizer API\nURL: ${api?.url_landing || ''}\nO que faz: ${api?.descricao || ''}\nUSPs: ${(api?.usp || []).slice(0, 3).join(' | ')}\nObjecoes:\n${objecoesStr}\nTom: dev para dev, direto, parece mensagem de colega\nAVISO: NAO mencione precos, planos, free, gratis ou valores — isso vai para followup, nunca para primeiro contato`;
+    } else {
+      const lp = produtos.find(p => p.id === 'landing-page-premium');
+      const objecoesStr = lp ? lp.objecoes.map(o => `\"${o.objecao}\" -> \"${o.resposta}\"`).join('\n') : '';
+      contexto_produto = `PRODUTO: Landing Page Premium Dark Mode + Neon\nO que faz: ${lp?.descricao || ''}\nUSPs: ${(lp?.usp || []).slice(0, 3).join(' | ')}\nPrecos: R$1.497 a R$5.997\nObjecoes:\n${objecoesStr}\nTom: aspiracional, focado em resultado`;
+    }
+    console.log(`[COPYWRITER] Modo: FALLBACK PRISMATIC (negócio não configurado)`);
   }
 
   // ---- CONTEXTO DE POSTS (análise de texto) ----
@@ -162,16 +180,23 @@ ${ganchoVis
         : '')
     : '';
 
-  const estruturaIdeal = isAPI
-    ? `COMO ESCREVER A MENSAGEM:\nVoce e um profissional que identificou um problema real no perfil desse lead e esta fazendo contato — com respeito, clareza e intenção genuina de ajudar.\nNAO use labels como [HOOK], [VALOR], [PERGUNTA] — sao instrucoes internas, NUNCA aparecem no texto final.\n\nESTRATEGIA DE PERSUASAO (3 a 5 frases, nao mais):\n1. Abertura especifica: cite um problema tecnico concreto que voce identificou no nicho ou contexto do lead. Nao elogie — identifique.\n2. Credencial direta: apresente o que voce construiu ou resolve, com um resultado mensuravel. Breve, confiante, sem exagero.\n3. Pergunta de qualificacao: encerre com uma pergunta simples que convida o lead a confirmar o problema ou o interesse.\n\nEXEMPLO DE TOM CORRETO (referencia de qualidade):\n"Trabalhando com automacoes no Make ou n8n, telefones fora do padrao E.164 costumam quebrar os flows de envio de mensagem.\nDesenvolvi uma API de normalizacao que resolve isso em menos de 50ms e ja tem integracao nativa com essas plataformas.\nIsso e um problema recorrente no seu fluxo atual?"\n\nEXEMPLO DO QUE EVITAR (cliche de spam que ninguem responde):\n"Ola! Vi seu perfil e adorei! Tenho uma solucao incrivel para o seu negocio que pode te ajudar a crescer muito. Podemos conversar?"\n\nLINGUAGEM: portugues brasileiro profissional, direto e humano. Sem formalidade excessiva, sem giriase. Tom de colega experiente falando com outro profissional.\nMINIMO: 3 linhas. MAXIMO: 5 linhas. Uma unica linha = INVALIDO.\nPROIBIDO no texto da mensagem: valores monetarios (R$, $), palavras de plano comercial (gratis, free, trial, desconto, sem cartao).`
-    : `COMO ESCREVER A MENSAGEM:\nVoce e um profissional que identificou uma oportunidade real no perfil desse lead e esta fazendo contato — com respeito, clareza e intenção genuina de ajudar.\nNAO use labels como [HOOK], [VALOR], [PERGUNTA] — sao instrucoes internas, NUNCA aparecem no texto final.\n\nESTRATEGIA DE PERSUASAO (3 a 5 frases, nao mais):\n1. Abertura especifica: cite algo concreto que voce observou no perfil ou nicho do lead. Nao elogie genericamente — mostre que voce prestou atencao.\n2. Conexao com resultado: explique de forma direta o que voce faz e traga um resultado real que voce gerou para alguem no mesmo contexto.\n3. Pergunta de qualificacao: encerre com uma pergunta simples que convida o lead a confirmar o interesse ou o problema.\n\nEXEMPLO DE TOM CORRETO (referencia de qualidade):\n"Acompanhando seu conteudo de nutricao funcional, percebi que o link na bio ainda nao tem uma pagina de captura propria.\nTenho um modelo de landing page dark mode desenvolvido especificamente para profissionais de saude — um cliente recente teve aumento de 40% nos agendamentos em tres semanas.\nFaria sentido mostrar como ficaria para o seu perfil?"\n\nEXEMPLO DO QUE EVITAR (cliche de spam que ninguem responde):\n"Oi! Vi seu perfil incrivel! Tenho uma oportunidade especial para alavancar sua presenca digital. Podemos conversar?"\n\nLINGUAGEM: portugues brasileiro profissional, direto e humano. Sem formalidade excessiva, sem giriase. Tom de colega experiente falando com outro profissional.\nMINIMO: 3 linhas. MAXIMO: 5 linhas. Uma unica linha = INVALIDO.\nPROIBIDO no texto da mensagem: valores monetarios (R$, $), palavras de plano comercial (gratis, free, trial, desconto, sem cartao).`;
+  const estruturaIdeal = `COMO ESCREVER A MENSAGEM:\nVoce e um profissional que identificou uma oportunidade real no perfil desse lead e esta fazendo contato — com respeito, clareza e intenção genuina de ajudar.\nNAO use labels como [HOOK], [VALOR], [PERGUNTA] — sao instrucoes internas, NUNCA aparecem no texto final.\n\nESTRATEGIA DE PERSUASAO (3 a 5 frases, nao mais):\n1. Abertura especifica: cite algo concreto que voce observou no perfil ou nicho do lead. Nao elogie genericamente — mostre que voce prestou atencao.\n2. Conexao com resultado: explique de forma direta o que voce faz e traga um resultado real ou relevante para alguem no mesmo contexto.\n3. Pergunta de qualificacao: encerre com uma pergunta simples que convida o lead a confirmar o interesse ou o problema.\n\nEXEMPLO DE TOM CORRETO (referencia de qualidade):\n"Acompanhando seu conteudo de [nicho do lead], percebi que [observacao especifica do perfil ou posts].\n[O que voce faz/oferece] — um cliente recente teve [resultado concreto].\nFaria sentido conversar sobre isso?"\n\nEXEMPLO DO QUE EVITAR (cliche de spam que ninguem responde):\n"Oi! Vi seu perfil incrivel! Tenho uma oportunidade especial para alavancar sua presenca digital. Podemos conversar?"\n\nLINGUAGEM: portugues brasileiro profissional, direto e humano. Sem formalidade excessiva, sem giriase. Tom de colega experiente falando com outro profissional.\nMINIMO: 3 linhas. MAXIMO: 5 linhas. Uma unica linha = INVALIDO.\nPROIBIDO no texto da mensagem: valores monetarios (R$, $), palavras de plano comercial (gratis, free, trial, desconto, sem cartao).`;
 
   // ---- INJETAR APRENDIZADO ACUMULADO ----
   const memoria = loadMemory();
   let memoriaStr = '';
   if (memoria?.regras_copywriting?.length) {
-    const prodAngle = isAPI ? memoria.angulos_por_produto?.lead_normalizer_api : memoria.angulos_por_produto?.landing_page;
-    memoriaStr = `\nAPRENDIZADO ACUMULADO (v${memoria.versao} — ${memoria.total_amostras} amostras, score medio ${memoria.score_medio}/100):\n\nREGRAS APRENDIDAS — siga TODAS obrigatoriamente:\n${memoria.regras_copywriting.map((r, i) => `${i + 1}. ${r}`).join('\n')}\n\nERROS PARA NUNCA REPETIR:\n${(memoria.erros_recorrentes || []).map(e => `- ${e}`).join('\n') || '(nenhum ainda)'}\n${prodAngle ? `\nANGULO MAIS EFICAZ (${a.servico_ideal}): ${prodAngle.melhor_angulo}\nEVITAR: ${(prodAngle.evitar || []).join(' | ')}` : ''}\n`;
+    // Ângulos por produto: modo genérico usa chave do produto_nome, fallback usa isAPI
+    let prodAngle = null;
+    if (usaNegocioConfig) {
+      // No modo genérico, tenta buscar ângulo por nome normalizado do produto
+      const prodKey = (negocio.produto_nome || '').toLowerCase().replace(/\s+/g, '_');
+      prodAngle = prodKey ? memoria.angulos_por_produto?.[prodKey] : null;
+    } else {
+      const isAPILocal = a.servico_ideal === 'lead_normalizer_api';
+      prodAngle = isAPILocal ? memoria.angulos_por_produto?.lead_normalizer_api : memoria.angulos_por_produto?.landing_page;
+    }
+    memoriaStr = `\nAPRENDIZADO ACUMULADO (v${memoria.versao} — ${memoria.total_amostras} amostras, score medio ${memoria.score_medio}/100):\n\nREGRAS APRENDIDAS — siga TODAS obrigatoriamente:\n${memoria.regras_copywriting.map((r, i) => `${i + 1}. ${r}`).join('\n')}\n\nERROS PARA NUNCA REPETIR:\n${(memoria.erros_recorrentes || []).map(e => `- ${e}`).join('\n') || '(nenhum ainda)'}\n${prodAngle ? `\nANGULO MAIS EFICAZ: ${prodAngle.melhor_angulo}\nEVITAR: ${(prodAngle.evitar || []).join(' | ')}` : ''}\n`;
     console.log(`[COPYWRITER] 🧠 Memoria v${memoria.versao} carregada (${memoria.regras_copywriting.length} regras)`);
   } else {
     console.log('[COPYWRITER] 📝 Sem memoria previa — gerando sem aprendizado acumulado');
@@ -221,7 +246,7 @@ ${ganchoVis
     const resultData = {
       timestamp:            new Date().toISOString(),
       username,
-      produto_detectado:    a.servico_ideal,
+      produto_detectado:    usaNegocioConfig ? (negocio.produto_nome || 'generico') : (a.servico_ideal || 'desconhecido'),
       analise_score:        a.score_potencial,
       prioridade:           a.prioridade,
       posts_analisados:     ap.tem_posts_analisados || false,
@@ -237,7 +262,9 @@ ${ganchoVis
 
     const recKey    = `mensagem_${messages.mensagem_recomendada}`;
     const recMsg    = messages[recKey];
-    const prodLabel   = isAPI ? '🔵 Lead Normalizer API' : '🟡 Landing Page';
+    const prodLabel   = usaNegocioConfig
+      ? `🟢 ${negocio.produto_nome || 'Produto configurado'}`
+      : (a.servico_ideal === 'lead_normalizer_api' ? '🔵 Lead Normalizer API' : '🟡 Landing Page');
     const postsLbl    = ap.tem_posts_analisados ? ' + posts ✓' : '';
     const visionLbl   = visionSintese ? ` + vision ✓ (${visionSintese.ferramentas_confirmadas.length} ferramentas)` : '';
 

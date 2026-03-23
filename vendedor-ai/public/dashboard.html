@@ -1069,7 +1069,7 @@ tbody tr:last-child td{border-bottom:none}
             <span style="color:var(--amber)">máx 20 / dia (anti-ban)</span>
           </div>
           <div style="display:flex;gap:7px">
-            <button class="filter-btn" onclick="sendAllDMs()">⚡ Enviar Fila Completa</button>
+            <!-- Envio automático desativado por segurança -->
             <button class="filter-btn" onclick="clearDMQueue()">✕ Limpar Fila</button>
           </div>
         </div>
@@ -1900,8 +1900,8 @@ function toast(msg, type = 'info') {
 }
 
 // ── Logging ──
-const LOG_ICONS = { scraper: '🔍', analyzer: '🧠', copywriter: '✍️', autopilot: '⚡', sender: '📤', notion: '📋', dashboard: '✓', error: '⚠' };
-const LOG_LABELS = { scraper: 'Busca de leads', analyzer: 'Análise de perfis', copywriter: 'Criação de mensagens', autopilot: 'Automático', sender: 'Envio de DMs', 'notion-sync': 'Sincronização', notion: 'Sincronização', dashboard: 'Sistema' };
+const LOG_ICONS = { scraper: '🔍', analyzer: '🧠', copywriter: '✍️', autopilot: '⚡', notion: '📋', dashboard: '✓', system: '📋', error: '⚠' };
+const LOG_LABELS = { scraper: 'Busca de leads', analyzer: 'Análise de perfis', copywriter: 'Criação de mensagens', autopilot: 'Automático', 'notion-sync': 'Sincronização', notion: 'Sincronização', dashboard: 'Sistema', system: 'Sistema' };
 function humanizeLog(module, msg) {
   // Transforma logs técnicos em linguagem humana
   const m = msg.toLowerCase();
@@ -2239,44 +2239,34 @@ function renderDMQueue() {
         </div>
       </div>
       <div class="dm-actions">
-        <button class="send-btn" onclick="sendDM(${i})">⚡ Enviar</button>
+        <button class="send-btn" onclick="copyDM(${i})">📋 Copiar DM</button>
         <button class="regen-btn" onclick="regenDM(${i})" id="regen-${i}">🔄 Regenerar</button>
         <button class="skip-btn" onclick="skipDM(${i})">Pular</button>
       </div>
     </div>`;
   }).join('');
 }
-function sendDM(idx) {
+function copyDM(idx) {
   const dm = state.dmQueue[idx];
   if (!dm) return;
-  toast(`Enviando DM para @${dm.username}...`, 'info');
-  addLog('SENDER', `▶ Enviando para @${dm.username}`);
-  const payload = {
-    username: dm.username,
-    mensagem_final: dm.mensagem_final || dm.dm_message || dm.message || dm.text,
-  };
-  authFetch('/api/send-dm', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) })
-    .then(r => r.json())
-    .then(d => {
-      if (d.ok) {
-        toast(`✓ DM enfileirada: @${dm.username}`, 'success');
-        addLog('SENDER', `✓ Na fila do sender @${dm.username}`, 'ok');
-        skipDM(idx);
-      } else {
-        toast(`Erro: ${d.error || 'falha desconhecida'}`, 'error');
-        addLog('SENDER', `✗ ${d.error || 'erro'}`, 'err');
-      }
-    })
-    .catch(() => { toast('Sender não disponível', 'error'); addLog('SENDER', '✗ Sender offline', 'err'); });
+  const text = (dm.mensagem_final || dm.dm_message || dm.message || dm.text || '').replace(/\\n/g, '\n');
+  navigator.clipboard.writeText(text).then(() => {
+    toast(`✓ DM copiada! Agora cole no Instagram para @${dm.username}`, 'success');
+    addLog('SYSTEM', `📋 DM copiada para @${dm.username}`, 'ok');
+  }).catch(() => {
+    // Fallback para navegadores sem clipboard API
+    const ta = document.createElement('textarea');
+    ta.value = text; ta.style.position = 'fixed'; ta.style.left = '-9999px';
+    document.body.appendChild(ta); ta.select(); document.execCommand('copy');
+    document.body.removeChild(ta);
+    toast(`✓ DM copiada! Cole no Instagram para @${dm.username}`, 'success');
+    addLog('SYSTEM', `📋 DM copiada para @${dm.username}`, 'ok');
+  });
 }
 function skipDM(idx) { state.dmQueue.splice(idx, 1); renderDMQueue(); }
 function sendAllDMs() {
-  toast('Iniciando envio em lote...', 'info');
-  addLog('SENDER', '▶ Sender em lote iniciado');
-  authFetch('/api/sender/start', { method: 'POST' })
-    .then(r => r.json())
-    .then(d => { toast(d.message || '✓ Sender iniciado', d.ok ? 'success' : 'error'); addLog('SENDER', d.message || '✓ OK', d.ok ? 'ok' : 'err'); })
-    .catch(() => { toast('Sender não disponível', 'error'); addLog('SENDER', '✗ Sender offline', 'err'); });
+  toast('Envio automático desativado por segurança. Copie cada DM individualmente e envie pelo Instagram.', 'info');
+  addLog('SYSTEM', 'Envio automático desativado — use botão "Copiar DM"', 'info');
 }
 function clearDMQueue() {
   if (!confirm('Limpar toda a fila de mensagens?')) return;

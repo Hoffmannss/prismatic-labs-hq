@@ -30,7 +30,7 @@ const PIPELINE_LOGS = [
   { file: path.join(LOGS_DIR, 'autopilot-out.log'),     label: 'autopilot'   },
   { file: path.join(LOGS_DIR, 'notion-sync-out.log'),   label: 'notion-sync' },
   { file: path.join(LOGS_DIR, 'dashboard-out.log'),     label: 'dashboard'   },
-  { file: path.join(LOGS_DIR, 'sender.log'),            label: 'sender'      },
+  // sender.log removido — sender desativado
 ];
 
 const autopilotDB = new AutopilotDB();
@@ -389,28 +389,18 @@ const server = http.createServer(async (req, res) => {
     return json(res, { ok: true });
   }
 
-  // Sender config
+  // Sender config — DESATIVADO (risco de ban Instagram)
+  // Futuro: reativar via Meta Business API oficial
   if (req.method === 'GET' && pathname === '/api/sender/config') {
-    return json(res, dmQueueDB.loadSenderConfig());
+    return json(res, { enabled: false, status: 'disabled', message: 'Sender desativado — use cópia manual de DM' });
   }
 
   if (req.method === 'POST' && pathname === '/api/sender/config') {
-    const body = await bodyJSON(req);
-    const config = dmQueueDB.updateSenderConfig(body);
-    return json(res, { ok: true, config });
+    return json(res, { ok: false, error: 'Sender desativado. Envio automatizado de DMs removido por segurança.' }, 403);
   }
 
   if (req.method === 'POST' && pathname === '/api/sender/start') {
-    const config = dmQueueDB.loadSenderConfig();
-    if (!config.enabled) return json(res, { ok: false, error: 'Sender está desabilitado' }, 400);
-    setTimeout(() => {
-      const child = spawn('node', [path.join(__dirname, '0-sender.js'), '--once'], {
-        detached: true, stdio: 'ignore', cwd: __dirname, env: process.env
-      });
-      child.unref();
-    }, 100);
-    dmQueueDB.updateSenderConfig({ status: 'running' });
-    return json(res, { ok: true, message: 'Sender iniciado (modo single batch)' });
+    return json(res, { ok: false, error: 'Sender desativado. Copie a DM e envie manualmente pelo Instagram.' }, 403);
   }
 
   // ====== FIM DM QUEUE API ======
@@ -930,24 +920,9 @@ const server = http.createServer(async (req, res) => {
     return json(res, { ok: true, removed, message: `${removed} lead(s) removido(s) do CRM` });
   }
 
-  // ── SEND DM (bridge → DmQueueDB + sender) ───────────────────────────────
+  // ── SEND DM — DESATIVADO (sender removido por segurança) ──────────────
   if (req.method === 'POST' && pathname === '/api/send-dm') {
-    const body = await bodyJSON(req);
-    const { username, mensagem_final, dm_message, message } = body;
-    if (!username) return json(res, { ok: false, error: 'username obrigatório' }, 400);
-    const text = mensagem_final || dm_message || message;
-    if (!text) return json(res, { ok: false, error: 'mensagem não encontrada' }, 400);
-    const item = dmQueueDB.addToQueue(username, text);
-    const senderConfig = dmQueueDB.loadSenderConfig();
-    if (senderConfig.enabled) {
-      setTimeout(() => {
-        const child = spawn('node', [path.join(__dirname, '0-sender.js'), '--once'], {
-          detached: true, stdio: 'ignore', cwd: __dirname, env: process.env
-        });
-        child.unref();
-      }, 200);
-    }
-    return json(res, { ok: true, item, message: `DM para @${username} adicionada à fila` });
+    return json(res, { ok: false, error: 'Envio automático de DMs desativado. Copie a mensagem e envie manualmente pelo Instagram.' }, 403);
   }
 
   json(res, { error: 'Not found' }, 404);
