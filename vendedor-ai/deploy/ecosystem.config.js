@@ -39,7 +39,7 @@ module.exports = {
       name: 'vendedor-autopilot',
       script: path.join(AGENTS, '10-autopilot.js'),
       cwd: ROOT,
-      args: process.env.AUTOPILOT_NICHO || 'api-automacao',
+      // Sem args — lê config do dashboard (search_mode, search_city, nicho)
       watch: false,
       autorestart: false,    // Nao reinicia automaticamente
       cron_restart: '0 8 * * *',  // Todo dia as 08:00
@@ -49,23 +49,6 @@ module.exports = {
       log_date_format: 'YYYY-MM-DD HH:mm:ss',
       error_file: path.join(ROOT, 'logs', 'autopilot-error.log'),
       out_file:   path.join(ROOT, 'logs', 'autopilot-out.log')
-    },
-
-    // ---- DM SENDER (daemon — sempre online, auto-gerencia limites) ----
-    {
-      name: 'vendedor-sender',
-      script: path.join(AGENTS, '0-sender.js'),
-      cwd: ROOT,
-      watch: false,
-      autorestart: true,
-      max_restarts: 5,
-      restart_delay: 60000,       // 1 min entre restarts
-      env: {
-        NODE_ENV: 'production'
-      },
-      log_date_format: 'YYYY-MM-DD HH:mm:ss',
-      error_file: path.join(ROOT, 'logs', 'sender-error.log'),
-      out_file:   path.join(ROOT, 'logs', 'sender-out.log')
     },
 
     // ---- NOTION SYNC (a cada 2h) ----
