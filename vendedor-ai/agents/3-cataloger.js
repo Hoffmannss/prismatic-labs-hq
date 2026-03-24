@@ -50,7 +50,7 @@ function upsertLead(username, analysisData, messagesData) {
     nicho: a.nicho || '',
     tipo_negocio: a.tipo_negocio || '',
     problema_principal: a.problema_principal || '',
-    servico_ideal: a.servico_ideal || '',
+    produto_sugerido: a.produto_sugerido || a.servico_ideal || '',
     primeira_mensagem_enviada: false,
     data_primeiro_contato: null,
     data_ultima_interacao: null,

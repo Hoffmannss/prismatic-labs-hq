@@ -117,6 +117,10 @@ function enrichLeads(leads) {
     const trk = getTracker(l.username);
     return {
       ...l,
+      // Mapeamento de campos: cataloger (PT) → dashboard (EN)
+      niche:             l.niche || l.nicho || '',
+      suggested_product: l.suggested_product || l.produto_sugerido || l.servico_ideal || '',
+      scraped_at:        l.scraped_at || l.criado_em || null,
       mensagem_final:    msg?.revisao?.mensagem_final || msg?.mensagens?.mensagem1?.texto || null,
       mensagem_original: msg?.revisao?.mensagem_original || null,
       score_reviewer:    msg?.revisao?.score || null,
