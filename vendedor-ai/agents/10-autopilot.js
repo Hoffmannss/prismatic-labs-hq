@@ -51,6 +51,10 @@ function loadCRMUsernames() {
   return new Set((dbData.leads || []).map(l => (l.username || '').toLowerCase()).filter(Boolean));
 }
 
+// Retorna o exit code do orchestrator:
+//   0 = lead qualificado e processado com sucesso
+//   1 = erro real no pipeline
+//   2 = lead filtrado intencionalmente (score baixo ou fora do nicho)
 function runAnalyze(username, bio, followers, posts, postsDesc, nichoId, imageUrls) {
   const script = path.join(__dirname, '5-orchestrator.js');
   const args = [
@@ -62,13 +66,12 @@ function runAnalyze(username, bio, followers, posts, postsDesc, nichoId, imageUr
     postsDesc    || '',
     nichoId      || ''
   ];
-  // Passa URLs de imagens via env var (evita argumentos muito longos no CLI)
   const env = { ...process.env };
   if (imageUrls && imageUrls.length > 0) {
     env.LEAD_IMAGE_URLS = imageUrls.join('|');
   }
   const r = spawnSync('node', args, { stdio: 'inherit', cwd: __dirname, env });
-  return r.status === 0;
+  return r.status ?? 1;
 }
 
 // Constrói descrição de posts a partir dos dados reais do perfil
@@ -87,9 +90,12 @@ function buildPostsDesc(profile) {
     .join('\n');
 }
 
-async function processNicho(nichoDesc, qtd, maxAnalyze, options = {}) {
+async function processNicho(nichoDesc, qtdTarget, maxAnalyze, options = {}) {
   const { mode = 'gmb', city = 'São Paulo' } = options;
   console.log(`\n${C.yellow}>>> Processando nicho: "${nichoDesc}" [modo: ${mode.toUpperCase()}]${C.reset}`);
+  // maxAnalyze = limite de segurança: máximo de perfis que o sistema topa checar antes de desistir
+  // O sistema analisa um por um até atingir qtdTarget qualificados — sem assumir taxa de rejeição
+  console.log(`${C.cyan}>>> Meta: ${qtdTarget} leads qualificados | Limite de segurança: ${maxAnalyze} perfis${C.reset}`);
 
   // IA detecta ou cria o nicho automaticamente
   const { id: nichoId, config } = await detectOrCreateNicho(nichoDesc);
@@ -98,72 +104,108 @@ async function processNicho(nichoDesc, qtd, maxAnalyze, options = {}) {
   let rawProfiles;
 
   if (mode === 'gmb') {
-    // ---- MODO GMB: Google Maps → Instagram ----
-    console.log(`\n${C.cyan}[1/4] Buscando negócios no Google Maps (${city})...${C.reset}`);
+    console.log(`\n${C.cyan}[1/4] Buscando perfis no Google Maps (${city}) — até ${maxAnalyze} candidatos...${C.reset}`);
     writeProgress({ step: 1, stepLabel: 'Buscando no Google Maps', detail: `Procurando "${nichoDesc}" em ${city}` });
-    rawProfiles = await scrapeGMB(nichoDesc, city, qtd * 2);
+    rawProfiles = await scrapeGMB(nichoDesc, city, maxAnalyze);
   } else {
-    // ---- MODO HASHTAG: Instagram scraping (legado) ----
-    console.log(`\n${C.cyan}[1/4] Scraping inteligente (hashtag → smart seed → followers)...${C.reset}`);
+    console.log(`\n${C.cyan}[1/4] Buscando perfis via hashtag — até ${maxAnalyze} candidatos...${C.reset}`);
     writeProgress({ step: 1, stepLabel: 'Buscando leads', detail: `Procurando perfis em "${nichoDesc}"` });
-    rawProfiles = await scrapeNicho(config, qtd * 2);
+    rawProfiles = await scrapeNicho(config, maxAnalyze);
   }
 
   // Deduplicação contra o CRM existente
-  const filtered = rawProfiles.filter(p => {
+  const candidates = rawProfiles.filter(p => {
     const u = (p.username || '').toLowerCase();
     if (jaCRM.has(u)) {
       console.log(`  ${C.dim}@${u} já no CRM — ignorado${C.reset}`);
       return false;
     }
     return true;
-  });
-
-  console.log(`\n${C.cyan}[2/4] Deduplicação CRM: ${filtered.length}/${rawProfiles.length} novos${C.reset}`);
-  writeProgress({ step: 2, stepLabel: 'Filtrando duplicados', detail: `${filtered.length} leads novos encontrados` });
-
-  if (filtered.length === 0) {
-    console.log(`${C.yellow}  Nenhum candidato novo após deduplicação. Pulando.${C.reset}`);
-    return { nichoId, leads: 0, analisados: 0 };
-  }
-
-  // Montar queue de leads com captions reais dos posts (zero custo extra)
-  const queue = filtered.slice(0, qtd).map(p => ({
-    username:    p.username,
-    bio:         p.bio,
-    followers:   p.followers,
-    posts:       p.posts,
-    postsDesc:   buildPostsDesc(p),   // captions reais ou '' se não disponível
-    imageUrls:   (p.recentPosts || []).filter(rp => rp.imageUrl).map(rp => rp.imageUrl).slice(0, 4),
-    nicho:       nichoId,
-    // Dados GMB (enriquecimento extra para leads vindos do Google Maps)
-    gmb:         p.gmb || null,
+  }).map(p => ({
+    username:  p.username,
+    bio:       p.bio,
+    followers: p.followers,
+    posts:     p.posts,
+    postsDesc: buildPostsDesc(p),
+    imageUrls: (p.recentPosts || []).filter(rp => rp.imageUrl).map(rp => rp.imageUrl).slice(0, 4),
+    nicho:     nichoId,
+    gmb:       p.gmb || null,
   }));
 
-  // Salvar queue em arquivo
+  console.log(`\n${C.cyan}[2/4] Candidatos disponíveis: ${candidates.length}/${rawProfiles.length} (novos no CRM)${C.reset}`);
+  writeProgress({ step: 2, stepLabel: 'Filtrando duplicados', detail: `${candidates.length} candidatos novos` });
+
+  if (candidates.length === 0) {
+    console.log(`${C.yellow}  Nenhum candidato novo após deduplicação. Pulando.${C.reset}`);
+    return { nichoId, leads: 0, qualificados: 0, analisados: 0 };
+  }
+
+  // Salvar pool de candidatos em arquivo (rastreabilidade)
   const dateStr = new Date().toISOString().split('T')[0];
   if (!fs.existsSync(SCOUT_DIR)) fs.mkdirSync(SCOUT_DIR, { recursive: true });
   const outFile = path.join(SCOUT_DIR, `autopilot-${dateStr}-${nichoId}.json`);
-  fs.writeFileSync(outFile, JSON.stringify({ nichoId, date: dateStr, total: queue.length, queue }, null, 2));
-  console.log(`  Queue salva: ${outFile}`);
+  fs.writeFileSync(outFile, JSON.stringify({ nichoId, date: dateStr, total: candidates.length, candidates }, null, 2));
 
-  // ---- FASE 3: ANALYZE (IA) ----
-  console.log(`\n${C.cyan}[3/4] Analyze IA em ${Math.min(queue.length, maxAnalyze)} leads...${C.reset}`);
-  writeProgress({ step: 3, stepLabel: 'Analisando com IA', detail: `Pontuando ${Math.min(queue.length, maxAnalyze)} perfis` });
-  const toAnalyze = queue.slice(0, maxAnalyze);
-  let okCount = 0;
+  // ---- FASE 3: LOOP "COLETAR ATÉ A COTA" ----
+  // Analisa candidatos um a um — para quando tiver qtdTarget qualificados
+  console.log(`\n${C.cyan}[3/4] Analisando candidatos até atingir ${qtdTarget} leads qualificados...${C.reset}`);
+  writeProgress({ step: 3, stepLabel: 'Analisando com IA', detail: `Meta: ${qtdTarget} qualificados` });
 
-  for (let i = 0; i < toAnalyze.length; i++) {
-    const l = toAnalyze[i];
-    console.log(`\n  ${C.bright}[${i+1}/${toAnalyze.length}] @${l.username}${C.reset} | ${l.followers} followers`);
-    writeProgress({ step: 3, stepLabel: 'Analisando com IA', detail: `Analisando @${l.username} (${i+1}/${toAnalyze.length})`, analyzed: i+1, total: toAnalyze.length });
-    const ok = runAnalyze(l.username, l.bio, l.followers, l.posts, l.postsDesc, nichoId, l.imageUrls);
-    if (ok) okCount++;
+  let qualificados = 0;
+  let analisados   = 0;
+  let filtrados    = 0;
+  let erros        = 0;
+
+  // Itera TODOS os candidatos disponíveis, um por um
+  // Para apenas quando bater a cota — sem limite interno
+  for (let i = 0; i < candidates.length; i++) {
+    // Cota atingida — para de analisar
+    if (qualificados >= qtdTarget) {
+      console.log(`\n${C.green}✅ Cota atingida: ${qualificados} leads qualificados!${C.reset}`);
+      break;
+    }
+
+    const l = candidates[i];
+    analisados++;
+    console.log(`\n  ${C.bright}[${i+1}/${candidates.length}] @${l.username}${C.reset} | ${l.followers} seguidores | ✅ ${qualificados}/${qtdTarget} qualificados`);
+    writeProgress({
+      step: 3,
+      stepLabel: 'Analisando com IA',
+      detail: `@${l.username} — ${qualificados}/${qtdTarget} qualificados`,
+      analyzed: analisados,
+      total: candidates.length,
+      qualified: qualificados
+    });
+
+    const exitCode = runAnalyze(l.username, l.bio, l.followers, l.posts, l.postsDesc, nichoId, l.imageUrls);
+
+    if (exitCode === 0) {
+      qualificados++;
+      console.log(`  ${C.green}✓ Qualificado! Total: ${qualificados}/${qtdTarget}${C.reset}`);
+    } else if (exitCode === 2) {
+      filtrados++;
+      console.log(`  ${C.yellow}⛔ Filtrado (score baixo ou fora do nicho)${C.reset}`);
+    } else {
+      erros++;
+      console.log(`  ${C.red}✗ Erro no pipeline${C.reset}`);
+    }
+
     await sleep(400);
   }
 
-  console.log(`\n  ${C.green}Analyze: ${okCount}/${toAnalyze.length} ok${C.reset}`);
-  return { nichoId, leads: queue.length, analisados: okCount };
+  // Relatório final do nicho
+  console.log(`\n${C.magenta}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${C.reset}`);
+  console.log(`${C.green}  Qualificados:  ${qualificados}/${qtdTarget}${C.reset}`);
+  console.log(`${C.yellow}  Filtrados:     ${filtrados}${C.reset}`);
+  console.log(`${C.dim}  Erros:         ${erros}${C.reset}`);
+  console.log(`${C.dim}  Total analisados: ${analisados} de ${candidates.length} candidatos${C.reset}`);
+  if (qualificados < qtdTarget) {
+    console.log(`${C.yellow}  ⚠️  Cota não atingida (${qualificados}/${qtdTarget}) — todos os ${candidates.length} candidatos foram verificados.${C.reset}`);
+    console.log(`${C.yellow}  Opções: aumente o limite de segurança no dashboard, tente outro nicho, ou rode novamente.${C.reset}`);
+  }
+  console.log(`${C.magenta}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${C.reset}`);
+
+  return { nichoId, leads: candidates.length, qualificados, analisados, filtrados };
 }
 
 async function main() {
@@ -307,8 +349,10 @@ async function main() {
   }
 
   // ---- RESUMO ----
-  const totalLeads      = resultados.reduce((s, r) => s + r.leads, 0);
-  const totalAnalisados = resultados.reduce((s, r) => s + r.analisados, 0);
+  const totalLeads       = resultados.reduce((s, r) => s + (r.leads || 0), 0);
+  const totalAnalisados  = resultados.reduce((s, r) => s + (r.analisados || 0), 0);
+  const totalQualificados = resultados.reduce((s, r) => s + (r.qualificados || 0), 0);
+  const totalFiltrados   = resultados.reduce((s, r) => s + (r.filtrados || 0), 0);
 
   console.log(`\n${C.magenta}${'='.repeat(70)}${C.reset}`);
   console.log(`${C.bright}  AUTOPILOT CONCLUIDO${C.reset}`);
@@ -316,8 +360,12 @@ async function main() {
 
   resultados.forEach(r => {
     const st = r.erro ? `${C.red}ERRO${C.reset}` : `${C.green}OK${C.reset}`;
-    console.log(`  ${st} ${r.nichoId}: ${r.leads} leads | ${r.analisados} analisados`);
+    const qualStr = r.qualificados !== undefined ? ` | ${C.green}${r.qualificados} qualificados${C.reset}` : '';
+    const filtStr = r.filtrados    !== undefined ? ` | ${C.yellow}${r.filtrados} filtrados${C.reset}` : '';
+    console.log(`  ${st} ${r.nichoId}: ${r.analisados || 0} analisados${qualStr}${filtStr}`);
   });
+
+  console.log(`\n  ${C.bright}TOTAL: ${totalQualificados} leads qualificados${C.reset} (${totalFiltrados} filtrados, ${totalAnalisados} analisados de ${totalLeads} candidatos)`);
 
   console.log(`\n  ${C.bright}TOTAL: ${totalLeads} leads | ${totalAnalisados} analisados${C.reset}`);
   console.log(`  Dashboard: http://localhost:3131`);

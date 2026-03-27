@@ -49,6 +49,26 @@ function analyzeAndPrepare(args) {
     log('Falha no Analyzer. Abortando.', C.red); process.exit(1);
   }
 
+  // STEP 1.2 — Filtro de score mínimo (só leads qualificados entram no pipeline)
+  const MIN_SCORE = parseInt(process.env.MIN_SCORE_LEAD || '60', 10);
+  const analysisFile = path.join(LEADS_DIR, `${clean}_analysis.json`);
+  try {
+    if (fs.existsSync(analysisFile)) {
+      const analysisData = JSON.parse(fs.readFileSync(analysisFile, 'utf8'));
+      const score = analysisData?.analise?.score_potencial ?? 100;
+      const prioridade = analysisData?.analise?.prioridade || 'cold';
+      if (score < MIN_SCORE) {
+        log(`\n⛔ [FILTRO] @${clean} descartado — score ${score}/100 (mínimo: ${MIN_SCORE})`, C.yellow);
+        log(`   Prioridade: ${prioridade} | Motivo: ${analysisData?.analise?.problema_principal || 'score abaixo do threshold'}`, C.yellow);
+        log(`[ORCHESTRATOR] Lead fora do critério de qualidade. Nenhuma mensagem gerada.`, C.yellow);
+        process.exit(2); // 2 = filtrado intencionalmente (não é erro)
+      }
+      log(`\n✅ [FILTRO] @${clean} aprovado — score ${score}/100 (prioridade: ${prioridade})`, C.green);
+    }
+  } catch (_) {
+    // Se falhar ao ler o score, continua o pipeline normalmente
+  }
+
   // STEP 1.5 — Vision (análise de imagens dos posts)
   if (hasGoogleKey) {
     log(`\n[STEP 2/${totalSteps}] Analisando imagens dos posts (vision AI)...`, C.yellow);
@@ -64,8 +84,7 @@ function analyzeAndPrepare(args) {
           log(`   Contexto: ${vd.sintese.contexto_confirmado}`, C.red);
           log(`   Posts relevantes: ${vd.sintese.posts_relevantes}/${vd.sintese.posts_analisados}`, C.red);
           log(`[ORCHESTRATOR] Pipeline abortado — lead fora do nicho alvo. Nenhuma mensagem gerada.`, C.red);
-          log(`[ORCHESTRATOR] Dados salvos em: ${visionFile}`, C.yellow);
-          process.exit(0);
+          process.exit(2); // 2 = filtrado intencionalmente (não é erro)
         }
       }
     } catch (_) {}

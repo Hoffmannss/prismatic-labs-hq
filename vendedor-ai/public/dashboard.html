@@ -710,7 +710,8 @@ tbody tr:last-child td{border-bottom:none}
       <div class="nav-item active" onclick="navigate('overview')" id="nav-overview">
         <span class="nav-icon">⊞</span><span>Painel Principal</span>
       </div>
-      <div class="nav-item" onclick="navigate('agents')" id="nav-agents" style="display:none" data-advanced="true">
+      <!-- nav-agents: arquivado v2.0 — envio é manual, módulo inativo -->
+      <div class="nav-item" id="nav-agents" style="display:none">
         <span class="nav-icon">⬡</span><span>Módulos de IA</span>
         <span class="nav-badge" id="badge-running">0</span>
       </div>
@@ -733,7 +734,8 @@ tbody tr:last-child td{border-bottom:none}
       <div class="nav-item" onclick="navigate('profile')" id="nav-profile">
         <span class="nav-icon">◆</span><span>Perfil do Negócio</span>
       </div>
-      <div class="nav-item" onclick="navigate('instagram')" id="nav-instagram" style="display:none" data-advanced="true">
+      <!-- nav-instagram: arquivado v2.0 — sessão Instagram não necessária no fluxo atual -->
+      <div class="nav-item" id="nav-instagram" style="display:none">
         <span class="nav-icon">📷</span><span>Conta Instagram</span>
       </div>
       <div class="nav-item" onclick="navigate('schedule')" id="nav-schedule" style="display:none" data-advanced="true">
@@ -770,7 +772,7 @@ tbody tr:last-child td{border-bottom:none}
       <div class="topbar-spacer"></div>
       <div class="topbar-pills">
         <div class="pill green" id="pill-system"><span class="dot"></span>Sistema Ativo</div>
-        <button class="pill pill-renew" id="pill-ig-session" onclick="navigate('instagram')" title="Configuração do Instagram" style="display:none"><span class="dot"></span>Instagram<span id="renew-status" style="margin-left:4px;font-size:10px;opacity:.6"></span></button>
+        <!-- pill-ig-session: arquivado v2.0 -->
       </div>
       <button class="topbar-cmd-btn" onclick="openPalette()">⌕ Buscar <kbd>⌘K</kbd></button>
       <button class="topbar-btn" onclick="refreshData()" title="Atualizar">↻</button>
