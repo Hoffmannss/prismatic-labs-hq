@@ -50,11 +50,13 @@ Para os posts acima, identifique:
 ` : '';
 
   // ---- PROMPT PRINCIPAL ----
-  const prompt = `Você é um especialista em análise de perfis do Instagram para prospecção B2B/B2C.
+  const prompt = `Você é um especialista em análise de perfis do Instagram para prospecção outbound.
 
 ${negocioCtx.prompt}
 
-Seu objetivo: analisar o perfil abaixo e determinar o quanto esse lead é um potencial cliente para o produto/serviço acima.
+MISSÃO CRÍTICA: O negócio acima é de QUEM ESTÁ USANDO ESTE SISTEMA. Seu trabalho é analisar o perfil do Instagram abaixo e determinar se essa pessoa/empresa é um COMPRADOR POTENCIAL para o produto/serviço descrito acima.
+Exemplo: se o negócio for "personal trainer", você procura alguém que QUER CONTRATAR um personal — não outro personal trainer.
+O "Público-alvo" e "Problema que resolve" no contexto acima descrevem as características do cliente ideal desse negócio.
 
 PERFIL A ANALISAR:
 - Username: @${username}

@@ -252,6 +252,7 @@ function ensureUsersFile() {
       password: hashPassword('admin123'),
       is_admin: true,
       company_name: 'Prismatic Labs',
+      max_runs_per_day: 999,
       created_at: new Date().toISOString()
     };
     saveJSON(USERS_FILE, { users: [defaultAdmin] });
@@ -346,7 +347,7 @@ const server = http.createServer(async (req, res) => {
     const apStatusFile = uFile(req.userSession, 'autopilot-status.json');
     const prevStatus = loadJSON(apStatusFile, {});
     const today = new Date().toISOString().slice(0, 10);
-    const maxRuns = config.max_runs_per_day ?? 2;
+    const maxRuns = req.userSession.is_admin ? 999 : (req.userSession.max_runs_per_day ?? config.max_runs_per_day ?? 2);
     const runsToday = (prevStatus.last_run_date === today) ? (prevStatus.runs_today || 0) : 0;
     if (runsToday >= maxRuns) {
       return json(res, {
@@ -406,15 +407,16 @@ const server = http.createServer(async (req, res) => {
     const apStatusFile = uFile(req.userSession, 'autopilot-status.json');
     const cfg = loadAutopilotCfg(req.userSession);
     const today = new Date().toISOString().slice(0, 10);
+    const maxRuns = req.userSession.is_admin ? 999 : (req.userSession.max_runs_per_day ?? cfg.max_runs_per_day ?? 2);
     if (!fs.existsSync(apStatusFile)) {
-      return json(res, { status: 'idle', runs_today: 0, max_runs_per_day: cfg.max_runs_per_day ?? 2 });
+      return json(res, { status: 'idle', runs_today: 0, max_runs_per_day: maxRuns });
     }
     try {
       const s = JSON.parse(fs.readFileSync(apStatusFile, 'utf8'));
       const runsToday = (s.last_run_date === today) ? (s.runs_today || 0) : 0;
-      return json(res, { ...s, runs_today: runsToday, max_runs_per_day: cfg.max_runs_per_day ?? 2 });
+      return json(res, { ...s, runs_today: runsToday, max_runs_per_day: maxRuns });
     } catch {
-      return json(res, { status: 'idle', runs_today: 0, max_runs_per_day: cfg.max_runs_per_day ?? 2 });
+      return json(res, { status: 'idle', runs_today: 0, max_runs_per_day: maxRuns });
     }
   }
 
@@ -714,7 +716,7 @@ const server = http.createServer(async (req, res) => {
     if (!user) return json(res, { ok: false, error: 'E-mail ou senha incorretos' }, 401);
     const token = generateToken();
     const createdAt = Date.now();
-    activeSessions[token] = { email: user.email, is_admin: user.is_admin, company_name: user.company_name, createdAt };
+    activeSessions[token] = { email: user.email, is_admin: user.is_admin, company_name: user.company_name, max_runs_per_day: user.is_admin ? 999 : (user.max_runs_per_day ?? null), createdAt };
     saveActiveSessions();
     return json(res, { ok: true, token, user: { email: user.email, is_admin: user.is_admin, company_name: user.company_name, must_change_password: !!user.must_change_password, expiresAt: createdAt + SESSION_TTL_MS } });
   }
@@ -731,7 +733,7 @@ const server = http.createServer(async (req, res) => {
   if (req.method === 'POST' && pathname === '/api/auth/create-user') {
     const session = verifyToken(req);
     if (!session || !session.is_admin) return json(res, { ok: false, error: 'Acesso negado' }, 403);
-    const { email, password, company_name, phone, plan, contract_value, notes } = await bodyJSON(req);
+    const { email, password, company_name, phone, plan, contract_value, notes, max_runs_per_day } = await bodyJSON(req);
     if (!email || !password) return json(res, { ok: false, error: 'E-mail e senha obrigatórios' }, 400);
     const usersData = loadJSON(USERS_FILE, { users: [] });
     if (usersData.users.find(u => u.email === email)) return json(res, { ok: false, error: 'E-mail já cadastrado' }, 409);
@@ -744,6 +746,7 @@ const server = http.createServer(async (req, res) => {
       plan: plan || '',
       contract_value: contract_value || '',
       notes: notes || '',
+      max_runs_per_day: (max_runs_per_day != null && Number.isInteger(+max_runs_per_day)) ? +max_runs_per_day : null,
       created_at: new Date().toISOString(),
       must_change_password: true
     });
