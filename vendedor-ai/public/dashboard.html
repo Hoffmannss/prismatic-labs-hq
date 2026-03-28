@@ -839,6 +839,16 @@ tbody tr:last-child td{border-bottom:none}
               <label style="font-size:10.5px;color:var(--t3);display:block;margin-bottom:3px">Nicho Alvo <span style="color:var(--red)">*</span></label>
               <input type="text" id="gmb-nicho" placeholder="Ex: salão de beleza, consultório odontológico" style="width:100%;background:var(--card);border:1px solid var(--b);border-radius:6px;padding:7px 10px;color:var(--t);font-size:12px">
             </div>
+          </div>
+          <div style="display:flex;gap:10px;align-items:end;flex-wrap:wrap;margin-top:8px">
+            <div style="flex:1;min-width:120px">
+              <label style="font-size:10.5px;color:var(--t3);display:block;margin-bottom:3px">Leads qualificados <span class="detail-btn">?<span class="detail-tooltip">Quantos leads bons o sistema deve encontrar por rodada. Ele analisa perfis um a um até bater essa cota.</span></span></label>
+              <input type="number" id="gmb-quantidade" value="5" min="1" max="100" style="width:100%;background:var(--card);border:1px solid var(--b);border-radius:6px;padding:7px 10px;color:var(--t);font-size:12px">
+            </div>
+            <div style="flex:1;min-width:120px">
+              <label style="font-size:10.5px;color:var(--t3);display:block;margin-bottom:3px">Limite de segurança <span class="detail-btn">?<span class="detail-tooltip">Máximo de perfis que o sistema vai verificar antes de parar. Se o nicho for difícil, aumente este número.</span></span></label>
+              <input type="number" id="gmb-max-analyze" value="50" min="5" max="500" style="width:100%;background:var(--card);border:1px solid var(--b);border-radius:6px;padding:7px 10px;color:var(--t);font-size:12px">
+            </div>
             <button onclick="saveGMBConfig()" style="background:var(--purple);color:#fff;border:none;border-radius:6px;padding:7px 14px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap">💾 Salvar</button>
           </div>
           <div id="gmbSaveStatus" style="margin-top:6px;font-size:10.5px;color:var(--t3)"></div>
@@ -2722,6 +2732,10 @@ async function loadGMBConfig() {
     if (modeEl) modeEl.value = cfg.search_mode || 'gmb';
     if (cityEl) cityEl.value = cfg.search_city || 'São Paulo';
     if (nichoEl) nichoEl.value = cfg.nicho || '';
+    const qtdEl = document.getElementById('gmb-quantidade');
+    const maxEl = document.getElementById('gmb-max-analyze');
+    if (qtdEl) qtdEl.value = cfg.quantidade_leads || 5;
+    if (maxEl) maxEl.value = cfg.max_analyze || 50;
     toggleCityField();
   } catch {}
 }
@@ -2743,7 +2757,9 @@ function saveGMBConfig() {
     return;
   }
 
-  const payload = { search_mode: mode, search_city: city, nicho: nicho, active: true };
+  const quantidade = parseInt(document.getElementById('gmb-quantidade')?.value || '5', 10);
+  const maxAnalyze = parseInt(document.getElementById('gmb-max-analyze')?.value || '50', 10);
+  const payload = { search_mode: mode, search_city: city, nicho: nicho, quantidade_leads: quantidade, max_analyze: maxAnalyze, active: true };
   statusEl.textContent = 'Salvando...';
   authFetch('/api/autopilot/config', {
     method: 'POST',
