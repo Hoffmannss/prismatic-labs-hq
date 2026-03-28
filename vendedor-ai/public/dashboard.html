@@ -741,6 +741,10 @@ tbody tr:last-child td{border-bottom:none}
       <div class="nav-item" onclick="navigate('schedule')" id="nav-schedule" style="display:none" data-advanced="true">
         <span class="nav-icon">⏰</span><span>Agendamento</span>
       </div>
+      <div class="nav-section-label admin-only" style="display:none">Admin</div>
+      <div class="nav-item admin-only" onclick="navigate('users')" id="nav-users" style="display:none">
+        <span class="nav-icon">👥</span><span>Usuários</span>
+      </div>
       <div class="nav-section-label">Ajuda</div>
       <div class="nav-item" onclick="navigate('guide')" id="nav-guide">
         <span class="nav-icon">?</span><span>Como Usar</span>
@@ -752,13 +756,77 @@ tbody tr:last-child td{border-bottom:none}
         <span id="advancedModeIcon">⚙</span><span id="advancedModeLabel">Modo Avançado</span>
       </button>
     </div>
-    <div class="sidebar-footer">
-      <div class="footer-avatar">PL</div>
+    <div class="sidebar-footer" style="cursor:pointer;position:relative" onclick="toggleAccountMenu()">
+      <div class="footer-avatar" id="footerAvatar">PL</div>
       <div style="flex:1;min-width:0">
-        <div class="footer-name">Prismatic Labs</div>
-        <div class="footer-role">v3.0 · Admin</div>
+        <div class="footer-name" id="footerName">Prismatic Labs</div>
+        <div class="footer-role" id="footerRole">v3.0 · Admin</div>
       </div>
-      <button class="topbar-btn" onclick="logout()" title="Sair" style="width:24px;height:24px;font-size:11px;flex-shrink:0">⏻</button>
+      <span style="font-size:11px;color:var(--t3)">⋯</span>
+      <!-- Account dropdown -->
+      <div id="accountMenu" style="display:none;position:absolute;bottom:52px;left:10px;right:10px;background:var(--card);border:1px solid var(--b);border-radius:10px;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,.4);z-index:200">
+        <button onclick="event.stopPropagation();openAccountModal()" style="width:100%;background:transparent;border:none;padding:10px 14px;color:var(--t);font-size:12px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:8px" onmouseenter="this.style.background='rgba(255,255,255,.05)'" onmouseleave="this.style.background='transparent'">👤 Minha Conta</button>
+        <div style="height:1px;background:var(--b)"></div>
+        <button onclick="event.stopPropagation();logout()" style="width:100%;background:transparent;border:none;padding:10px 14px;color:var(--red);font-size:12px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:8px" onmouseenter="this.style.background='rgba(239,68,68,.08)'" onmouseleave="this.style.background='transparent'">⏻ Sair</button>
+      </div>
+    </div>
+
+    <!-- MODAL MINHA CONTA -->
+    <div id="accountModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9998;display:none;align-items:center;justify-content:center">
+      <div style="background:var(--bg-el);border:1px solid var(--b);border-radius:14px;padding:28px;width:360px;max-width:90vw">
+        <div style="font-size:15px;font-weight:700;color:var(--t);margin-bottom:4px">Minha Conta</div>
+        <div id="accountModalSub" style="font-size:11px;color:var(--t3);margin-bottom:20px">Atualize suas credenciais de acesso</div>
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <div>
+            <label style="font-size:10.5px;color:var(--t3);display:block;margin-bottom:3px">E-mail atual</label>
+            <input id="accEmail" type="email" style="width:100%;background:var(--card);border:1px solid var(--b);border-radius:6px;padding:8px 10px;color:var(--t);font-size:12px">
+          </div>
+          <div>
+            <label style="font-size:10.5px;color:var(--t3);display:block;margin-bottom:3px">Senha atual</label>
+            <input id="accCurrentPwd" type="password" placeholder="Digite sua senha atual" style="width:100%;background:var(--card);border:1px solid var(--b);border-radius:6px;padding:8px 10px;color:var(--t);font-size:12px">
+          </div>
+          <div>
+            <label style="font-size:10.5px;color:var(--t3);display:block;margin-bottom:3px">Nova senha <span style="color:var(--t3)">(deixe em branco para manter)</span></label>
+            <input id="accNewPwd" type="password" placeholder="Mínimo 6 caracteres" style="width:100%;background:var(--card);border:1px solid var(--b);border-radius:6px;padding:8px 10px;color:var(--t);font-size:12px">
+          </div>
+          <div id="accError" style="display:none;font-size:11px;color:var(--red);padding:8px 10px;background:rgba(239,68,68,.08);border-radius:6px"></div>
+          <div style="display:flex;gap:8px;margin-top:4px">
+            <button onclick="closeAccountModal()" style="flex:1;background:transparent;border:1px solid var(--b);border-radius:7px;padding:9px;color:var(--t2);font-size:12px;cursor:pointer">Cancelar</button>
+            <button onclick="saveAccount()" style="flex:1;background:var(--purple);border:none;border-radius:7px;padding:9px;color:#fff;font-size:12px;font-weight:700;cursor:pointer">Salvar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL CRIAR USUÁRIO (admin) -->
+    <div id="createUserModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9998;align-items:center;justify-content:center">
+      <div style="background:var(--bg-el);border:1px solid var(--b);border-radius:14px;padding:28px;width:380px;max-width:90vw">
+        <div style="font-size:15px;font-weight:700;color:var(--t);margin-bottom:4px">Novo Cliente</div>
+        <div style="font-size:11px;color:var(--t3);margin-bottom:20px">As credenciais temporárias serão exibidas uma única vez</div>
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <div>
+            <label style="font-size:10.5px;color:var(--t3);display:block;margin-bottom:3px">Nome da empresa</label>
+            <input id="newUserCompany" type="text" placeholder="Ex: Agência Fulano" style="width:100%;background:var(--card);border:1px solid var(--b);border-radius:6px;padding:8px 10px;color:var(--t);font-size:12px">
+          </div>
+          <div>
+            <label style="font-size:10.5px;color:var(--t3);display:block;margin-bottom:3px">E-mail</label>
+            <input id="newUserEmail" type="email" placeholder="cliente@empresa.com" style="width:100%;background:var(--card);border:1px solid var(--b);border-radius:6px;padding:8px 10px;color:var(--t);font-size:12px">
+          </div>
+          <div>
+            <label style="font-size:10.5px;color:var(--t3);display:block;margin-bottom:3px">Senha temporária</label>
+            <div style="display:flex;gap:6px">
+              <input id="newUserPwd" type="text" placeholder="Gerada automaticamente" style="flex:1;background:var(--card);border:1px solid var(--b);border-radius:6px;padding:8px 10px;color:var(--t);font-size:12px">
+              <button onclick="genTempPwd()" title="Gerar senha" style="background:var(--card);border:1px solid var(--b);border-radius:6px;padding:8px 10px;color:var(--t2);font-size:12px;cursor:pointer;white-space:nowrap">⟳ Gerar</button>
+            </div>
+          </div>
+          <div id="createUserResult" style="display:none;background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.3);border-radius:8px;padding:12px;font-size:12px;color:var(--t)"></div>
+          <div id="createUserError" style="display:none;font-size:11px;color:var(--red);padding:8px 10px;background:rgba(239,68,68,.08);border-radius:6px"></div>
+          <div style="display:flex;gap:8px;margin-top:4px">
+            <button onclick="closeCreateUserModal()" id="cancelCreateUserBtn" style="flex:1;background:transparent;border:1px solid var(--b);border-radius:7px;padding:9px;color:var(--t2);font-size:12px;cursor:pointer">Cancelar</button>
+            <button onclick="createUser()" id="submitCreateUserBtn" style="flex:1;background:var(--purple);border:none;border-radius:7px;padding:9px;color:#fff;font-size:12px;font-weight:700;cursor:pointer">Criar Acesso</button>
+          </div>
+        </div>
+      </div>
     </div>
   </aside>
 
@@ -1557,6 +1625,28 @@ tbody tr:last-child td{border-bottom:none}
         </div>
       </section>
 
+      <!-- ══ USUÁRIOS (admin-only) ══ -->
+      <section class="section" id="section-users">
+        <div class="page-header">
+          <h1>Usuários</h1>
+          <p>Gerencie os acessos dos seus clientes ao Vendedor AI</p>
+        </div>
+        <div class="card" style="margin-bottom:20px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+            <div>
+              <div style="font-size:13px;font-weight:700;color:var(--t)">Clientes cadastrados</div>
+              <div style="font-size:11px;color:var(--t3);margin-top:2px">Credenciais temporárias exigem troca de senha no primeiro acesso</div>
+            </div>
+            <button onclick="openCreateUserModal()" style="background:var(--purple);border:none;border-radius:8px;padding:8px 16px;color:#fff;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px">
+              + Novo Cliente
+            </button>
+          </div>
+          <div id="usersTableWrap">
+            <div style="text-align:center;padding:24px;color:var(--t3);font-size:12px">Carregando...</div>
+          </div>
+        </div>
+      </section>
+
       <!-- ══ COMO USAR ══ -->
       <section class="section" id="section-guide">
         <div class="page-header">
@@ -1696,7 +1786,26 @@ tbody tr:last-child td{border-bottom:none}
             <div class="guide-tip"><strong>💡 Dica:</strong> O campo "Tom das Mensagens" é especialmente importante — ele define se suas DMs serão formais, casuais, consultivas, etc.</div>
           </div>
 
-          <!-- CARD 8 — PRISMATIC CONNECT (EXTENSÃO) -->
+          <!-- CARD 8 — INTEGRAÇÃO NOTION -->
+          <div class="card guide-card">
+            <div class="guide-card-header">
+              <div class="guide-step-num">8</div>
+              <div class="guide-card-icon">📓</div>
+              <div><div class="guide-card-title">Conectar ao Notion</div><div class="guide-card-sub">Seus leads sincronizados no Notion automaticamente</div></div>
+            </div>
+            <div class="guide-steps">
+              <div class="guide-step"><span>①</span><span>Acesse <strong><a href="https://www.notion.so/my-integrations" target="_blank" style="color:var(--purple-xl)">notion.so/my-integrations</a></strong> e clique em <strong>New integration</strong></span></div>
+              <div class="guide-step"><span>②</span><span>Dê um nome (ex: <em>Vendedor AI</em>), selecione seu workspace e clique em <strong>Save</strong></span></div>
+              <div class="guide-step"><span>③</span><span>Copie o <strong>Internal Integration Token</strong> — começa com <code style="background:rgba(255,255,255,.06);padding:1px 5px;border-radius:4px;font-size:10px">secret_...</code></span></div>
+              <div class="guide-step"><span>④</span><span>No Notion, abra seu <strong>banco de dados de leads</strong> → clique em <strong>⋯ → Connections</strong> → adicione a integração criada</span></div>
+              <div class="guide-step"><span>⑤</span><span>Copie o <strong>Database ID</strong> da URL do banco: <code style="background:rgba(255,255,255,.06);padding:1px 5px;border-radius:4px;font-size:10px">notion.so/SEU_WORKSPACE/<strong>ESTE_ID</strong>?v=...</code></span></div>
+              <div class="guide-step"><span>⑥</span><span>Cole o Token e o Database ID em <strong>Configurações → Integração Notion</strong> no menu lateral e salve</span></div>
+            </div>
+            <div class="guide-tip"><strong>💡 Resultado:</strong> Cada lead coletado pelo Autopilot aparece automaticamente como uma linha no seu banco Notion — com score, DM gerada, status e todos os dados do perfil.</div>
+            <div style="margin-top:10px;padding:9px 12px;background:rgba(124,58,237,.07);border:1px solid rgba(124,58,237,.2);border-radius:8px;font-size:11px;color:var(--purple-xl);line-height:1.5">🔒 Seu token Notion é <strong>privado</strong> — nunca é compartilhado com terceiros. Fica armazenado apenas no seu servidor.</div>
+          </div>
+
+          <!-- CARD 9 — PRISMATIC CONNECT (EXTENSÃO) -->
           <div class="card guide-card" style="grid-column:span 2">
             <div class="guide-card-header">
               <div class="guide-step-num">8</div>
@@ -1853,6 +1962,7 @@ const SECTION_TITLES = {
   instagram: ['Conta Instagram', 'Conexão'],
   guide:     ['Como Usar', 'Guia'],
   settings:  ['Configurações', 'Admin'],
+  users:     ['Usuários', 'Admin'],
 };
 
 const statusLabels = { online: 'Ativo', idle: 'Parado', running: 'Executando', error: 'Erro' };
@@ -1871,6 +1981,7 @@ function navigate(section) {
   if (section === 'profile') loadBusinessProfile();
   if (section === 'schedule') loadSchedule();
   if (section === 'instagram') loadInstagramStatus();
+  if (section === 'users') loadUsers();
 }
 
 // ── Command Palette ──
@@ -3065,6 +3176,9 @@ function doLogin() {
         if (d.user?.is_admin) document.body.classList.add('is-admin');
         updateUserInfo(d.user);
         toast('✓ Bem-vindo ao Vendedor AI!', 'success');
+        if (d.user?.must_change_password) {
+          setTimeout(() => openAccountModal(true), 400);
+        }
       } else {
         errEl.textContent = d.error || 'E-mail ou senha incorretos';
       }
@@ -3112,6 +3226,9 @@ function updateUserInfo(user) {
   document.querySelector('.footer-name').textContent = name;
   document.querySelector('.footer-role').textContent = user.is_admin ? 'v3.0 · Administrador' : 'v3.0 · Usuário';
   document.querySelector('.footer-avatar').textContent = avatar;
+  // Show/hide admin-only nav items
+  const display = user.is_admin ? 'flex' : 'none';
+  document.querySelectorAll('.admin-only').forEach(el => el.style.display = display);
 }
 
 function logout() {
@@ -3282,6 +3399,204 @@ function init() {
 }
 
 document.addEventListener('DOMContentLoaded', init);
+
+// ── Minha Conta ──────────────────────────────────────────────────────────
+function toggleAccountMenu() {
+  const menu = document.getElementById('accountMenu');
+  const isOpen = menu.style.display === 'block';
+  menu.style.display = isOpen ? 'none' : 'block';
+}
+
+document.addEventListener('click', function(e) {
+  const footer = document.querySelector('.sidebar-footer');
+  if (footer && !footer.contains(e.target)) {
+    const menu = document.getElementById('accountMenu');
+    if (menu) menu.style.display = 'none';
+  }
+});
+
+function openAccountModal(forceChange = false) {
+  const menu = document.getElementById('accountMenu');
+  if (menu) menu.style.display = 'none';
+  const user = (() => { try { return JSON.parse(localStorage.getItem('vendedor_user') || '{}'); } catch { return {}; } })();
+  document.getElementById('accEmail').value = user.email || '';
+  document.getElementById('accCurrentPwd').value = '';
+  document.getElementById('accNewPwd').value = '';
+  document.getElementById('accError').style.display = 'none';
+  const sub = document.getElementById('accountModalSub');
+  if (forceChange) {
+    sub.textContent = '⚠️ Você precisa criar uma nova senha antes de continuar';
+    sub.style.color = 'var(--yellow, #f59e0b)';
+  } else {
+    sub.textContent = 'Atualize suas credenciais de acesso';
+    sub.style.color = '';
+  }
+  document.getElementById('accountModal').dataset.force = forceChange ? '1' : '';
+  document.getElementById('accountModal').style.display = 'flex';
+}
+
+function closeAccountModal() {
+  if (document.getElementById('accountModal').dataset.force === '1') {
+    toast('Você precisa criar uma nova senha para continuar', 'error');
+    return;
+  }
+  document.getElementById('accountModal').style.display = 'none';
+}
+
+function saveAccount() {
+  const email = document.getElementById('accEmail').value.trim();
+  const currentPwd = document.getElementById('accCurrentPwd').value;
+  const newPwd = document.getElementById('accNewPwd').value;
+  const errEl = document.getElementById('accError');
+  const isForced = document.getElementById('accountModal').dataset.force === '1';
+
+  if (!email) { errEl.textContent = 'E-mail obrigatório'; errEl.style.display = 'block'; return; }
+  if (!currentPwd) { errEl.textContent = 'Senha atual obrigatória'; errEl.style.display = 'block'; return; }
+  if (isForced && !newPwd) { errEl.textContent = 'Crie uma nova senha para continuar'; errEl.style.display = 'block'; return; }
+  if (newPwd && newPwd.length < 6) { errEl.textContent = 'Nova senha: mínimo 6 caracteres'; errEl.style.display = 'block'; return; }
+
+  errEl.style.display = 'none';
+  const btn = document.querySelector('#accountModal button[onclick="saveAccount()"]');
+  if (btn) { btn.disabled = true; btn.textContent = 'Salvando...'; }
+
+  authFetch('/api/auth/me', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, current_password: currentPwd, ...(newPwd ? { new_password: newPwd } : {}) })
+  })
+  .then(r => r.json())
+  .then(d => {
+    if (d.ok) {
+      const user = (() => { try { return JSON.parse(localStorage.getItem('vendedor_user') || '{}'); } catch { return {}; } })();
+      user.email = email;
+      user.must_change_password = false;
+      localStorage.setItem('vendedor_user', JSON.stringify(user));
+      updateUserInfo(user);
+      document.getElementById('accountModal').dataset.force = '';
+      document.getElementById('accountModal').style.display = 'none';
+      toast('✓ Conta atualizada com sucesso', 'success');
+    } else {
+      errEl.textContent = d.error || 'Erro ao salvar';
+      errEl.style.display = 'block';
+    }
+  })
+  .catch(() => { errEl.textContent = 'Erro de conexão'; errEl.style.display = 'block'; })
+  .finally(() => { if (btn) { btn.disabled = false; btn.textContent = 'Salvar'; } });
+}
+
+// ── Admin — Usuários ─────────────────────────────────────────────────────
+function loadUsers() {
+  const wrap = document.getElementById('usersTableWrap');
+  if (!wrap) return;
+  authFetch('/api/auth/users')
+    .then(r => r.json())
+    .then(d => {
+      if (!d.ok || !d.users) { wrap.innerHTML = '<div style="color:var(--red);font-size:12px;padding:16px">Erro ao carregar usuários</div>'; return; }
+      if (d.users.length === 0) { wrap.innerHTML = '<div style="text-align:center;padding:24px;color:var(--t3);font-size:12px">Nenhum usuário cadastrado</div>'; return; }
+      const rows = d.users.map(u => `
+        <tr style="border-bottom:1px solid var(--b)">
+          <td style="padding:10px 12px;font-size:12px;color:var(--t)">
+            <div style="font-weight:600">${u.company_name || '—'}</div>
+            <div style="color:var(--t3);font-size:11px">${u.email}</div>
+          </td>
+          <td style="padding:10px 12px;font-size:11px;color:var(--t3)">${u.created_at ? new Date(u.created_at).toLocaleDateString('pt-BR') : '—'}</td>
+          <td style="padding:10px 12px">
+            ${u.is_admin ? '<span style="background:rgba(139,92,246,.15);color:var(--purple);padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700">Admin</span>' :
+              u.must_change_password ? '<span style="background:rgba(245,158,11,.15);color:#f59e0b;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700">Temp</span>' :
+              '<span style="background:rgba(16,185,129,.15);color:#10b981;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700">Ativo</span>'}
+          </td>
+          <td style="padding:10px 12px;text-align:right">
+            ${!u.is_admin ? `<button onclick="deleteUser('${u.email}')" style="background:rgba(239,68,68,.1);border:none;border-radius:6px;padding:4px 10px;color:var(--red);font-size:11px;cursor:pointer">Remover</button>` : ''}
+          </td>
+        </tr>`).join('');
+      wrap.innerHTML = `<table style="width:100%;border-collapse:collapse">
+        <thead><tr style="border-bottom:1px solid var(--b)">
+          <th style="padding:8px 12px;font-size:10.5px;color:var(--t3);font-weight:600;text-align:left">Cliente</th>
+          <th style="padding:8px 12px;font-size:10.5px;color:var(--t3);font-weight:600;text-align:left">Criado em</th>
+          <th style="padding:8px 12px;font-size:10.5px;color:var(--t3);font-weight:600;text-align:left">Status</th>
+          <th style="padding:8px 12px;font-size:10.5px;color:var(--t3);font-weight:600;text-align:right">Ações</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>`;
+    })
+    .catch(() => { wrap.innerHTML = '<div style="color:var(--red);font-size:12px;padding:16px">Erro de conexão</div>'; });
+}
+
+function deleteUser(email) {
+  if (!confirm(`Remover acesso de "${email}"?`)) return;
+  authFetch(`/api/auth/users/${encodeURIComponent(email)}`, { method: 'DELETE' })
+    .then(r => r.json())
+    .then(d => {
+      if (d.ok) { toast('✓ Usuário removido', 'success'); loadUsers(); }
+      else toast(d.error || 'Erro ao remover', 'error');
+    })
+    .catch(() => toast('Erro de conexão', 'error'));
+}
+
+function openCreateUserModal() {
+  document.getElementById('newUserCompany').value = '';
+  document.getElementById('newUserEmail').value = '';
+  document.getElementById('newUserPwd').value = '';
+  document.getElementById('createUserError').style.display = 'none';
+  document.getElementById('createUserResult').style.display = 'none';
+  document.getElementById('submitCreateUserBtn').style.display = '';
+  document.getElementById('cancelCreateUserBtn').textContent = 'Cancelar';
+  genTempPwd();
+  document.getElementById('createUserModal').style.display = 'flex';
+}
+
+function closeCreateUserModal() {
+  document.getElementById('createUserModal').style.display = 'none';
+}
+
+function genTempPwd() {
+  const chars = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#';
+  let pwd = '';
+  for (let i = 0; i < 10; i++) pwd += chars[Math.floor(Math.random() * chars.length)];
+  document.getElementById('newUserPwd').value = pwd;
+}
+
+function createUser() {
+  const company = document.getElementById('newUserCompany').value.trim();
+  const email = document.getElementById('newUserEmail').value.trim();
+  const password = document.getElementById('newUserPwd').value.trim();
+  const errEl = document.getElementById('createUserError');
+  if (!email) { errEl.textContent = 'E-mail obrigatório'; errEl.style.display = 'block'; return; }
+  if (!password) { errEl.textContent = 'Senha obrigatória'; errEl.style.display = 'block'; return; }
+  errEl.style.display = 'none';
+  const btn = document.getElementById('submitCreateUserBtn');
+  btn.disabled = true; btn.textContent = 'Criando...';
+
+  authFetch('/api/auth/create-user', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password, company_name: company })
+  })
+  .then(r => r.json())
+  .then(d => {
+    if (d.ok) {
+      const res = document.getElementById('createUserResult');
+      res.innerHTML = `<div style="font-weight:700;margin-bottom:8px;color:#10b981">✓ Acesso criado!</div>
+        <div style="font-size:11px;color:var(--t3);margin-bottom:4px">Envie estas credenciais ao cliente:</div>
+        <div style="background:var(--card);border-radius:6px;padding:10px;font-family:monospace;font-size:12px;line-height:1.8">
+          URL: <b>${window.location.origin}</b><br>
+          E-mail: <b>${email}</b><br>
+          Senha: <b>${password}</b>
+        </div>
+        <div style="font-size:10.5px;color:var(--t3);margin-top:8px">⚠️ O cliente será obrigado a criar uma nova senha no primeiro acesso.</div>`;
+      res.style.display = 'block';
+      btn.style.display = 'none';
+      document.getElementById('cancelCreateUserBtn').textContent = 'Fechar';
+      loadUsers();
+    } else {
+      errEl.textContent = d.error || 'Erro ao criar usuário';
+      errEl.style.display = 'block';
+      btn.disabled = false; btn.textContent = 'Criar Acesso';
+    }
+  })
+  .catch(() => { errEl.textContent = 'Erro de conexão'; errEl.style.display = 'block'; btn.disabled = false; btn.textContent = 'Criar Acesso'; });
+}
+
 </script>
 </body>
 </html>

@@ -635,7 +635,7 @@ const server = http.createServer(async (req, res) => {
     const token = generateToken();
     activeSessions[token] = { email: user.email, is_admin: user.is_admin, company_name: user.company_name, createdAt: Date.now() };
     saveActiveSessions();
-    return json(res, { ok: true, token, user: { email: user.email, is_admin: user.is_admin, company_name: user.company_name } });
+    return json(res, { ok: true, token, user: { email: user.email, is_admin: user.is_admin, company_name: user.company_name, must_change_password: !!user.must_change_password } });
   }
 
   if (req.method === 'GET' && pathname === '/api/auth/verify') {
@@ -651,9 +651,52 @@ const server = http.createServer(async (req, res) => {
     if (!email || !password) return json(res, { ok: false, error: 'E-mail e senha obrigatórios' }, 400);
     const usersData = loadJSON(USERS_FILE, { users: [] });
     if (usersData.users.find(u => u.email === email)) return json(res, { ok: false, error: 'E-mail já cadastrado' }, 409);
-    usersData.users.push({ email, password: hashPassword(password), is_admin: false, company_name: company_name || '', created_at: new Date().toISOString() });
+    usersData.users.push({ email, password: hashPassword(password), is_admin: false, company_name: company_name || '', created_at: new Date().toISOString(), must_change_password: true });
     saveJSON(USERS_FILE, usersData);
     return json(res, { ok: true, message: 'Usuário criado com sucesso' });
+  }
+
+  if (req.method === 'PATCH' && pathname === '/api/auth/me') {
+    const session = verifyToken(req);
+    if (!session) return json(res, { ok: false, error: 'Não autenticado' }, 401);
+    const { email, current_password, new_password } = await bodyJSON(req);
+    if (!email || !current_password) return json(res, { ok: false, error: 'E-mail e senha atual obrigatórios' }, 400);
+    const usersData = loadJSON(USERS_FILE, { users: [] });
+    const userIdx = usersData.users.findIndex(u => u.email === session.email && u.password === hashPassword(current_password));
+    if (userIdx === -1) return json(res, { ok: false, error: 'Senha atual incorreta' }, 401);
+    if (new_password) {
+      if (new_password.length < 6) return json(res, { ok: false, error: 'Nova senha deve ter no mínimo 6 caracteres' }, 400);
+      usersData.users[userIdx].password = hashPassword(new_password);
+    }
+    usersData.users[userIdx].email = email;
+    usersData.users[userIdx].must_change_password = false;
+    saveJSON(USERS_FILE, usersData);
+    // Update active session email
+    const token = (req.headers.authorization || '').replace('Bearer ', '');
+    if (activeSessions[token]) { activeSessions[token].email = email; saveActiveSessions(); }
+    return json(res, { ok: true, message: 'Conta atualizada' });
+  }
+
+  if (req.method === 'GET' && pathname === '/api/auth/users') {
+    const session = verifyToken(req);
+    if (!session || !session.is_admin) return json(res, { ok: false, error: 'Acesso negado' }, 403);
+    const usersData = loadJSON(USERS_FILE, { users: [] });
+    const safe = usersData.users.map(u => ({ email: u.email, company_name: u.company_name || '', is_admin: !!u.is_admin, created_at: u.created_at || '', must_change_password: !!u.must_change_password }));
+    return json(res, { ok: true, users: safe });
+  }
+
+  if (req.method === 'DELETE' && pathname.startsWith('/api/auth/users/')) {
+    const session = verifyToken(req);
+    if (!session || !session.is_admin) return json(res, { ok: false, error: 'Acesso negado' }, 403);
+    const targetEmail = decodeURIComponent(pathname.replace('/api/auth/users/', ''));
+    if (!targetEmail) return json(res, { ok: false, error: 'E-mail obrigatório' }, 400);
+    if (targetEmail === session.email) return json(res, { ok: false, error: 'Não é possível remover sua própria conta' }, 400);
+    const usersData = loadJSON(USERS_FILE, { users: [] });
+    const before = usersData.users.length;
+    usersData.users = usersData.users.filter(u => u.email !== targetEmail);
+    if (usersData.users.length === before) return json(res, { ok: false, error: 'Usuário não encontrado' }, 404);
+    saveJSON(USERS_FILE, usersData);
+    return json(res, { ok: true, message: 'Usuário removido' });
   }
 
   // ── BUSINESS PROFILE ────────────────────────────────────────────────────
