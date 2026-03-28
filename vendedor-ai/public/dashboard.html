@@ -738,7 +738,7 @@ tbody tr:last-child td{border-bottom:none}
       <div class="nav-item" id="nav-instagram" style="display:none">
         <span class="nav-icon">📷</span><span>Conta Instagram</span>
       </div>
-      <div class="nav-item" onclick="navigate('schedule')" id="nav-schedule" style="display:none" data-advanced="true">
+      <div class="nav-item" onclick="navigate('schedule')" id="nav-schedule">
         <span class="nav-icon">⏰</span><span>Agendamento</span>
       </div>
       <div class="nav-section-label admin-only" style="display:none">Admin</div>
@@ -803,26 +803,57 @@ tbody tr:last-child td{border-bottom:none}
     </div>
 
     <!-- MODAL CRIAR USUÁRIO (admin) -->
-    <div id="createUserModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9998;align-items:center;justify-content:center">
-      <div style="background:var(--bg-el);border:1px solid var(--b);border-radius:14px;padding:28px;width:380px;max-width:90vw">
+    <div id="createUserModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9998;align-items:center;justify-content:center;overflow-y:auto;padding:16px 0">
+      <div style="background:var(--bg-el);border:1px solid var(--b);border-radius:14px;padding:28px;width:440px;max-width:90vw">
         <div style="font-size:15px;font-weight:700;color:var(--t);margin-bottom:4px">Novo Cliente</div>
         <div style="font-size:11px;color:var(--t3);margin-bottom:20px">As credenciais temporárias serão exibidas uma única vez</div>
         <div style="display:flex;flex-direction:column;gap:12px">
+
+          <div style="font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.06em;padding-bottom:2px;border-bottom:1px solid var(--b)">Dados de Acesso</div>
+
           <div>
-            <label style="font-size:10.5px;color:var(--t3);display:block;margin-bottom:3px">Nome da empresa</label>
+            <label style="font-size:10.5px;color:var(--t3);display:block;margin-bottom:3px">Nome da empresa *</label>
             <input id="newUserCompany" type="text" placeholder="Ex: Agência Fulano" style="width:100%;background:var(--card);border:1px solid var(--b);border-radius:6px;padding:8px 10px;color:var(--t);font-size:12px">
           </div>
           <div>
-            <label style="font-size:10.5px;color:var(--t3);display:block;margin-bottom:3px">E-mail</label>
+            <label style="font-size:10.5px;color:var(--t3);display:block;margin-bottom:3px">E-mail *</label>
             <input id="newUserEmail" type="email" placeholder="cliente@empresa.com" style="width:100%;background:var(--card);border:1px solid var(--b);border-radius:6px;padding:8px 10px;color:var(--t);font-size:12px">
           </div>
           <div>
-            <label style="font-size:10.5px;color:var(--t3);display:block;margin-bottom:3px">Senha temporária</label>
+            <label style="font-size:10.5px;color:var(--t3);display:block;margin-bottom:3px">Senha temporária *</label>
             <div style="display:flex;gap:6px">
               <input id="newUserPwd" type="text" placeholder="Gerada automaticamente" style="flex:1;background:var(--card);border:1px solid var(--b);border-radius:6px;padding:8px 10px;color:var(--t);font-size:12px">
               <button onclick="genTempPwd()" title="Gerar senha" style="background:var(--card);border:1px solid var(--b);border-radius:6px;padding:8px 10px;color:var(--t2);font-size:12px;cursor:pointer;white-space:nowrap">⟳ Gerar</button>
             </div>
           </div>
+
+          <div style="font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.06em;padding-top:4px;padding-bottom:2px;border-bottom:1px solid var(--b)">Dados Comerciais</div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <div>
+              <label style="font-size:10.5px;color:var(--t3);display:block;margin-bottom:3px">Telefone / WhatsApp</label>
+              <input id="newUserPhone" type="text" placeholder="+55 11 99999-0000" style="width:100%;background:var(--card);border:1px solid var(--b);border-radius:6px;padding:8px 10px;color:var(--t);font-size:12px">
+            </div>
+            <div>
+              <label style="font-size:10.5px;color:var(--t3);display:block;margin-bottom:3px">Plano</label>
+              <select id="newUserPlan" style="width:100%;background:var(--card);border:1px solid var(--b);border-radius:6px;padding:8px 10px;color:var(--t);font-size:12px">
+                <option value="">Selecionar...</option>
+                <option value="starter">Starter</option>
+                <option value="pro">Pro</option>
+                <option value="enterprise">Enterprise</option>
+                <option value="custom">Personalizado</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <label style="font-size:10.5px;color:var(--t3);display:block;margin-bottom:3px">Valor do contrato (R$)</label>
+            <input id="newUserContractValue" type="text" placeholder="Ex: 497,00 / mês" style="width:100%;background:var(--card);border:1px solid var(--b);border-radius:6px;padding:8px 10px;color:var(--t);font-size:12px">
+          </div>
+          <div>
+            <label style="font-size:10.5px;color:var(--t3);display:block;margin-bottom:3px">Observações internas</label>
+            <textarea id="newUserNotes" placeholder="Notas sobre onboarding, preferências, histórico de contato..." rows="3" style="width:100%;background:var(--card);border:1px solid var(--b);border-radius:6px;padding:8px 10px;color:var(--t);font-size:12px;resize:vertical"></textarea>
+          </div>
+
           <div id="createUserResult" style="display:none;background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.3);border-radius:8px;padding:12px;font-size:12px;color:var(--t)"></div>
           <div id="createUserError" style="display:none;font-size:11px;color:var(--red);padding:8px 10px;background:rgba(239,68,68,.08);border-radius:6px"></div>
           <div style="display:flex;gap:8px;margin-top:4px">
@@ -1669,11 +1700,11 @@ tbody tr:last-child td{border-bottom:none}
             <div class="guide-flow-arrow">→</div>
             <div class="guide-flow-step">✍️ Mensagem<br><span style="font-size:9px;color:var(--t3)">cria DM única</span></div>
             <div class="guide-flow-arrow">→</div>
-            <div class="guide-flow-step">📤 Envio<br><span style="font-size:9px;color:var(--t3)">manda a DM</span></div>
+            <div class="guide-flow-step">💾 CRM<br><span style="font-size:9px;color:var(--t3)">salva tudo</span></div>
             <div class="guide-flow-arrow">→</div>
-            <div class="guide-flow-step">📊 Resultado<br><span style="font-size:9px;color:var(--t3)">acompanhe</span></div>
+            <div class="guide-flow-step">📬 Envio Manual<br><span style="font-size:9px;color:var(--t3)">você decide</span></div>
           </div>
-          <p style="font-size:12px;color:var(--t2);line-height:1.6">O <strong style="color:var(--t)">Autopilot</strong> faz tudo isso automaticamente com <strong style="color:var(--purple-xl)">um único clique</strong>. Você só precisa revisar as mensagens antes do envio.</p>
+          <p style="font-size:12px;color:var(--t2);line-height:1.6">O <strong style="color:var(--t)">Autopilot</strong> executa as etapas automáticas com <strong style="color:var(--purple-xl)">um único clique</strong>. Você revisa as mensagens geradas e as envia quando e como quiser — <strong style="color:var(--t)">o envio é sempre manual</strong>, pelo próprio Instagram.</p>
         </div>
 
         <div class="guide-grid">
@@ -1703,11 +1734,12 @@ tbody tr:last-child td{border-bottom:none}
             </div>
             <div class="guide-steps">
               <div class="guide-step"><span>①</span><span>Vá ao <strong>Painel Principal</strong> (tela inicial)</span></div>
-              <div class="guide-step"><span>②</span><span>Clique no botão <strong style="color:var(--purple-xl)">⚡ Iniciar Autopilot</strong> — o sistema encontra leads, analisa e gera mensagens automaticamente</span></div>
+              <div class="guide-step"><span>②</span><span>Clique no botão <strong style="color:var(--purple-xl)">⚡ Iniciar Autopilot</strong> — o sistema busca negócios no Google Maps, analisa perfis no Instagram e gera mensagens personalizadas automaticamente</span></div>
               <div class="guide-step"><span>③</span><span>Aguarde <strong>5 a 15 minutos</strong> — acompanhe o progresso em tempo real no painel</span></div>
-              <div class="guide-step"><span>④</span><span>Quando terminar, os leads aparecem no <strong>CRM</strong> e as DMs ficam na <strong>Fila de DMs</strong> prontas para revisão</span></div>
+              <div class="guide-step"><span>④</span><span>Quando terminar, os leads aparecem no <strong>CRM</strong> com score e as DMs ficam na <strong>Fila de DMs</strong> prontas para revisão</span></div>
+              <div class="guide-step"><span>⑤</span><span>Revise as mensagens, copie as que aprovar e <strong>envie manualmente pelo Instagram</strong> para cada lead</span></div>
             </div>
-            <div class="guide-tip"><strong>💡 Dica:</strong> Recomendamos rodar o Autopilot <strong>uma vez por dia</strong>. Mais que isso pode gerar restrições no Instagram.</div>
+            <div class="guide-tip"><strong>💡 Dica:</strong> Recomendamos rodar o Autopilot <strong>uma vez por dia</strong>. Mais que isso pode sobrecarregar a coleta e gerar leads duplicados.</div>
           </div>
 
           <!-- CARD 3 — ANALISAR PERFIL ESPECÍFICO -->
@@ -1731,16 +1763,16 @@ tbody tr:last-child td{border-bottom:none}
             <div class="guide-card-header">
               <div class="guide-step-num">4</div>
               <div class="guide-card-icon">💬</div>
-              <div><div class="guide-card-title">Revisar e Enviar DMs</div><div class="guide-card-sub">Controle total sobre suas mensagens</div></div>
+              <div><div class="guide-card-title">Revisar e Enviar DMs</div><div class="guide-card-sub">Você controla quando e como enviar</div></div>
             </div>
             <div class="guide-steps">
-              <div class="guide-step"><span>①</span><span>Após o Autopilot rodar, vá à <strong>Fila de DMs</strong> para ver as mensagens geradas</span></div>
-              <div class="guide-step"><span>②</span><span><strong>Revise cada mensagem</strong> antes de enviar — a IA personaliza mas sua aprovação é essencial</span></div>
-              <div class="guide-step"><span>③</span><span>Não gostou de uma mensagem? Clique em <strong style="color:var(--cyan)">🔄 Regenerar</strong> para a IA criar uma nova versão</span></div>
-              <div class="guide-step"><span>④</span><span>Clique em <strong>⚡ Enviar</strong> para enviar individualmente ou <strong>Enviar Fila Completa</strong> para todas</span></div>
-              <div class="guide-step"><span>⑤</span><span>O envio é automático e seguro: o sistema espera <strong>3–8 minutos entre cada DM</strong></span></div>
+              <div class="guide-step"><span>①</span><span>Após o Autopilot terminar, vá à <strong>Fila de DMs</strong> para ver todas as mensagens geradas</span></div>
+              <div class="guide-step"><span>②</span><span><strong>Leia cada mensagem</strong> — a IA personaliza com base no perfil do lead, mas você tem a palavra final</span></div>
+              <div class="guide-step"><span>③</span><span>Não gostou? Clique em <strong style="color:var(--cyan)">🔄 Regenerar</strong> para a IA criar uma nova versão</span></div>
+              <div class="guide-step"><span>④</span><span>Clique no <strong>↗ link do perfil</strong> para abrir o Instagram do lead em uma nova aba</span></div>
+              <div class="guide-step"><span>⑤</span><span>Copie a mensagem e <strong>envie manualmente pelo Instagram</strong> — você tem controle total sobre o que sai</span></div>
             </div>
-            <div style="margin-top:12px;padding:9px 12px;background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.2);border-radius:8px;font-size:11px;color:var(--amber);line-height:1.5"><strong>⚠️ Limite de segurança:</strong> Máximo 20 DMs por dia para proteger sua conta do Instagram.</div>
+            <div style="margin-top:12px;padding:9px 12px;background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.2);border-radius:8px;font-size:11px;color:var(--amber);line-height:1.5"><strong>⚠️ Boas práticas:</strong> Recomendamos enviar no máximo 20 DMs por dia pelo Instagram para preservar sua conta. Distribua ao longo do dia.</div>
           </div>
 
           <!-- CARD 5 — CRM -->
@@ -1810,38 +1842,6 @@ tbody tr:last-child td{border-bottom:none}
             <div style="margin-top:10px;padding:9px 12px;background:rgba(124,58,237,.07);border:1px solid rgba(124,58,237,.2);border-radius:8px;font-size:11px;color:var(--purple-xl);line-height:1.5">🔒 Seu token Notion é <strong>privado</strong> — nunca é compartilhado com terceiros. Fica armazenado apenas no seu servidor.</div>
           </div>
 
-          <!-- CARD 9 — PRISMATIC CONNECT (EXTENSÃO) -->
-          <div class="card guide-card" style="grid-column:span 2">
-            <div class="guide-card-header">
-              <div class="guide-step-num">8</div>
-              <div class="guide-card-icon">🔌</div>
-              <div><div class="guide-card-title">Extensão Prismatic Connect</div><div class="guide-card-sub">Sincronização automática da sessão Instagram — instale uma vez, esqueça para sempre</div></div>
-            </div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:4px">
-              <div>
-                <div style="font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px">Como instalar</div>
-                <div class="guide-steps">
-                  <div class="guide-step"><span>①</span><span>Baixe a extensão com o arquivo que recebeu da Prismatic Labs</span></div>
-                  <div class="guide-step"><span>②</span><span>Abra o Chrome e acesse <strong>chrome://extensions</strong></span></div>
-                  <div class="guide-step"><span>③</span><span>Ative o <strong>Modo desenvolvedor</strong> (canto superior direito)</span></div>
-                  <div class="guide-step"><span>④</span><span>Clique em <strong>Carregar sem compactação</strong> e selecione a pasta <code style="background:rgba(255,255,255,.06);padding:1px 5px;border-radius:4px;font-size:10px">chrome-extension</code></span></div>
-                  <div class="guide-step"><span>⑤</span><span>O ícone <strong>P</strong> da Prismatic Connect vai aparecer na barra do Chrome</span></div>
-                </div>
-              </div>
-              <div>
-                <div style="font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px">Como configurar (só uma vez)</div>
-                <div class="guide-steps">
-                  <div class="guide-step"><span>①</span><span>Clique no ícone <strong>P</strong> e depois no <strong>⚙ ícone de configurações</strong></span></div>
-                  <div class="guide-step"><span>②</span><span>Preencha a <strong>URL da VPS</strong> (ex: http://72.61.33.60:3131)</span></div>
-                  <div class="guide-step"><span>③</span><span>Digite seu <strong>e-mail e senha</strong> do dashboard e clique em <strong>Salvar e Conectar</strong></span></div>
-                  <div class="guide-step"><span>④</span><span>Pronto — a extensão começa a sincronizar automaticamente</span></div>
-                </div>
-              </div>
-            </div>
-            <div class="guide-tip" style="margin-top:14px"><strong>⚡ Como funciona:</strong> A extensão detecta automaticamente quando você está logado no Instagram no Chrome e sincroniza a sessão com o Vendedor AI em segundo plano. Você <strong>não precisa fazer nada</strong> — só usar o Instagram normalmente. A sessão nunca expira enquanto você usar o Instagram pelo menos uma vez por semana.</div>
-            <div class="guide-warning"><strong>📌 Requisito:</strong> A extensão precisa estar instalada no <strong>mesmo navegador Chrome</strong> onde você usa o Instagram. Funciona apenas no Chrome (Windows e Mac).</div>
-          </div>
-
           <!-- CARD 9 — PERGUNTAS FREQUENTES -->
           <div class="card guide-card" style="grid-column:span 2">
             <div class="guide-card-header">
@@ -1851,15 +1851,15 @@ tbody tr:last-child td{border-bottom:none}
             <div class="guide-faq">
               <div class="guide-faq-item">
                 <div class="guide-faq-q">O que é o Autopilot?</div>
-                <div class="guide-faq-a">É o modo automático do Vendedor AI. Com um clique, ele busca potenciais clientes no Instagram, analisa cada perfil com IA, e gera mensagens personalizadas. Você só precisa revisar e aprovar o envio.</div>
+                <div class="guide-faq-a">É o modo automático do Vendedor AI. Com um clique, ele busca negócios no Google Maps, encontra seus perfis no Instagram, analisa cada um com IA e gera mensagens personalizadas. Você revisa as mensagens na Fila de DMs e as envia manualmente pelo Instagram quando quiser.</div>
               </div>
               <div class="guide-faq-item">
                 <div class="guide-faq-q">Quantas DMs posso enviar por dia?</div>
-                <div class="guide-faq-a">O sistema envia até 20 DMs por dia com intervalos de 3–8 minutos entre cada uma. Esse limite protege sua conta do Instagram contra bloqueios. Não recomendamos alterar esse limite.</div>
+                <div class="guide-faq-a">O envio é feito por você, manualmente, pelo Instagram. Por segurança, recomendamos no máximo 20 DMs por dia — distribute ao longo do dia para parecer mais natural. Não existe limite técnico no sistema, mas respeitar esse volume protege sua conta.</div>
               </div>
               <div class="guide-faq-item">
                 <div class="guide-faq-q">Minha conta do Instagram pode ser bloqueada?</div>
-                <div class="guide-faq-a">O Vendedor AI tem múltiplas camadas de proteção: delays humanizados, limite diário, e pausas automáticas. Seguindo as recomendações (máx. 20 DMs/dia, 1 execução do Autopilot/dia), o risco é mínimo.</div>
+                <div class="guide-faq-a">O Vendedor AI usa delays humanizados na coleta e nunca envia mensagens automaticamente, o que reduz o risco. Seguindo as recomendações (máx. 20 DMs/dia enviadas manualmente, 1 execução do Autopilot/dia), o risco é mínimo.</div>
               </div>
               <div class="guide-faq-item">
                 <div class="guide-faq-q">As mensagens parecem escritas por IA?</div>
@@ -1880,10 +1880,6 @@ tbody tr:last-child td{border-bottom:none}
               <div class="guide-faq-item">
                 <div class="guide-faq-q">Como definir o Limite de Segurança?</div>
                 <div class="guide-faq-a">O Limite de Segurança define quantos perfis o sistema vai checar antes de desistir, caso não encontre leads suficientes. A regra prática é multiplicar a cota de leads pela dificuldade do nicho: <strong>3–5×</strong> para nichos populares ("salão de beleza"), <strong>10–15×</strong> para nichos médios ("clínica de estética"), <strong>20–50×</strong> para nichos raros ("importadora de café especial"). Exemplo: quer 5 leads qualificados em um nicho médio? Coloque limite 50–75. Um indicador de cor aparece automaticamente abaixo do campo — verde = bom, amarelo = apertado, vermelho = insuficiente.</div>
-              </div>
-              <div class="guide-faq-item">
-                <div class="guide-faq-q">Como renovar a sessão do Instagram?</div>
-                <div class="guide-faq-a">Com a extensão <strong>Prismatic Connect</strong> instalada no Chrome, isso acontece <strong>automaticamente</strong> — sem nenhuma ação sua. A extensão detecta quando o Instagram renova o login e sincroniza com o sistema em segundo plano. Se não tiver a extensão, vá em <strong>Conta Instagram → Colar Session ID</strong> e siga as instruções na tela.</div>
               </div>
             </div>
           </div>
@@ -2950,7 +2946,8 @@ function triggerAutopilot() {
       if (d.ok) {
         btn.classList.add('running');
         btn.disabled = false;
-        btn.textContent = '⏸ Em execução...';
+        btn.textContent = '⏹ Parar Autopilot';
+        btn.onclick = stopAutopilot;
         statusEl.innerHTML = '<span class="ah-dot running"></span>&nbsp;Executando — aguarde 10–15 min';
         document.getElementById('systemStatus').textContent = 'Autopilot ativo';
         document.getElementById('autopilotTimeline').style.display = 'block';
@@ -3025,10 +3022,30 @@ function resetAutopilotHero() {
   btn.className = 'ah-btn';
   btn.disabled = false;
   btn.textContent = '⚡ Iniciar Autopilot';
+  btn.onclick = triggerAutopilot;
   const statusEl = document.getElementById('ahStatus');
   if (statusEl) statusEl.innerHTML = '<span class="ah-dot done"></span>&nbsp;Último run concluído';
   const sysStatus = document.getElementById('systemStatus');
   if (sysStatus) sysStatus.textContent = 'Sistema operacional';
+}
+function stopAutopilot() {
+  const btn = document.getElementById('ahBtn');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Parando...'; }
+  authFetch('/api/autopilot/stop', { method: 'POST' })
+    .then(r => r.json())
+    .then(d => {
+      if (_autopilotPollTimer) { clearInterval(_autopilotPollTimer); _autopilotPollTimer = null; }
+      document.getElementById('autopilotTimeline').style.display = 'none';
+      resetAutopilotHero();
+      toast('Autopilot parado manualmente', 'info');
+      addLog('AUTOPILOT', '⏹ Parado pelo usuário', 'err');
+    })
+    .catch(() => {
+      if (_autopilotPollTimer) { clearInterval(_autopilotPollTimer); _autopilotPollTimer = null; }
+      document.getElementById('autopilotTimeline').style.display = 'none';
+      resetAutopilotHero();
+      toast('Autopilot interrompido', 'info');
+    });
 }
 
 // ── Settings ──
@@ -3578,6 +3595,11 @@ function loadUsers() {
           <td style="padding:10px 12px;font-size:12px;color:var(--t)">
             <div style="font-weight:600">${u.company_name || '—'}</div>
             <div style="color:var(--t3);font-size:11px">${u.email}</div>
+            ${u.phone ? `<div style="color:var(--t3);font-size:10.5px;margin-top:1px">📞 ${u.phone}</div>` : ''}
+          </td>
+          <td style="padding:10px 12px;font-size:11px;color:var(--t2)">
+            ${u.plan ? `<div style="font-weight:600;text-transform:capitalize">${u.plan}</div>` : '<div style="color:var(--t3)">—</div>'}
+            ${u.contract_value ? `<div style="color:var(--t3);font-size:10.5px">R$ ${u.contract_value}</div>` : ''}
           </td>
           <td style="padding:10px 12px;font-size:11px;color:var(--t3)">${u.created_at ? new Date(u.created_at).toLocaleDateString('pt-BR') : '—'}</td>
           <td style="padding:10px 12px">
@@ -3592,6 +3614,7 @@ function loadUsers() {
       wrap.innerHTML = `<table style="width:100%;border-collapse:collapse">
         <thead><tr style="border-bottom:1px solid var(--b)">
           <th style="padding:8px 12px;font-size:10.5px;color:var(--t3);font-weight:600;text-align:left">Cliente</th>
+          <th style="padding:8px 12px;font-size:10.5px;color:var(--t3);font-weight:600;text-align:left">Plano</th>
           <th style="padding:8px 12px;font-size:10.5px;color:var(--t3);font-weight:600;text-align:left">Criado em</th>
           <th style="padding:8px 12px;font-size:10.5px;color:var(--t3);font-weight:600;text-align:left">Status</th>
           <th style="padding:8px 12px;font-size:10.5px;color:var(--t3);font-weight:600;text-align:right">Ações</th>
@@ -3617,6 +3640,10 @@ function openCreateUserModal() {
   document.getElementById('newUserCompany').value = '';
   document.getElementById('newUserEmail').value = '';
   document.getElementById('newUserPwd').value = '';
+  document.getElementById('newUserPhone').value = '';
+  document.getElementById('newUserPlan').value = '';
+  document.getElementById('newUserContractValue').value = '';
+  document.getElementById('newUserNotes').value = '';
   document.getElementById('createUserError').style.display = 'none';
   document.getElementById('createUserResult').style.display = 'none';
   document.getElementById('submitCreateUserBtn').style.display = '';
@@ -3640,6 +3667,10 @@ function createUser() {
   const company = document.getElementById('newUserCompany').value.trim();
   const email = document.getElementById('newUserEmail').value.trim();
   const password = document.getElementById('newUserPwd').value.trim();
+  const phone = document.getElementById('newUserPhone').value.trim();
+  const plan = document.getElementById('newUserPlan').value.trim();
+  const contract_value = document.getElementById('newUserContractValue').value.trim();
+  const notes = document.getElementById('newUserNotes').value.trim();
   const errEl = document.getElementById('createUserError');
   if (!email) { errEl.textContent = 'E-mail obrigatório'; errEl.style.display = 'block'; return; }
   if (!password) { errEl.textContent = 'Senha obrigatória'; errEl.style.display = 'block'; return; }
@@ -3650,7 +3681,7 @@ function createUser() {
   authFetch('/api/auth/create-user', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password, company_name: company })
+    body: JSON.stringify({ email, password, company_name: company, phone, plan, contract_value, notes })
   })
   .then(r => r.json())
   .then(d => {

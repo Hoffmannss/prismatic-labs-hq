@@ -14,8 +14,8 @@ const DEFAULT_CONFIG = {
   version: '2.0.0',
   active: false,
   nicho: '',
-  quantidade_leads: 20,
-  max_analyze: 10,
+  quantidade_leads: 5,
+  max_analyze: 50,
   search_mode: 'gmb',         // 'gmb' (Google Maps) ou 'hashtag' (Instagram)
   search_city: 'São Paulo',   // Cidade para busca GMB
   schedule: {

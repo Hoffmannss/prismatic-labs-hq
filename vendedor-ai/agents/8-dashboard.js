@@ -342,11 +342,9 @@ const server = http.createServer(async (req, res) => {
       return json(res, { ok: false, error: 'Nenhum nicho configurado' }, 400);
     }
 
-    // Limpa status anterior e inicia autopilot em processo separado
-    try {
-      const apStatusFile = uFile(req.userSession, 'autopilot-status.json');
-      fs.writeFileSync(apStatusFile, JSON.stringify({ status: 'running', startedAt: new Date().toISOString() }));
-    } catch {}
+    // Inicia autopilot e persiste PID para poder parar depois
+    const apStatusFile = uFile(req.userSession, 'autopilot-status.json');
+    try { saveJSON(apStatusFile, { status: 'running', startedAt: new Date().toISOString() }); } catch {}
     setTimeout(() => {
       const child = spawn('node', [path.join(__dirname, '10-autopilot.js')], {
         detached: true,
@@ -354,6 +352,7 @@ const server = http.createServer(async (req, res) => {
         cwd: __dirname,
         env: process.env
       });
+      try { saveJSON(apStatusFile, { status: 'running', startedAt: new Date().toISOString(), pid: child.pid }); } catch {}
       child.unref();
     }, 100);
 
@@ -366,6 +365,16 @@ const server = http.createServer(async (req, res) => {
         max_analyze: config.max_analyze
       }
     });
+  }
+
+  if (req.method === 'POST' && pathname === '/api/autopilot/stop') {
+    const apStatusFile = uFile(req.userSession, 'autopilot-status.json');
+    const status = loadJSON(apStatusFile, {});
+    if (status.pid) {
+      try { process.kill(status.pid, 'SIGTERM'); } catch {}
+    }
+    saveJSON(apStatusFile, { status: 'stopped', stoppedAt: new Date().toISOString() });
+    return json(res, { ok: true, message: 'Autopilot parado' });
   }
 
   if (req.method === 'POST' && pathname === '/api/autopilot/toggle') {
@@ -698,11 +707,22 @@ const server = http.createServer(async (req, res) => {
   if (req.method === 'POST' && pathname === '/api/auth/create-user') {
     const session = verifyToken(req);
     if (!session || !session.is_admin) return json(res, { ok: false, error: 'Acesso negado' }, 403);
-    const { email, password, company_name } = await bodyJSON(req);
+    const { email, password, company_name, phone, plan, contract_value, notes } = await bodyJSON(req);
     if (!email || !password) return json(res, { ok: false, error: 'E-mail e senha obrigatórios' }, 400);
     const usersData = loadJSON(USERS_FILE, { users: [] });
     if (usersData.users.find(u => u.email === email)) return json(res, { ok: false, error: 'E-mail já cadastrado' }, 409);
-    usersData.users.push({ email, password: hashPassword(password), is_admin: false, company_name: company_name || '', created_at: new Date().toISOString(), must_change_password: true });
+    usersData.users.push({
+      email,
+      password: hashPassword(password),
+      is_admin: false,
+      company_name: company_name || '',
+      phone: phone || '',
+      plan: plan || '',
+      contract_value: contract_value || '',
+      notes: notes || '',
+      created_at: new Date().toISOString(),
+      must_change_password: true
+    });
     saveJSON(USERS_FILE, usersData);
     return json(res, { ok: true, message: 'Usuário criado com sucesso' });
   }
@@ -732,7 +752,17 @@ const server = http.createServer(async (req, res) => {
     const session = verifyToken(req);
     if (!session || !session.is_admin) return json(res, { ok: false, error: 'Acesso negado' }, 403);
     const usersData = loadJSON(USERS_FILE, { users: [] });
-    const safe = usersData.users.map(u => ({ email: u.email, company_name: u.company_name || '', is_admin: !!u.is_admin, created_at: u.created_at || '', must_change_password: !!u.must_change_password }));
+    const safe = usersData.users.map(u => ({
+      email: u.email,
+      company_name: u.company_name || '',
+      phone: u.phone || '',
+      plan: u.plan || '',
+      contract_value: u.contract_value || '',
+      notes: u.notes || '',
+      is_admin: !!u.is_admin,
+      created_at: u.created_at || '',
+      must_change_password: !!u.must_change_password
+    }));
     return json(res, { ok: true, users: safe });
   }
 
