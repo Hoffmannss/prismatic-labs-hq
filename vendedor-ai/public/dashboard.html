@@ -911,14 +911,15 @@ tbody tr:last-child td{border-bottom:none}
           <div style="display:flex;gap:10px;align-items:end;flex-wrap:wrap;margin-top:8px">
             <div style="flex:1;min-width:120px">
               <label style="font-size:10.5px;color:var(--t3);display:block;margin-bottom:3px">Leads qualificados <span class="detail-btn">?<span class="detail-tooltip">Quantos leads bons o sistema deve encontrar por rodada. Ele analisa perfis um a um até bater essa cota.</span></span></label>
-              <input type="number" id="gmb-quantidade" value="5" min="1" max="100" style="width:100%;background:var(--card);border:1px solid var(--b);border-radius:6px;padding:7px 10px;color:var(--t);font-size:12px">
+              <input type="number" id="gmb-quantidade" value="5" min="1" max="100" oninput="updateLimitHint()" style="width:100%;background:var(--card);border:1px solid var(--b);border-radius:6px;padding:7px 10px;color:var(--t);font-size:12px">
             </div>
             <div style="flex:1;min-width:120px">
-              <label style="font-size:10.5px;color:var(--t3);display:block;margin-bottom:3px">Limite de segurança <span class="detail-btn">?<span class="detail-tooltip">Máximo de perfis que o sistema vai verificar antes de parar. Se o nicho for difícil, aumente este número.</span></span></label>
-              <input type="number" id="gmb-max-analyze" value="50" min="5" max="500" style="width:100%;background:var(--card);border:1px solid var(--b);border-radius:6px;padding:7px 10px;color:var(--t);font-size:12px">
+              <label style="font-size:10.5px;color:var(--t3);display:block;margin-bottom:3px">Limite de segurança <span class="detail-btn">?<span class="detail-tooltip">Máximo de perfis analisados antes de parar. Nichos fáceis: 3–5× a cota. Nichos difíceis: 20–50×.</span></span></label>
+              <input type="number" id="gmb-max-analyze" value="50" min="5" max="500" oninput="updateLimitHint()" style="width:100%;background:var(--card);border:1px solid var(--b);border-radius:6px;padding:7px 10px;color:var(--t);font-size:12px">
             </div>
             <button onclick="saveGMBConfig()" style="background:var(--purple);color:#fff;border:none;border-radius:6px;padding:7px 14px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap">💾 Salvar</button>
           </div>
+          <div id="limitHint" style="margin-top:6px;font-size:10.5px;padding:6px 10px;background:rgba(139,92,246,.07);border-radius:6px;color:var(--t3);display:none"></div>
           <div id="gmbSaveStatus" style="margin-top:6px;font-size:10.5px;color:var(--t3)"></div>
         </div>
 
@@ -2848,7 +2849,40 @@ async function loadGMBConfig() {
     if (qtdEl) qtdEl.value = cfg.quantidade_leads || 5;
     if (maxEl) maxEl.value = cfg.max_analyze || 50;
     toggleCityField();
+    updateLimitHint();
   } catch {}
+}
+
+function updateLimitHint() {
+  const quota = parseInt(document.getElementById('gmb-quantidade')?.value || '5', 10);
+  const limit = parseInt(document.getElementById('gmb-max-analyze')?.value || '50', 10);
+  const hint  = document.getElementById('limitHint');
+  if (!hint || isNaN(quota) || isNaN(limit)) return;
+
+  const ratio = limit / quota;
+  let msg = '';
+  let color = 'var(--t3)';
+
+  if (limit < quota) {
+    msg = `⚠️ Limite menor que a cota — o sistema vai parar antes de encontrar os ${quota} leads.`;
+    color = 'var(--red, #ef4444)';
+  } else if (ratio < 3) {
+    msg = `⚠️ Limite apertado (${ratio.toFixed(1)}× a cota) — adequado só para nichos muito fáceis.`;
+    color = '#f59e0b';
+  } else if (ratio <= 10) {
+    msg = `✓ Bom para nichos comuns — analisa até ${limit} perfis para encontrar ${quota} leads qualificados.`;
+    color = '#10b981';
+  } else if (ratio <= 30) {
+    msg = `✓ Ideal para nichos difíceis — o sistema vai procurar bastante até achar os ${quota} certos.`;
+    color = '#10b981';
+  } else {
+    msg = `ℹ️ Limite alto (${limit} perfis) — use só se o nicho for muito específico ou raro.`;
+    color = 'var(--t3)';
+  }
+
+  hint.textContent = msg;
+  hint.style.color = color;
+  hint.style.display = msg ? 'block' : 'none';
 }
 
 function saveGMBConfig() {
@@ -3172,19 +3206,14 @@ function doLogin() {
       if (d.ok && d.token) {
         localStorage.setItem('vendedor_token', d.token);
         localStorage.setItem('vendedor_user', JSON.stringify(d.user || {}));
-        document.getElementById('loginOverlay').style.display = 'none';
-        if (d.user?.is_admin) document.body.classList.add('is-admin');
-        updateUserInfo(d.user);
-        toast('✓ Bem-vindo ao Vendedor AI!', 'success');
-        if (d.user?.must_change_password) {
-          setTimeout(() => openAccountModal(true), 400);
-        }
+        // Reload completo: garante dados 100% isolados por usuário, sem nenhum resíduo
+        window.location.reload();
       } else {
         errEl.textContent = d.error || 'E-mail ou senha incorretos';
+        btn.disabled = false; btn.textContent = 'Entrar';
       }
     })
-    .catch(() => { errEl.textContent = 'Erro de conexão com o servidor'; })
-    .finally(() => { btn.disabled = false; btn.textContent = 'Entrar'; });
+    .catch(() => { errEl.textContent = 'Erro de conexão com o servidor'; btn.disabled = false; btn.textContent = 'Entrar'; });
 }
 
 function checkAuth() {
@@ -3197,14 +3226,18 @@ function checkAuth() {
         document.getElementById('loginOverlay').style.display = 'none';
         if (d.user?.is_admin) document.body.classList.add('is-admin');
         updateUserInfo(d.user);
+        // Verificar must_change_password salvo no login
+        const cached = (() => { try { return JSON.parse(localStorage.getItem('vendedor_user') || '{}'); } catch { return {}; } })();
+        if (cached.must_change_password) setTimeout(() => openAccountModal(true), 350);
       } else {
+        // Token inválido: limpa tudo e força nova autenticação
         localStorage.removeItem('vendedor_token');
+        localStorage.removeItem('vendedor_user');
         document.getElementById('loginOverlay').style.display = 'flex';
       }
     })
     .catch(() => {
-      // Servidor offline — manter login visível por segurança
-      // Só permite acesso se houver token válido em cache
+      // Servidor offline — permite acesso somente se há cache válido
       const cached = localStorage.getItem('vendedor_user');
       if (cached) {
         try {
@@ -3234,9 +3267,8 @@ function updateUserInfo(user) {
 function logout() {
   localStorage.removeItem('vendedor_token');
   localStorage.removeItem('vendedor_user');
-  document.getElementById('loginOverlay').style.display = 'flex';
-  document.body.classList.remove('is-admin');
-  toast('Sessão encerrada', 'info');
+  // Reload completo: zero dados residuais de qualquer usuário anterior
+  window.location.reload();
 }
 
 // ── Schedule ──
