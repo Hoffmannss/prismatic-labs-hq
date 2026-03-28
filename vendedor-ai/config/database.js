@@ -24,6 +24,7 @@ const DEFAULT_CONFIG = {
     timezone: 'America/Sao_Paulo'
   },
   sync_notion: true,
+  max_runs_per_day: 2,          // Limite diário de ativações do autopilot por cliente
   last_run: null,
   created_at: new Date().toISOString(),
   updated_at: new Date().toISOString()

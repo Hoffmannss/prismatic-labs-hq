@@ -342,9 +342,24 @@ const server = http.createServer(async (req, res) => {
       return json(res, { ok: false, error: 'Nenhum nicho configurado' }, 400);
     }
 
-    // Inicia autopilot e persiste PID para poder parar depois
+    // ── Verificar limite diário de ativações ──
     const apStatusFile = uFile(req.userSession, 'autopilot-status.json');
-    try { saveJSON(apStatusFile, { status: 'running', startedAt: new Date().toISOString() }); } catch {}
+    const prevStatus = loadJSON(apStatusFile, {});
+    const today = new Date().toISOString().slice(0, 10);
+    const maxRuns = config.max_runs_per_day ?? 2;
+    const runsToday = (prevStatus.last_run_date === today) ? (prevStatus.runs_today || 0) : 0;
+    if (runsToday >= maxRuns) {
+      return json(res, {
+        ok: false,
+        error: `Limite diário atingido: ${maxRuns} ativação(ões)/dia. Tente novamente amanhã.`,
+        runs_today: runsToday,
+        max_runs_per_day: maxRuns
+      }, 429);
+    }
+
+    // Inicia autopilot e persiste PID + contador diário
+    const newRunsToday = runsToday + 1;
+    try { saveJSON(apStatusFile, { ...prevStatus, status: 'running', startedAt: new Date().toISOString(), runs_today: newRunsToday, last_run_date: today }); } catch {}
     setTimeout(() => {
       const child = spawn('node', [path.join(__dirname, '10-autopilot.js')], {
         detached: true,
@@ -352,13 +367,15 @@ const server = http.createServer(async (req, res) => {
         cwd: __dirname,
         env: process.env
       });
-      try { saveJSON(apStatusFile, { status: 'running', startedAt: new Date().toISOString(), pid: child.pid }); } catch {}
+      try { saveJSON(apStatusFile, { ...loadJSON(apStatusFile, {}), pid: child.pid }); } catch {}
       child.unref();
     }, 100);
 
     return json(res, {
       ok: true,
       message: `Autopilot iniciado para nicho: ${config.nicho}`,
+      runs_today: newRunsToday,
+      max_runs_per_day: maxRuns,
       config: {
         nicho: config.nicho,
         quantidade_leads: config.quantidade_leads,
@@ -373,7 +390,9 @@ const server = http.createServer(async (req, res) => {
     if (status.pid) {
       try { process.kill(status.pid, 'SIGTERM'); } catch {}
     }
-    saveJSON(apStatusFile, { status: 'stopped', stoppedAt: new Date().toISOString() });
+    const today = new Date().toISOString().slice(0, 10);
+    const runsToday = (status.last_run_date === today) ? (status.runs_today || 0) : 0;
+    saveJSON(apStatusFile, { status: 'stopped', stoppedAt: new Date().toISOString(), runs_today: runsToday, last_run_date: today });
     return json(res, { ok: true, message: 'Autopilot parado' });
   }
 
@@ -385,12 +404,17 @@ const server = http.createServer(async (req, res) => {
 
   if (req.method === 'GET' && pathname === '/api/autopilot/status') {
     const apStatusFile = uFile(req.userSession, 'autopilot-status.json');
-    if (!fs.existsSync(apStatusFile)) return json(res, { status: 'idle' });
+    const cfg = loadAutopilotCfg(req.userSession);
+    const today = new Date().toISOString().slice(0, 10);
+    if (!fs.existsSync(apStatusFile)) {
+      return json(res, { status: 'idle', runs_today: 0, max_runs_per_day: cfg.max_runs_per_day ?? 2 });
+    }
     try {
       const s = JSON.parse(fs.readFileSync(apStatusFile, 'utf8'));
-      return json(res, s);
+      const runsToday = (s.last_run_date === today) ? (s.runs_today || 0) : 0;
+      return json(res, { ...s, runs_today: runsToday, max_runs_per_day: cfg.max_runs_per_day ?? 2 });
     } catch {
-      return json(res, { status: 'idle' });
+      return json(res, { status: 'idle', runs_today: 0, max_runs_per_day: cfg.max_runs_per_day ?? 2 });
     }
   }
 

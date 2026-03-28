@@ -55,7 +55,7 @@ function loadCRMUsernames() {
 //   0 = lead qualificado e processado com sucesso
 //   1 = erro real no pipeline
 //   2 = lead filtrado intencionalmente (score baixo ou fora do nicho)
-function runAnalyze(username, bio, followers, posts, postsDesc, nichoId, imageUrls) {
+function runAnalyze(username, bio, followers, posts, postsDesc, nichoId, imageUrls, contactInfo = {}) {
   const script = path.join(__dirname, '5-orchestrator.js');
   const args = [
     script, 'analyze',
@@ -70,6 +70,9 @@ function runAnalyze(username, bio, followers, posts, postsDesc, nichoId, imageUr
   if (imageUrls && imageUrls.length > 0) {
     env.LEAD_IMAGE_URLS = imageUrls.join('|');
   }
+  if (contactInfo.telefone)    env.LEAD_PHONE        = contactInfo.telefone;
+  if (contactInfo.website)     env.LEAD_WEBSITE      = contactInfo.website;
+  if (contactInfo.externalUrl) env.LEAD_EXTERNAL_URL = contactInfo.externalUrl;
   const r = spawnSync('node', args, { stdio: 'inherit', cwd: __dirname, env });
   return r.status ?? 1;
 }
@@ -127,9 +130,12 @@ async function processNicho(nichoDesc, qtdTarget, maxAnalyze, options = {}) {
     followers: p.followers,
     posts:     p.posts,
     postsDesc: buildPostsDesc(p),
-    imageUrls: (p.recentPosts || []).filter(rp => rp.imageUrl).map(rp => rp.imageUrl).slice(0, 4),
-    nicho:     nichoId,
-    gmb:       p.gmb || null,
+    imageUrls:   (p.recentPosts || []).filter(rp => rp.imageUrl).map(rp => rp.imageUrl).slice(0, 4),
+    nicho:       nichoId,
+    gmb:         p.gmb || null,
+    externalUrl: p.externalUrl || null,
+    telefone:    p.gmb?.telefone || null,
+    website:     p.gmb?.website  || null,
   }));
 
   console.log(`\n${C.cyan}[2/4] Candidatos disponíveis: ${candidates.length}/${rawProfiles.length} (novos no CRM)${C.reset}`);
@@ -177,7 +183,11 @@ async function processNicho(nichoDesc, qtdTarget, maxAnalyze, options = {}) {
       qualified: qualificados
     });
 
-    const exitCode = runAnalyze(l.username, l.bio, l.followers, l.posts, l.postsDesc, nichoId, l.imageUrls);
+    const exitCode = runAnalyze(l.username, l.bio, l.followers, l.posts, l.postsDesc, nichoId, l.imageUrls, {
+      telefone:    l.telefone,
+      website:     l.website,
+      externalUrl: l.externalUrl
+    });
 
     if (exitCode === 0) {
       qualificados++;
@@ -205,7 +215,16 @@ async function processNicho(nichoDesc, qtdTarget, maxAnalyze, options = {}) {
   }
   console.log(`${C.magenta}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${C.reset}`);
 
-  return { nichoId, leads: candidates.length, qualificados, analisados, filtrados };
+  // Niche difficulty: how many profiles checked per qualified lead
+  const difficultyRatio = qualificados > 0 ? Math.round((analisados / qualificados) * 10) / 10 : null;
+  let difficulty = null;
+  if (difficultyRatio !== null) {
+    if (difficultyRatio < 5)       difficulty = 'Fácil';
+    else if (difficultyRatio <= 15) difficulty = 'Médio';
+    else                            difficulty = 'Difícil';
+  }
+
+  return { nichoId, leads: candidates.length, qualificados, analisados, filtrados, difficulty, difficultyRatio };
 }
 
 async function main() {
@@ -371,16 +390,30 @@ async function main() {
   console.log(`  Dashboard: http://localhost:3131`);
   console.log(`${C.magenta}${'='.repeat(70)}${C.reset}\n`);
 
+  // ---- DIFICULDADE DO NICHO (calibrado pelos dados reais do run) ----
+  const overallRatio = totalQualificados > 0 ? Math.round((totalAnalisados / totalQualificados) * 10) / 10 : null;
+  let overallDifficulty = null;
+  if (overallRatio !== null) {
+    if (overallRatio < 5)       overallDifficulty = 'Fácil';
+    else if (overallRatio <= 15) overallDifficulty = 'Médio';
+    else                         overallDifficulty = 'Difícil';
+  }
+
   // ---- ARQUIVO DE STATUS (lido pelo dashboard para saber que concluiu) ----
   try {
+    const prevStatus = fs.existsSync(STATUS_FILE) ? JSON.parse(fs.readFileSync(STATUS_FILE, 'utf8')) : {};
     fs.writeFileSync(STATUS_FILE, JSON.stringify({
+      ...prevStatus,
       status: 'completed',
       completedAt: new Date().toISOString(),
       step: 4, stepLabel: 'Concluído',
       detail: `${totalLeads} leads encontrados · ${totalAnalisados} analisados`,
       totalLeads,
       totalAnalisados,
-      nichos: resultados.map(r => r.nichoId)
+      totalQualificados,
+      nichos: resultados.map(r => r.nichoId),
+      difficulty: overallDifficulty,
+      difficulty_ratio: overallRatio
     }));
   } catch {}
 }

@@ -24,10 +24,18 @@ const followersCount = process.argv[4] || process.env.LEAD_FOLLOWERS || '0';
 const postsCount     = process.argv[5] || process.env.LEAD_POSTS || '0';
 const postsDesc      = process.argv[6] || process.env.LEAD_POSTS_DESC || '';
 
+// ---- DADOS DE CONTATO (capturados via GMB ou bio) ----
+const leadPhone       = process.env.LEAD_PHONE        || null;
+const leadWebsite     = process.env.LEAD_WEBSITE      || null;
+const leadExternalUrl = process.env.LEAD_EXTERNAL_URL || null;
+
 async function analyzeProfile() {
   console.log(`\n[ANALYZER] Iniciando analise do perfil: @${username}`);
   console.log(`[ANALYZER] Seguidores: ${followersCount} | Posts: ${postsCount}`);
-  if (postsDesc) console.log(`[ANALYZER] Posts descritos: SIM ✓`);
+  if (postsDesc)        console.log(`[ANALYZER] Posts descritos: SIM ✓`);
+  if (leadPhone)        console.log(`[ANALYZER] Telefone: ${leadPhone}`);
+  if (leadWebsite)      console.log(`[ANALYZER] Website: ${leadWebsite}`);
+  if (leadExternalUrl)  console.log(`[ANALYZER] External URL: ${leadExternalUrl}`);
 
   // ---- SECAO DE POSTS (se fornecida) ----
   const postsSection = postsDesc ? `
@@ -52,7 +60,7 @@ PERFIL A ANALISAR:
 - Username: @${username}
 - Bio: ${bioText || 'Não disponível'}
 - Seguidores: ${followersCount}
-- Posts: ${postsCount}
+- Posts: ${postsCount}${leadPhone ? `\n- Telefone: ${leadPhone}` : ''}${leadWebsite ? `\n- Website: ${leadWebsite}` : ''}${leadExternalUrl ? `\n- Link externo na bio: ${leadExternalUrl}` : ''}
 ${postsSection}
 CRITÉRIOS DE SCORE (0-100):
 - 80-100: Lead ideal — bio/posts mostram dor direta que o produto resolve
@@ -112,6 +120,11 @@ RESPONDA APENAS O JSON, SEM TEXTO ADICIONAL.`;
       timestamp: new Date().toISOString(),
       username,
       dados_perfil: { bio: bioText, seguidores: followersCount, posts: postsCount, posts_descritos: postsDesc || null },
+      contato: {
+        telefone:     leadPhone       || null,
+        website:      leadWebsite     || null,
+        external_url: leadExternalUrl || null,
+      },
       analise: analysis
     };
 

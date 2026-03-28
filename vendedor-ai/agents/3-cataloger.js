@@ -51,6 +51,10 @@ function upsertLead(username, analysisData, messagesData) {
     tipo_negocio: a.tipo_negocio || '',
     problema_principal: a.problema_principal || '',
     produto_sugerido: a.produto_sugerido || a.servico_ideal || '',
+    // Dados de contato (capturados via GMB ou bio do Instagram)
+    telefone_contato: process.env.LEAD_PHONE        || null,
+    website:          process.env.LEAD_WEBSITE      || null,
+    external_url:     process.env.LEAD_EXTERNAL_URL || null,
     primeira_mensagem_enviada: false,
     data_primeiro_contato: null,
     data_ultima_interacao: null,

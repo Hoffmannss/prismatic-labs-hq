@@ -899,6 +899,7 @@ tbody tr:last-child td{border-bottom:none}
               <div class="ah-title">Prospecção Automática <span class="detail-btn">?<span class="detail-tooltip">Com um clique, o sistema busca negócios reais no Google Maps, encontra seus perfis do Instagram, analisa cada um com IA (score de 0 a 100) e gera mensagens personalizadas. Recomendamos rodar 1 vez por dia.</span></span></div>
               <div class="ah-desc">Encontra negócios reais no Google Maps, analisa seus perfis do Instagram com IA e cria mensagens personalizadas — tudo automaticamente</div>
               <div class="ah-status" id="ahStatus"><span class="ah-dot idle"></span>&nbsp;Aguardando — clique para iniciar</div>
+              <div id="ahRunsCounter" style="font-size:10.5px;color:var(--t3);margin-top:4px;display:none"></div>
               <!-- Linha do tempo de progresso (visível só quando rodando) -->
               <div id="autopilotTimeline" style="display:none;margin-top:12px;padding-top:10px;border-top:1px solid rgba(255,255,255,.07)">
                 <div style="display:flex;align-items:center;gap:0;font-size:11px">
@@ -2932,6 +2933,31 @@ function saveGMBConfig() {
 // ── Autopilot Hero ──
 let _autopilotPollTimer = null;
 
+function updateRunsCounter(runsToday, maxRuns) {
+  const el = document.getElementById('ahRunsCounter');
+  if (!el) return;
+  const remaining = Math.max(0, maxRuns - runsToday);
+  el.style.display = 'block';
+  if (remaining === 0) {
+    el.innerHTML = `<span style="color:#f87171">⛔ Limite diário atingido (${runsToday}/${maxRuns} ativações)</span> — reinicia à meia-noite`;
+  } else if (remaining === 1) {
+    el.innerHTML = `<span style="color:#fbbf24">⚡ ${remaining} ativação restante hoje</span> de ${maxRuns}`;
+  } else {
+    el.innerHTML = `<span style="color:var(--cyan)">✓ ${remaining} ativações disponíveis hoje</span> (${runsToday}/${maxRuns} usadas)`;
+  }
+}
+
+function fetchRunsCounter() {
+  authFetch('/api/autopilot/status')
+    .then(r => r.json())
+    .then(s => {
+      if (typeof s.runs_today !== 'undefined' && typeof s.max_runs_per_day !== 'undefined') {
+        updateRunsCounter(s.runs_today, s.max_runs_per_day);
+      }
+    })
+    .catch(() => {});
+}
+
 function triggerAutopilot() {
   const btn = document.getElementById('ahBtn');
   const statusEl = document.getElementById('ahStatus');
@@ -2949,6 +2975,7 @@ function triggerAutopilot() {
         btn.textContent = '⏹ Parar Autopilot';
         btn.onclick = stopAutopilot;
         statusEl.innerHTML = '<span class="ah-dot running"></span>&nbsp;Executando — aguarde 10–15 min';
+        fetchRunsCounter();
         document.getElementById('systemStatus').textContent = 'Autopilot ativo';
         document.getElementById('autopilotTimeline').style.display = 'block';
         setTimelineStep(1, 'Iniciando busca de leads...');
@@ -2968,6 +2995,18 @@ function triggerAutopilot() {
                 setTimelineStep(4, s.detail || 'Concluído');
                 const total = s.totalLeads || 0;
                 const analisados = s.totalAnalisados || 0;
+                const qualificados = s.totalQualificados || 0;
+                // Show niche difficulty badge
+                if (s.difficulty) {
+                  const diffColors = { 'Fácil': '#34d399', 'Médio': '#fbbf24', 'Difícil': '#f87171' };
+                  const diffEl = document.getElementById('ahRunsCounter');
+                  if (diffEl) {
+                    const color = diffColors[s.difficulty] || 'var(--t3)';
+                    const ratio = s.difficulty_ratio !== null ? ` (${s.difficulty_ratio}:1)` : '';
+                    diffEl.style.display = 'block';
+                    diffEl.innerHTML = `Dificuldade do nicho: <span style="color:${color};font-weight:700">${s.difficulty}</span>${ratio} · ${qualificados} qualificados de ${analisados} analisados`;
+                  }
+                }
                 addLog('AUTOPILOT', `✓ Concluído — ${total} leads coletados, ${analisados} analisados`, 'ok');
                 toast(`✓ Autopilot concluído — ${total} leads, ${analisados} analisados`, 'success');
                 setTimeout(() => {
@@ -2992,6 +3031,10 @@ function triggerAutopilot() {
         }, 10000);
       } else {
         resetAutopilotHero();
+        // Show limit error in counter if that was the cause
+        if (d.runs_today !== undefined && d.max_runs_per_day !== undefined) {
+          updateRunsCounter(d.runs_today, d.max_runs_per_day);
+        }
         toast(d.error || 'Erro ao iniciar autopilot', 'error');
         addLog('AUTOPILOT', '✗ ' + (d.error || 'erro'), 'err');
       }
@@ -3027,6 +3070,7 @@ function resetAutopilotHero() {
   if (statusEl) statusEl.innerHTML = '<span class="ah-dot done"></span>&nbsp;Último run concluído';
   const sysStatus = document.getElementById('systemStatus');
   if (sysStatus) sysStatus.textContent = 'Sistema operacional';
+  fetchRunsCounter();
 }
 function stopAutopilot() {
   const btn = document.getElementById('ahBtn');
@@ -3477,9 +3521,11 @@ function init() {
   loadBusinessProfile();
   loadSchedule();
   loadInstagramStatus();
+  fetchRunsCounter();
   setInterval(fetchData, 30000);
   setInterval(checkAPIStatus, 60000);
   setInterval(loadSettings, 120000);
+  setInterval(fetchRunsCounter, 60000);
 }
 
 document.addEventListener('DOMContentLoaded', init);

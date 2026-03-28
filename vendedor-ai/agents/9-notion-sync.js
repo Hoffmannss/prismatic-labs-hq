@@ -44,6 +44,8 @@ function leadFingerprint(lead) {
     ultima:       lead.data_ultima_interacao || null,
     gancho:       ap.gancho_ideal || null,
     reviewer:     reviewScore,
+    telefone:     lead.telefone_contato || null,
+    website:      lead.website || null,
   });
 }
 
@@ -118,6 +120,8 @@ const DB_SCHEMA = {
   'Posts Analisados':  { checkbox: {} },
   'Gancho':            { rich_text: {} },
   'Msgs Enviadas':     { number: { format: 'number' } },
+  'Telefone':          { phone_number: {} },
+  'Website':           { url: {} },
 };
 
 function buildProperties(lead) {
@@ -156,6 +160,8 @@ function buildProperties(lead) {
     'Posts Analisados': { checkbox: !!(ap.tem_posts_analisados) },
     'Gancho':           safeText(ap.gancho_ideal),
     'Msgs Enviadas':    { number: lead.followups_enviados || 0 },
+    'Telefone':         { phone_number: lead.telefone_contato || null },
+    'Website':          { url: lead.website || lead.external_url || null },
   };
 }
 
