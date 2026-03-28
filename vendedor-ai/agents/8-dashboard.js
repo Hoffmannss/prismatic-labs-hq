@@ -33,8 +33,46 @@ const PIPELINE_LOGS = [
   // sender.log removido — sender desativado
 ];
 
-const autopilotDB = new AutopilotDB();
-const dmQueueDB = new DmQueueDB();
+const autopilotDB = new AutopilotDB(); // mantido para compat interna
+const dmQueueDB = new DmQueueDB();   // mantido para compat interna
+
+// ── MULTI-TENANCY ─────────────────────────────────────────────────────────
+// Admin → arquivos globais (sem migração, agentes continuam funcionando)
+// Clientes → data/users/{email}/ (isolado, começa vazio)
+const { DEFAULT_CONFIG: DEFAULT_AUTOPILOT_CFG } = require('../config/database');
+
+function uFile(session, relPath) {
+  if (session && session.is_admin) {
+    const adminMap = {
+      'crm/leads-database.json': DB_FILE,
+      'business-profile.json':   BP_FILE,
+      'settings.json':           SETTINGS_FILE,
+      'schedule.json':           SCHEDULE_FILE,
+      'autopilot-config.json':   path.join(DATA_DIR, 'autopilot-config.json'),
+      'dm-queue.json':           path.join(DATA_DIR, 'dm-queue.json'),
+      'autopilot-status.json':   path.join(DATA_DIR, 'autopilot-status.json'),
+    };
+    if (adminMap[relPath]) return adminMap[relPath];
+  }
+  const safeEmail = ((session && session.email) || 'unknown')
+    .toLowerCase().replace(/[^a-z0-9._-]/g, '_');
+  const filePath = path.join(DATA_DIR, 'users', safeEmail, relPath);
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  return filePath;
+}
+
+function loadAutopilotCfg(session) {
+  return loadJSON(uFile(session, 'autopilot-config.json'), { ...DEFAULT_AUTOPILOT_CFG });
+}
+function saveAutopilotCfg(session, updates) {
+  const f = uFile(session, 'autopilot-config.json');
+  const merged = { ...loadJSON(f, { ...DEFAULT_AUTOPILOT_CFG }), ...updates, updated_at: new Date().toISOString() };
+  saveJSON(f, merged);
+  return merged;
+}
+function loadDmQueueArr(session) { return loadJSON(uFile(session, 'dm-queue.json'), []); }
+function saveDmQueueArr(session, q) { saveJSON(uFile(session, 'dm-queue.json'), q); }
+// ─────────────────────────────────────────────────────────────────────────
 
 function json(res, data, status = 200) {
   res.writeHead(status, {
@@ -251,20 +289,21 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (req.method === 'GET' && pathname === '/api/leads') {
-    const db    = loadJSON(DB_FILE, { leads: [] });
+    const db    = loadJSON(uFile(req.userSession, 'crm/leads-database.json'), { leads: [] });
     const leads = enrichLeads(db.leads || []);
     return json(res, { leads, total: leads.length, updated_at: db.updated_at });
   }
 
   if (req.method === 'GET' && pathname === '/api/settings') {
-    return json(res, loadJSON(SETTINGS_FILE, {}));
+    return json(res, loadJSON(uFile(req.userSession, 'settings.json'), {}));
   }
 
   if (req.method === 'POST' && pathname === '/api/settings') {
     const body    = await bodyJSON(req);
-    const current = loadJSON(SETTINGS_FILE, {});
+    const sf      = uFile(req.userSession, 'settings.json');
+    const current = loadJSON(sf, {});
     const updated = { ...current, ...body };
-    saveJSON(SETTINGS_FILE, updated);
+    saveJSON(sf, updated);
     return json(res, { ok: true, settings: updated });
   }
 
@@ -279,23 +318,22 @@ const server = http.createServer(async (req, res) => {
   // ====== NOVAS ROTAS PARA AUTOPILOT ======
 
   if (req.method === 'GET' && pathname === '/api/autopilot/config') {
-    const config = autopilotDB.loadConfig();
-    return json(res, config);
+    return json(res, loadAutopilotCfg(req.userSession));
   }
 
   if (req.method === 'POST' && pathname === '/api/autopilot/config') {
     const body = await bodyJSON(req);
-    const success = autopilotDB.updateConfig(body);
-    if (success) {
-      return json(res, { ok: true, config: autopilotDB.loadConfig() });
-    } else {
+    try {
+      const cfg = saveAutopilotCfg(req.userSession, body);
+      return json(res, { ok: true, config: cfg });
+    } catch (e) {
       return json(res, { ok: false, error: 'Falha ao salvar configuração' }, 500);
     }
   }
 
   if (req.method === 'POST' && pathname === '/api/autopilot/start') {
-    const config = autopilotDB.loadConfig();
-    
+    const config = loadAutopilotCfg(req.userSession);
+
     if (!config.active) {
       return json(res, { ok: false, error: 'Autopilot está desativado' }, 400);
     }
@@ -306,7 +344,7 @@ const server = http.createServer(async (req, res) => {
 
     // Limpa status anterior e inicia autopilot em processo separado
     try {
-      const apStatusFile = path.join(DATA_DIR, 'autopilot-status.json');
+      const apStatusFile = uFile(req.userSession, 'autopilot-status.json');
       fs.writeFileSync(apStatusFile, JSON.stringify({ status: 'running', startedAt: new Date().toISOString() }));
     } catch {}
     setTimeout(() => {
@@ -319,8 +357,8 @@ const server = http.createServer(async (req, res) => {
       child.unref();
     }, 100);
 
-    return json(res, { 
-      ok: true, 
+    return json(res, {
+      ok: true,
       message: `Autopilot iniciado para nicho: ${config.nicho}`,
       config: {
         nicho: config.nicho,
@@ -332,12 +370,12 @@ const server = http.createServer(async (req, res) => {
 
   if (req.method === 'POST' && pathname === '/api/autopilot/toggle') {
     const { active } = await bodyJSON(req);
-    autopilotDB.updateConfig({ active: active === true });
-    return json(res, { ok: true, active: autopilotDB.loadConfig().active });
+    const cfg = saveAutopilotCfg(req.userSession, { active: active === true });
+    return json(res, { ok: true, active: cfg.active });
   }
 
   if (req.method === 'GET' && pathname === '/api/autopilot/status') {
-    const apStatusFile = path.join(DATA_DIR, 'autopilot-status.json');
+    const apStatusFile = uFile(req.userSession, 'autopilot-status.json');
     if (!fs.existsSync(apStatusFile)) return json(res, { status: 'idle' });
     try {
       const s = JSON.parse(fs.readFileSync(apStatusFile, 'utf8'));
@@ -350,46 +388,54 @@ const server = http.createServer(async (req, res) => {
   // ====== DM QUEUE API ======
 
   if (req.method === 'GET' && pathname === '/api/dm-queue') {
-    const queue = dmQueueDB.loadQueue();
-    const stats = dmQueueDB.getStats();
-    const config = dmQueueDB.loadSenderConfig();
-    return json(res, { queue, stats, sender: config });
+    const queue = loadDmQueueArr(req.userSession);
+    const stats = { total: queue.length, pendente: queue.filter(i=>i.status==='pendente').length, enviado: queue.filter(i=>i.status==='enviado').length };
+    return json(res, { queue, stats, sender: { enabled: false } });
   }
 
   if (req.method === 'POST' && pathname === '/api/dm-queue') {
     const { username, message, followup_day } = await bodyJSON(req);
     if (!username || !message) return json(res, { ok: false, error: 'username e message obrigatórios' }, 400);
-    const item = dmQueueDB.addToQueue(username, message, followup_day || null);
+    const queue = loadDmQueueArr(req.userSession);
+    const item = { id: Date.now().toString(), username, message, followup_day: followup_day || null, status: 'pendente', created_at: new Date().toISOString() };
+    queue.push(item);
+    saveDmQueueArr(req.userSession, queue);
     return json(res, { ok: true, item });
   }
 
   if (req.method === 'POST' && pathname === '/api/dm-queue/enqueue-lead') {
-    // Enqueue a lead's best message directly from CRM
     const { username } = await bodyJSON(req);
     if (!username) return json(res, { ok: false, error: 'username obrigatório' }, 400);
     const msg = getLeadMessages(username);
     const text = msg?.revisao?.mensagem_final || msg?.mensagens?.mensagem1?.texto;
     if (!text) return json(res, { ok: false, error: 'Nenhuma mensagem encontrada para este lead' }, 404);
-    const item = dmQueueDB.addToQueue(username, text);
+    const queue = loadDmQueueArr(req.userSession);
+    const item = { id: Date.now().toString(), username, message: text, status: 'pendente', created_at: new Date().toISOString() };
+    queue.push(item);
+    saveDmQueueArr(req.userSession, queue);
     return json(res, { ok: true, item });
   }
 
   if (req.method === 'PATCH' && pathname.startsWith('/api/dm-queue/')) {
     const id = pathname.split('/').pop();
     const updates = await bodyJSON(req);
-    const ok = dmQueueDB.updateItem(id, updates);
-    return json(res, { ok });
+    const queue = loadDmQueueArr(req.userSession);
+    const idx = queue.findIndex(i => i.id === id);
+    if (idx === -1) return json(res, { ok: false }, 404);
+    queue[idx] = { ...queue[idx], ...updates };
+    saveDmQueueArr(req.userSession, queue);
+    return json(res, { ok: true });
   }
 
-  // Clear entire DM queue
   if (req.method === 'DELETE' && pathname === '/api/dm-queue') {
-    dmQueueDB.clearQueue();
+    saveDmQueueArr(req.userSession, []);
     return json(res, { ok: true, message: 'Fila limpa' });
   }
 
   if (req.method === 'DELETE' && pathname.startsWith('/api/dm-queue/')) {
     const id = pathname.split('/').pop();
-    dmQueueDB.removeItem(id);
+    const queue = loadDmQueueArr(req.userSession).filter(i => i.id !== id);
+    saveDmQueueArr(req.userSession, queue);
     return json(res, { ok: true });
   }
 
@@ -422,7 +468,7 @@ const server = http.createServer(async (req, res) => {
   if (req.method === 'POST' && pathname === '/api/autopilot') {
     // DEPRECATED: mantido para backward compatibility
     const body     = await bodyJSON(req);
-    const settings = loadJSON(SETTINGS_FILE, {});
+    const settings = loadJSON(uFile(req.userSession, 'settings.json'), {});
     const n  = body.nicho      || settings.autopilotDefaults?.nicho      || 'api-automacao';
     const q  = body.qtd        || settings.autopilotDefaults?.qtd        || 20;
     const ma = body.maxAnalyze || settings.autopilotDefaults?.maxAnalyze || 8;
@@ -452,8 +498,9 @@ const server = http.createServer(async (req, res) => {
     const { username, status, nota } = await bodyJSON(req);
     if (!username || !status)
       return json(res, { ok: false, error: 'username e status obrigatorios' }, 400);
-    const db   = loadJSON(DB_FILE, { leads: [] });
-    const lead = (db.leads || []).find(l => l.username === username);
+    const dbFile = uFile(req.userSession, 'crm/leads-database.json');
+    const db     = loadJSON(dbFile, { leads: [] });
+    const lead   = (db.leads || []).find(l => l.username === username);
     if (!lead) return json(res, { ok: false, error: 'Lead nao encontrado' }, 404);
     lead.status        = status;
     lead.atualizado_em = new Date().toISOString();
@@ -461,12 +508,12 @@ const server = http.createServer(async (req, res) => {
       lead.notas = lead.notas || [];
       lead.notas.push({ timestamp: new Date().toISOString(), texto: nota });
     }
-    saveJSON(DB_FILE, db);
+    saveJSON(dbFile, db);
     return json(res, { ok: true });
   }
 
   if (req.method === 'GET' && pathname === '/api/stats') {
-    const db    = loadJSON(DB_FILE, { leads: [] });
+    const db    = loadJSON(uFile(req.userSession, 'crm/leads-database.json'), { leads: [] });
     const leads = db.leads || [];
     const byPriority = { hot: 0, warm: 0, cold: 0 };
     const byOutcome  = { sent: 0, respondeu: 0, ignorou: 0, negociando: 0, converteu: 0, recusou: 0 };
@@ -478,7 +525,7 @@ const server = http.createServer(async (req, res) => {
       if (trk?.outcome === 'converteu' && trk?.valor) totalValue += Number(trk.valor) || 0;
     });
     const learning = loadJSON(LEARNING_FILE, null);
-    const autopilotConfig = autopilotDB.loadConfig();
+    const autopilotConfig = loadAutopilotCfg(req.userSession);
     return json(res, {
       total: leads.length,
       byPriority,
@@ -701,23 +748,24 @@ const server = http.createServer(async (req, res) => {
 
   // ── BUSINESS PROFILE ────────────────────────────────────────────────────
   if (req.method === 'GET' && pathname === '/api/business-profile') {
-    return json(res, loadJSON(BP_FILE, {}));
+    return json(res, loadJSON(uFile(req.userSession, 'business-profile.json'), {}));
   }
 
   if (req.method === 'POST' && pathname === '/api/business-profile') {
     const body = await bodyJSON(req);
-    saveJSON(BP_FILE, body);
+    saveJSON(uFile(req.userSession, 'business-profile.json'), body);
     return json(res, { ok: true, profile: body });
   }
 
   // ── SCHEDULE ────────────────────────────────────────────────────────────
   if (req.method === 'GET' && pathname === '/api/schedule') {
-    return json(res, loadJSON(SCHEDULE_FILE, { active: false, time: '08:00', frequency: 'daily', days: [0,1,2,3,4,5,6] }));
+    return json(res, loadJSON(uFile(req.userSession, 'schedule.json'), { active: false, time: '08:00', frequency: 'daily', days: [0,1,2,3,4,5,6] }));
   }
 
   if (req.method === 'POST' && pathname === '/api/schedule') {
     const body = await bodyJSON(req);
-    const current = loadJSON(SCHEDULE_FILE, {});
+    const sf = uFile(req.userSession, 'schedule.json');
+    const current = loadJSON(sf, {});
     const updated = { ...current, ...body };
     // Calculate next run
     if (updated.active && updated.time) {
@@ -736,7 +784,7 @@ const server = http.createServer(async (req, res) => {
     } else {
       updated.next_run = null;
     }
-    saveJSON(SCHEDULE_FILE, updated);
+    saveJSON(sf, updated);
     return json(res, { ok: true, schedule: updated });
   }
 
@@ -922,11 +970,12 @@ const server = http.createServer(async (req, res) => {
   if (req.method === 'DELETE' && pathname.startsWith('/api/lead/') && !pathname.includes('/bulk')) {
     const username = decodeURIComponent(pathname.slice('/api/lead/'.length)).replace(/^@/, '').trim().toLowerCase();
     if (!username) return json(res, { ok: false, error: 'username obrigatório' }, 400);
-    const db = loadJSON(DB_FILE, { leads: [] });
+    const dbFile = uFile(req.userSession, 'crm/leads-database.json');
+    const db = loadJSON(dbFile, { leads: [] });
     const idx = db.leads.findIndex(l => l.username === username);
     if (idx === -1) return json(res, { ok: false, error: `Lead @${username} não encontrado` }, 404);
     db.leads.splice(idx, 1);
-    saveJSON(DB_FILE, db);
+    saveJSON(dbFile, db);
     // Limpar cache Notion + arquivar página no Notion
     try {
       const cacheFile = path.join(DATA_DIR, 'crm', 'notion-sync-cache.json');
@@ -946,13 +995,14 @@ const server = http.createServer(async (req, res) => {
     const body = await bodyJSON(req);
     const usernames = (body.usernames || []).map(u => u.replace(/^@/, '').trim().toLowerCase()).filter(Boolean);
     if (!usernames.length) return json(res, { ok: false, error: 'Nenhum username fornecido' }, 400);
-    const db = loadJSON(DB_FILE, { leads: [] });
+    const dbFile = uFile(req.userSession, 'crm/leads-database.json');
+    const db = loadJSON(dbFile, { leads: [] });
     let removed = 0;
     for (const uname of usernames) {
       const idx = db.leads.findIndex(l => l.username === uname);
       if (idx !== -1) { db.leads.splice(idx, 1); removed++; }
     }
-    saveJSON(DB_FILE, db);
+    saveJSON(dbFile, db);
     // Limpar cache Notion
     try {
       const cacheFile = path.join(DATA_DIR, 'crm', 'notion-sync-cache.json');
