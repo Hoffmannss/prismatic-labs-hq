@@ -775,7 +775,11 @@ tbody tr:last-child td{border-bottom:none}
     <div id="accountModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9998;display:none;align-items:center;justify-content:center">
       <div style="background:var(--bg-el);border:1px solid var(--b);border-radius:14px;padding:28px;width:360px;max-width:90vw">
         <div style="font-size:15px;font-weight:700;color:var(--t);margin-bottom:4px">Minha Conta</div>
-        <div id="accountModalSub" style="font-size:11px;color:var(--t3);margin-bottom:20px">Atualize suas credenciais de acesso</div>
+        <div id="accountModalSub" style="font-size:11px;color:var(--t3);margin-bottom:16px">Atualize suas credenciais de acesso</div>
+        <div id="accExpiryInfo" style="display:none;background:rgba(139,92,246,.07);border:1px solid rgba(139,92,246,.15);border-radius:8px;padding:10px 12px;font-size:11px;color:var(--t2);line-height:1.7;margin-bottom:16px">
+          <div>📅 <strong>Acesso ativo até:</strong> <span id="accExpiryDate" style="color:var(--t)">—</span></div>
+          <div style="margin-top:5px;color:var(--t3)">Após o vencimento, seus dados (leads, perfil, configurações) ficam <strong>preservados por 30 dias</strong>. Renove antes desse prazo para não perder nada.</div>
+        </div>
         <div style="display:flex;flex-direction:column;gap:12px">
           <div>
             <label style="font-size:10.5px;color:var(--t3);display:block;margin-bottom:3px">E-mail atual</label>
@@ -914,7 +918,7 @@ tbody tr:last-child td{border-bottom:none}
               <input type="number" id="gmb-quantidade" value="5" min="1" max="100" oninput="updateLimitHint()" style="width:100%;background:var(--card);border:1px solid var(--b);border-radius:6px;padding:7px 10px;color:var(--t);font-size:12px">
             </div>
             <div style="flex:1;min-width:120px">
-              <label style="font-size:10.5px;color:var(--t3);display:block;margin-bottom:3px">Limite de segurança <span class="detail-btn">?<span class="detail-tooltip">Máximo de perfis analisados antes de parar. Nichos fáceis: 3–5× a cota. Nichos difíceis: 20–50×.</span></span></label>
+              <label style="font-size:10.5px;color:var(--t3);display:block;margin-bottom:3px">Limite de segurança <span class="detail-btn">?<span class="detail-tooltip">Máximo de perfis analisados antes de parar, mesmo sem atingir a cota. Regra prática: multiplique a cota pela dificuldade do nicho. 3–5× = nicho fácil (ex: "salão de beleza em SP"). 10–15× = nicho médio (ex: "clínica de estética"). 20–50× = nicho difícil ou raro (ex: "importadora de vinhos artesanais"). Exemplo: cota 5 + nicho médio → limite 50 a 75.</span></span></label>
               <input type="number" id="gmb-max-analyze" value="50" min="5" max="500" oninput="updateLimitHint()" style="width:100%;background:var(--card);border:1px solid var(--b);border-radius:6px;padding:7px 10px;color:var(--t);font-size:12px">
             </div>
             <button onclick="saveGMBConfig()" style="background:var(--purple);color:#fff;border:none;border-radius:6px;padding:7px 14px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap">💾 Salvar</button>
@@ -1872,6 +1876,10 @@ tbody tr:last-child td{border-bottom:none}
               <div class="guide-faq-item">
                 <div class="guide-faq-q">Preciso de conhecimento técnico?</div>
                 <div class="guide-faq-a">Não. O Vendedor AI foi feito para ser usado sem nenhum conhecimento técnico. Preencha seu Perfil do Negócio, clique no Autopilot, revise as DMs e envie. É só isso.</div>
+              </div>
+              <div class="guide-faq-item">
+                <div class="guide-faq-q">Como definir o Limite de Segurança?</div>
+                <div class="guide-faq-a">O Limite de Segurança define quantos perfis o sistema vai checar antes de desistir, caso não encontre leads suficientes. A regra prática é multiplicar a cota de leads pela dificuldade do nicho: <strong>3–5×</strong> para nichos populares ("salão de beleza"), <strong>10–15×</strong> para nichos médios ("clínica de estética"), <strong>20–50×</strong> para nichos raros ("importadora de café especial"). Exemplo: quer 5 leads qualificados em um nicho médio? Coloque limite 50–75. Um indicador de cor aparece automaticamente abaixo do campo — verde = bom, amarelo = apertado, vermelho = insuficiente.</div>
               </div>
               <div class="guide-faq-item">
                 <div class="guide-faq-q">Como renovar a sessão do Instagram?</div>
@@ -3257,8 +3265,35 @@ function updateUserInfo(user) {
   const name = user.company_name || user.email || 'Usuário';
   const avatar = name.slice(0, 2).toUpperCase();
   document.querySelector('.footer-name').textContent = name;
-  document.querySelector('.footer-role').textContent = user.is_admin ? 'v3.0 · Administrador' : 'v3.0 · Usuário';
+
+  // Expiry indicator
+  const cached = (() => { try { return JSON.parse(localStorage.getItem('vendedor_user') || '{}'); } catch { return {}; } })();
+  const expiresAt = user.expiresAt || cached.expiresAt;
+  // Merge expiresAt into cached so it persists across reloads
+  if (user.expiresAt && !cached.expiresAt) {
+    cached.expiresAt = user.expiresAt;
+    localStorage.setItem('vendedor_user', JSON.stringify({ ...cached, ...user }));
+  }
+
+  const roleEl = document.querySelector('.footer-role');
+  let roleText = user.is_admin ? 'v3.0 · Administrador' : 'v3.0 · Usuário';
+  roleEl.style.color = '';
+  if (expiresAt) {
+    const daysLeft = Math.ceil((expiresAt - Date.now()) / 86400000);
+    if (daysLeft <= 3) {
+      roleText = `⚠️ Acesso expira em ${daysLeft}d`;
+      roleEl.style.color = 'var(--red, #ef4444)';
+    } else if (daysLeft <= 14) {
+      roleText = `⚠️ Renove em ${daysLeft} dias`;
+      roleEl.style.color = '#f59e0b';
+    } else if (daysLeft <= 30) {
+      roleText = `Expira em ${daysLeft} dias`;
+      roleEl.style.color = 'var(--t3)';
+    }
+  }
+  roleEl.textContent = roleText;
   document.querySelector('.footer-avatar').textContent = avatar;
+
   // Show/hide admin-only nav items
   const display = user.is_admin ? 'flex' : 'none';
   document.querySelectorAll('.admin-only').forEach(el => el.style.display = display);
@@ -3455,6 +3490,19 @@ function openAccountModal(forceChange = false) {
   document.getElementById('accCurrentPwd').value = '';
   document.getElementById('accNewPwd').value = '';
   document.getElementById('accError').style.display = 'none';
+  // Expiry info
+  const expiryInfo = document.getElementById('accExpiryInfo');
+  const expiryDate = document.getElementById('accExpiryDate');
+  if (expiryInfo && expiryDate && user.expiresAt) {
+    const dt = new Date(user.expiresAt);
+    const daysLeft = Math.ceil((user.expiresAt - Date.now()) / 86400000);
+    const color = daysLeft <= 3 ? 'var(--red,#ef4444)' : daysLeft <= 14 ? '#f59e0b' : 'var(--t)';
+    expiryDate.textContent = `${dt.toLocaleDateString('pt-BR', { day:'2-digit', month:'long', year:'numeric' })} (${daysLeft} dias restantes)`;
+    expiryDate.style.color = color;
+    expiryInfo.style.display = 'block';
+  } else if (expiryInfo) {
+    expiryInfo.style.display = 'none';
+  }
   const sub = document.getElementById('accountModalSub');
   if (forceChange) {
     sub.textContent = '⚠️ Você precisa criar uma nova senha antes de continuar';

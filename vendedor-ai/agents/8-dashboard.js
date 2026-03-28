@@ -680,14 +680,18 @@ const server = http.createServer(async (req, res) => {
     const user = usersData.users.find(u => u.email === email && u.password === hashPassword(password));
     if (!user) return json(res, { ok: false, error: 'E-mail ou senha incorretos' }, 401);
     const token = generateToken();
-    activeSessions[token] = { email: user.email, is_admin: user.is_admin, company_name: user.company_name, createdAt: Date.now() };
+    const createdAt = Date.now();
+    activeSessions[token] = { email: user.email, is_admin: user.is_admin, company_name: user.company_name, createdAt };
     saveActiveSessions();
-    return json(res, { ok: true, token, user: { email: user.email, is_admin: user.is_admin, company_name: user.company_name, must_change_password: !!user.must_change_password } });
+    return json(res, { ok: true, token, user: { email: user.email, is_admin: user.is_admin, company_name: user.company_name, must_change_password: !!user.must_change_password, expiresAt: createdAt + SESSION_TTL_MS } });
   }
 
   if (req.method === 'GET' && pathname === '/api/auth/verify') {
     const session = verifyToken(req);
-    if (session) return json(res, { ok: true, user: session });
+    if (session) {
+      const expiresAt = (session.createdAt || 0) + SESSION_TTL_MS;
+      return json(res, { ok: true, user: { ...session, expiresAt } });
+    }
     return json(res, { ok: false, error: 'Token inválido' }, 401);
   }
 
