@@ -750,12 +750,7 @@ tbody tr:last-child td{border-bottom:none}
         <span class="nav-icon">?</span><span>Como Usar</span>
       </div>
     </nav>
-    <!-- Modo Avançado toggle -->
-    <div style="padding:6px 12px;border-top:1px solid var(--b)">
-      <button onclick="toggleAdvancedMode()" id="advancedModeBtn" style="width:100%;background:transparent;border:1px solid var(--b);border-radius:7px;padding:6px 10px;color:var(--t3);font-size:10.5px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:6px;transition:.15s" onmouseenter="this.style.color='var(--t2)'" onmouseleave="this.style.color='var(--t3)'">
-        <span id="advancedModeIcon">⚙</span><span id="advancedModeLabel">Modo Avançado</span>
-      </button>
-    </div>
+    <!-- Modo Avançado removido — todas as funcionalidades estão sempre visíveis -->
     <div class="sidebar-footer" style="cursor:pointer;position:relative" onclick="toggleAccountMenu()">
       <div class="footer-avatar" id="footerAvatar">PL</div>
       <div style="flex:1;min-width:0">
@@ -934,6 +929,7 @@ tbody tr:last-child td{border-bottom:none}
                 <option value="gmb">📍 Google Maps (Recomendado)</option>
                 <option value="hashtag">📸 Instagram Hashtag</option>
               </select>
+              <div id="searchModeHint" style="margin-top:5px;font-size:10px;color:var(--t3);line-height:1.4"></div>
             </div>
             <div style="flex:1;min-width:140px" id="gmbCityField">
               <label style="font-size:10.5px;color:var(--t3);display:block;margin-bottom:3px">Cidade</label>
@@ -2010,10 +2006,21 @@ function authHeaders(extra = {}) {
 }
 function authFetch(url, opts = {}) {
   const token = localStorage.getItem('vendedor_token');
+  // Sem token: mostra login imediatamente, sem reload (evita loop infinito)
+  if (!token) {
+    document.getElementById('loginOverlay').style.display = 'flex';
+    return Promise.reject(new Error('Não autenticado'));
+  }
   if (!opts.headers) opts.headers = {};
-  if (token) opts.headers['Authorization'] = 'Bearer ' + token;
+  opts.headers['Authorization'] = 'Bearer ' + token;
   return fetch(url, opts).then(r => {
-    if (r.status === 401) { logout(); throw new Error('Sessão expirada'); }
+    if (r.status === 401) {
+      // Token expirado: limpa estado e mostra login — SEM reload (evita loop)
+      localStorage.removeItem('vendedor_token');
+      localStorage.removeItem('vendedor_user');
+      document.getElementById('loginOverlay').style.display = 'flex';
+      throw new Error('Sessão expirada');
+    }
     return r;
   });
 }
@@ -2835,9 +2842,15 @@ function refreshData() {
 }
 
 // ── GMB Config ──
+const SEARCH_MODE_HINTS = {
+  gmb: '📍 <strong>Negócios físicos:</strong> salões, clínicas, academias, restaurantes, imobiliárias, escritórios. Encontra quem tem endereço real no Google Maps.',
+  hashtag: '📸 <strong>Negócios digitais:</strong> agências, coaches, infoprodutores, freelancers, consultores. Encontra quem usa a hashtag do nicho no Instagram.'
+};
 function toggleCityField() {
   const mode = document.getElementById('gmb-search-mode').value;
   document.getElementById('gmbCityField').style.display = mode === 'gmb' ? 'block' : 'none';
+  const hintEl = document.getElementById('searchModeHint');
+  if (hintEl) hintEl.innerHTML = SEARCH_MODE_HINTS[mode] || '';
 }
 
 async function loadGMBConfig() {
