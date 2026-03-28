@@ -929,7 +929,6 @@ tbody tr:last-child td{border-bottom:none}
                 <option value="gmb">📍 Google Maps (Recomendado)</option>
                 <option value="hashtag">📸 Instagram Hashtag</option>
               </select>
-              <div id="searchModeHint" style="margin-top:5px;font-size:10px;color:var(--t3);line-height:1.4"></div>
             </div>
             <div style="flex:1;min-width:140px" id="gmbCityField">
               <label style="font-size:10.5px;color:var(--t3);display:block;margin-bottom:3px">Cidade</label>
@@ -940,6 +939,8 @@ tbody tr:last-child td{border-bottom:none}
               <input type="text" id="gmb-nicho" placeholder="Ex: salão de beleza, consultório odontológico" style="width:100%;background:var(--card);border:1px solid var(--b);border-radius:6px;padding:7px 10px;color:var(--t);font-size:12px">
             </div>
           </div>
+          <!-- Hint do modo de busca — fora do flex para não desalinhar os campos -->
+          <div id="searchModeHint" style="margin-top:6px;font-size:10px;color:var(--t3);line-height:1.5;padding:5px 8px;background:rgba(255,255,255,.03);border-radius:5px;border-left:2px solid rgba(255,255,255,.08)"></div>
           <div style="display:flex;gap:10px;align-items:end;flex-wrap:wrap;margin-top:8px">
             <div style="flex:1;min-width:120px">
               <label style="font-size:10.5px;color:var(--t3);display:block;margin-bottom:3px">Leads qualificados <span class="detail-btn">?<span class="detail-tooltip">Quantos leads bons o sistema deve encontrar por rodada. Ele analisa perfis um a um até bater essa cota.</span></span></label>
