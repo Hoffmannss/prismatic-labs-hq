@@ -601,15 +601,15 @@ tbody tr:last-child td{border-bottom:none}
     <div class="cmd-list">
       <div class="cmd-group-label">Navegação</div>
       <div class="cmd-item" onclick="navigate('overview');closePalette()"><div class="cmd-item-icon">⊞</div><span class="cmd-item-name">Painel Principal</span><span class="cmd-item-key">G O</span></div>
-      <div class="cmd-item" onclick="navigate('agents');closePalette()"><div class="cmd-item-icon">⬡</div><span class="cmd-item-name">Agentes</span><span class="cmd-item-key">G A</span></div>
+      <div class="cmd-item cmd-admin-only" onclick="navigate('agents');closePalette()"><div class="cmd-item-icon">⬡</div><span class="cmd-item-name">Agentes</span><span class="cmd-item-key">G A</span></div>
       <div class="cmd-item" onclick="navigate('crm');closePalette()"><div class="cmd-item-icon">◈</div><span class="cmd-item-name">CRM — Leads</span><span class="cmd-item-key">G C</span></div>
       <div class="cmd-item" onclick="navigate('dmqueue');closePalette()"><div class="cmd-item-icon">◎</div><span class="cmd-item-name">Fila de DMs</span><span class="cmd-item-key">G D</span></div>
       <div class="cmd-item" onclick="navigate('analytics');closePalette()"><div class="cmd-item-icon">◈</div><span class="cmd-item-name">Relatórios</span><span class="cmd-item-key">G N</span></div>
-      <div class="cmd-item" onclick="navigate('logs');closePalette()"><div class="cmd-item-icon">≡</div><span class="cmd-item-name">Histórico</span><span class="cmd-item-key">G L</span></div>
+      <div class="cmd-item cmd-admin-only" onclick="navigate('logs');closePalette()"><div class="cmd-item-icon">≡</div><span class="cmd-item-name">Histórico</span><span class="cmd-item-key">G L</span></div>
       <div class="cmd-group-label">Ações Rápidas</div>
       <div class="cmd-item" onclick="runAgent('autopilot');closePalette()"><div class="cmd-item-icon">⚡</div><span class="cmd-item-name">Iniciar Autopilot</span><span class="cmd-item-key">⌘ P</span></div>
-      <div class="cmd-item" onclick="runAgent('scraper');closePalette()"><div class="cmd-item-icon">🔍</div><span class="cmd-item-name">Buscar Novos Leads</span></div>
-      <div class="cmd-item" onclick="runAgent('copywriter');closePalette()"><div class="cmd-item-icon">✍️</div><span class="cmd-item-name">Criar Mensagens</span></div>
+      <div class="cmd-item cmd-admin-only" onclick="runAgent('scraper');closePalette()"><div class="cmd-item-icon">🔍</div><span class="cmd-item-name">Buscar Novos Leads</span></div>
+      <div class="cmd-item cmd-admin-only" onclick="runAgent('copywriter');closePalette()"><div class="cmd-item-icon">✍️</div><span class="cmd-item-name">Criar Mensagens</span></div>
       <div class="cmd-item" onclick="refreshData();closePalette()"><div class="cmd-item-icon">↻</div><span class="cmd-item-name">Atualizar Dados</span><span class="cmd-item-key">⌘ R</span></div>
     </div>
     <div class="cmd-footer">
@@ -1989,6 +1989,21 @@ function navigate(section) {
 
 // ── Command Palette ──
 function openPalette() {
+  // Filtrar itens admin-only com base no role do usuário atual
+  const isAdmin = document.body.classList.contains('is-admin');
+  document.querySelectorAll('.cmd-admin-only').forEach(el => {
+    el.style.display = isAdmin ? '' : 'none';
+  });
+  // Esconder group-labels que ficaram sem itens visíveis
+  document.querySelectorAll('.cmd-list .cmd-group-label').forEach(label => {
+    let next = label.nextElementSibling;
+    let hasVisible = false;
+    while (next && !next.classList.contains('cmd-group-label')) {
+      if (next.style.display !== 'none') { hasVisible = true; break; }
+      next = next.nextElementSibling;
+    }
+    label.style.display = hasVisible ? '' : 'none';
+  });
   document.getElementById('cmdOverlay').classList.add('open');
   setTimeout(() => document.getElementById('cmdInput').focus(), 50);
 }
@@ -2027,13 +2042,14 @@ function authFetch(url, opts = {}) {
 }
 
 // ── Toast ──
-function toast(msg, type = 'info') {
-  const icons = { info: 'ℹ', success: '✓', error: '✕' };
+function toast(msg, type = 'info', duration = 3800) {
+  const icons = { info: 'ℹ', success: '✓', error: '✕', warning: '⚠' };
   const el = document.createElement('div');
-  el.className = `toast ${type}`;
+  el.className = `toast ${type === 'warning' ? 'error' : type}`;
+  if (type === 'warning') el.style.cssText = 'border-color:rgba(245,158,11,.4);background:rgba(245,158,11,.08)';
   el.innerHTML = `<span class="toast-icon">${icons[type] || 'ℹ'}</span><span class="toast-msg">${msg}</span>`;
   document.getElementById('toasts').prepend(el);
-  setTimeout(() => el.remove(), 3800);
+  setTimeout(() => el.remove(), duration);
 }
 
 // ── Logging ──
@@ -3309,9 +3325,14 @@ function checkAuth() {
         document.getElementById('loginOverlay').style.display = 'none';
         if (d.user?.is_admin) document.body.classList.add('is-admin');
         updateUserInfo(d.user);
-        // Verificar must_change_password salvo no login
+        // Verificar must_change_password — primeiro login exige troca de senha
         const cached = (() => { try { return JSON.parse(localStorage.getItem('vendedor_user') || '{}'); } catch { return {}; } })();
-        if (cached.must_change_password) setTimeout(() => openAccountModal(true), 350);
+        if (cached.must_change_password) {
+          setTimeout(() => {
+            toast('🔒 Primeiro acesso — crie sua senha para continuar', 'warning', 5000);
+            openAccountModal(true);
+          }, 400);
+        }
       } else {
         // Token inválido: limpa tudo e força nova autenticação
         localStorage.removeItem('vendedor_token');
